@@ -1,0 +1,16 @@
+{
+  "name": "@molten-voice/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsgo --project tsconfig.json --noEmit",
+    "fmt": "oxfmt --check .",
+    "lint": "oxlint .",
+    "test": "vitest run",
+    "build": "tsgo --project tsconfig.json --noEmit"
+  }
+}
