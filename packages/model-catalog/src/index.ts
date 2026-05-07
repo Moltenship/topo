@@ -1,1 +1,1 @@
-export const packageReady = true;
+export * from "./model-catalog";
