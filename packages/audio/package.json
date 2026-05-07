@@ -14,6 +14,7 @@
     "build": "tsgo --project tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@molten-voice/shared": "workspace:*"
+    "@molten-voice/shared": "workspace:*",
+    "effect": "^3.21.2"
   }
 }

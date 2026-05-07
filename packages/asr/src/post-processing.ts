@@ -5,11 +5,14 @@ export const normalizeTranscript = (text: string, mode: PostProcessingMode): str
     return text;
   }
 
-  const normalized = text.trim().replace(/\s+/g, " ").replace(/\s+([,.!?;:])/g, "$1");
+  const normalized = text
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.!?;:])/g, "$1");
 
   if (normalized.length === 0) {
     return normalized;
   }
 
-  return normalized[0].toLocaleUpperCase() + normalized.slice(1);
+  return normalized.charAt(0).toLocaleUpperCase() + normalized.slice(1);
 };

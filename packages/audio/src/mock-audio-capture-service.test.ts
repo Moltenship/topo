@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 import { createMockAudioCaptureService } from "./audio-capture-service";
 
@@ -8,8 +9,8 @@ describe("createMockAudioCaptureService", () => {
 
     service.onLevelFrame((frame) => frames.push(frame));
 
-    await service.startRecording("session_1");
-    const audio = await service.stopRecording("hotkey-release");
+    await Effect.runPromise(service.startRecording("session_1"));
+    const audio = await Effect.runPromise(service.stopRecording("hotkey-release"));
 
     expect(frames).toHaveLength(1);
     expect(audio).toEqual({
