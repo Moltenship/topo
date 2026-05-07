@@ -63,6 +63,12 @@ importers:
 
   packages/asr:
     dependencies:
+      '@molten-voice/audio':
+        specifier: workspace:*
+        version: link:../audio
+      '@molten-voice/shared':
+        specifier: workspace:*
+        version: link:../shared
       effect:
         specifier: ^3.21.2
         version: 3.21.2
