@@ -108,3 +108,83 @@ p {
 .model-card dd {
   margin: 0;
 }
+
+.history-panel {
+  width: min(920px, calc(100% - 64px));
+  margin: 0 auto 48px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.search-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 20px 0;
+  padding: 12px 14px;
+  border: 1px solid #c9c1b5;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #ded8cf;
+}
+
+.history-item p {
+  margin: 0;
+  font-size: 16px;
+}
+
+.history-item time {
+  color: #6f6a62;
+  white-space: nowrap;
+}
+
+.overlay-preview {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 10px auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 999px;
+  background: rgb(20 20 20 / 88%);
+  color: #fff;
+  box-shadow: 0 18px 48px rgb(20 20 20 / 24%);
+}
+
+.recording-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ff5959;
+}
+
+.waveform {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 52px;
+}
+
+.waveform span {
+  width: 4px;
+  border-radius: 999px;
+  background: #78dcca;
+}
