@@ -9,7 +9,7 @@
     "typecheck": "tsgo --project tsconfig.json --noEmit",
     "fmt": "oxfmt --check .",
     "lint": "oxlint .",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "build": "vite --config vite.renderer.config.ts build"
   },
   "dependencies": {
