@@ -1,5 +1,8 @@
 import { contextBridge } from "electron";
+import type { MoltenVoiceApi } from "@molten-voice/shared";
 
-contextBridge.exposeInMainWorld("moltenVoice", {
+const api: MoltenVoiceApi = {
   appName: "Molten Voice",
-});
+};
+
+contextBridge.exposeInMainWorld("moltenVoice", api);
