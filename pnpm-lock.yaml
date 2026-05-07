@@ -63,7 +63,11 @@ importers:
 
   packages/asr: {}
 
-  packages/audio: {}
+  packages/audio:
+    dependencies:
+      '@molten-voice/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/db:
     dependencies:
