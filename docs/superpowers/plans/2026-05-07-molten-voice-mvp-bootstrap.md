@@ -6,7 +6,7 @@
 
 **Architecture:** Start with a pnpm monorepo and a working Electron + React renderer shell, then add typed shared packages, IPC boundaries, local state, model catalog, mock dictation workflows, overlay, setup, settings, and history. Native helper integration is prepared through package boundaries and mockable contracts before real platform helpers are implemented.
 
-**Tech Stack:** pnpm workspaces, Electron, React, Vite, TypeScript, Effect TS, TanStack Router, shadcn/ui-compatible UI structure, Drizzle ORM, SQLite, OxLint, OxFormat.
+**Tech Stack:** pnpm workspaces, Electron, React, Vite, TypeScript, Effect TS, TanStack Router, shadcn/ui-compatible UI structure, Drizzle ORM, SQLite, OxLint, Oxfmt.
 
 ---
 
@@ -146,7 +146,7 @@ strict-peer-dependencies=false
 Run:
 
 ```powershell
-pnpm add -D @typescript/native-preview@beta oxlint oxlint-tsgolint oxformat vitest
+pnpm add -Dw @typescript/native-preview@beta oxlint oxlint-tsgolint oxfmt vitest
 ```
 
 Expected: `pnpm-lock.yaml` is created and dev dependencies are added.
@@ -169,7 +169,7 @@ Expected: Commit succeeds.
 **Files:**
 - Create: `tsconfig.base.json`
 - Create: `oxlint.json`
-- Create: `oxformat.json`
+- Create: `.oxfmt.json`
 
 - [ ] **Step 1: Create base TypeScript config**
 
@@ -218,7 +218,7 @@ Create `oxlint.json`:
 
 - [ ] **Step 3: Create OxFormat config**
 
-Create `oxformat.json`:
+Create `.oxfmt.json`:
 
 ```json
 {
@@ -239,7 +239,7 @@ Expected: Command exits successfully or reports there are no package scripts yet
 Run:
 
 ```powershell
-git add tsconfig.base.json oxlint.json oxformat.json
+git add tsconfig.base.json oxlint.json .oxfmt.json
 git commit -m "chore: add shared tooling config"
 ```
 

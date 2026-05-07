@@ -1,0 +1,23 @@
+{
+  "name": "molten-voice",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.11.0",
+  "scripts": {
+    "check": "pnpm run typecheck && pnpm run fmt && pnpm run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "fmt": "pnpm -r run fmt",
+    "lint": "pnpm -r run lint",
+    "dev": "pnpm --filter @molten-voice/desktop dev",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260421.2",
+    "oxfmt": "^0.48.0",
+    "oxlint": "^1.63.0",
+    "oxlint-tsgolint": "^0.22.1",
+    "vitest": "^4.1.5"
+  }
+}

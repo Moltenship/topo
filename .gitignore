@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-electron
+.vite
+.turbo
+coverage
+*.log
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
