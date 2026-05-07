@@ -1,0 +1,40 @@
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(),
+  valueJson: text("value_json").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const installedModels = sqliteTable("installed_models", {
+  id: text("id").primaryKey(),
+  modelId: text("model_id").notNull(),
+  runtime: text("runtime").notNull(),
+  directory: text("directory").notNull(),
+  checksumSha256: text("checksum_sha256").notNull(),
+  installedAt: text("installed_at").notNull(),
+});
+
+export const transcripts = sqliteTable("transcripts", {
+  id: text("id").primaryKey(),
+  text: text("text").notNull(),
+  createdAt: text("created_at").notNull(),
+  durationMs: integer("duration_ms").notNull(),
+  modelId: text("model_id").notNull(),
+  runtime: text("runtime").notNull(),
+  language: text("language").notNull(),
+  recordingMode: text("recording_mode").notNull(),
+  stopReason: text("stop_reason").notNull(),
+  insertionMode: text("insertion_mode").notNull(),
+  insertionStatus: text("insertion_status").notNull(),
+  targetAppName: text("target_app_name"),
+});
+
+export const insertionEvents = sqliteTable("insertion_events", {
+  id: text("id").primaryKey(),
+  transcriptId: text("transcript_id").notNull(),
+  mode: text("mode").notNull(),
+  status: text("status").notNull(),
+  createdAt: text("created_at").notNull(),
+  errorCode: text("error_code"),
+});
