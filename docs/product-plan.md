@@ -39,6 +39,7 @@ The app is local-first by default and by design.
 - Core dictation must work fully offline after model installation.
 - No audio or transcript text is sent to cloud providers in MVP.
 - AI SDK is used as an internal transcription/provider abstraction, not as a reason to send data externally.
+- Effect TS is a core application dependency for reliable local workflows, typed failures, and service boundaries.
 - Future cloud features, if added, must be explicit opt-in and separate from the default local dictation flow.
 
 ## First-Run Setup Flow
@@ -314,4 +315,3 @@ Future local AI actions may include cleanup, formatting, translation, and comman
 - English and Russian are supported.
 - The app keeps local searchable transcript history without retaining audio.
 - The model layer can support WhisperKit, whisper.cpp, and Parakeet without changing the renderer UI.
-

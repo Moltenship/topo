@@ -51,6 +51,7 @@ The renderer never talks directly to native helpers or SQLite. It talks to Elect
 - shadcn/ui.
 - ElevenLabs-style waveform components.
 - AI SDK v6 transcription API.
+- Effect TS as a core application dependency for typed errors, services, configuration, and async workflows.
 - pnpm workspaces.
 - OxLint.
 - OxFormat.
@@ -89,8 +90,9 @@ packages/ui
 
 packages/shared
   shared types
-  result/error helpers
+  Effect-based result/error helpers
   platform constants
+  shared configuration schemas
 
 packages/db
   Drizzle schema
@@ -106,11 +108,13 @@ packages/asr
   AI SDK local transcription provider
   transcription model adapters
   transcript result normalization
+  Effect services for model/runtime dependencies
 
 packages/native-bridge
   helper process lifecycle
   JSON-RPC client
   transport abstraction
+  Effect-managed helper resources
 
 packages/audio
   audio capture interfaces
@@ -122,6 +126,22 @@ packages/settings
   default values
   validation
 ```
+
+## Effect TS Usage
+
+Effect is a core dependency for the TypeScript application layer.
+
+Use Effect for:
+
+- typed domain errors;
+- service boundaries and dependency injection;
+- configuration loading and validation;
+- helper process lifecycle resources;
+- model download, verification, and install workflows;
+- transcription orchestration;
+- retry, timeout, cancellation, and cleanup behavior.
+
+Avoid using Effect as a renderer UI state library. React UI state should stay in React/TanStack patterns, while Effect owns application workflows and infrastructure services behind typed IPC and service APIs.
 
 ## Routing
 
@@ -460,6 +480,8 @@ checksum_failed
 
 Detailed helper logs go to local logs, not directly to the overlay.
 
+Internally, domain and infrastructure failures should be represented as typed Effect errors before they are mapped to IPC-safe error payloads and user-readable messages.
+
 ## Testing Strategy
 
 Unit tests:
@@ -495,4 +517,3 @@ Manual desktop tests:
 - Transparent focusless overlay behavior can be platform-sensitive.
 - whisper.cpp long-running helper needs custom lifecycle work.
 - Parakeet packaging on Windows may be heavier than the default Whisper path.
-
