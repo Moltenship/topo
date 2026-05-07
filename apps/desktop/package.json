@@ -13,6 +13,7 @@
     "build": "vite --config vite.renderer.config.ts build"
   },
   "dependencies": {
+    "@molten-voice/model-catalog": "workspace:*",
     "@molten-voice/shared": "workspace:*",
     "@tanstack/react-router": "^1.139.3",
     "@vitejs/plugin-react": "^5.1.2",

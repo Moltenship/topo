@@ -29,6 +29,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@molten-voice/model-catalog':
+        specifier: workspace:*
+        version: link:../../packages/model-catalog
       '@molten-voice/shared':
         specifier: workspace:*
         version: link:../../packages/shared

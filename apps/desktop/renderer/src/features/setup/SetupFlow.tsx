@@ -1,3 +1,4 @@
+import { ModelPicker } from "./ModelPicker";
 import { setupSteps } from "./setup-steps";
 
 export const SetupFlow = () => {
@@ -14,6 +15,7 @@ export const SetupFlow = () => {
             </li>
           ))}
         </ol>
+        <ModelPicker />
       </section>
     </main>
   );

@@ -73,3 +73,38 @@ p {
   font-size: 14px;
   font-weight: 700;
 }
+
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.model-card {
+  border: 1px solid #d5cec2;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fffdf8;
+}
+
+.model-card h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.model-card dl {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+}
+
+.model-card dt {
+  color: #6f6a62;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.model-card dd {
+  margin: 0;
+}
