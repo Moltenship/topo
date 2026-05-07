@@ -67,6 +67,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@molten-voice/shared':
+        specifier: workspace:*
+        version: link:../shared
       better-sqlite3:
         specifier: ^12.9.0
         version: 12.9.0
