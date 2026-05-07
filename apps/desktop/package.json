@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite --config vite.renderer.config.ts",
     "typecheck": "tsgo --project tsconfig.json --noEmit",
-    "fmt": "oxfmt --check .",
+    "fmt": "oxfmt --check electron renderer/src vite.renderer.config.ts package.json tsconfig.json",
     "lint": "oxlint .",
     "test": "vitest run --passWithNoTests",
     "build": "vite --config vite.renderer.config.ts build"
