@@ -1,0 +1,29 @@
+{
+  "name": "@molten-voice/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite --config vite.renderer.config.ts",
+    "typecheck": "tsgo --project tsconfig.json --noEmit",
+    "fmt": "oxfmt --check .",
+    "lint": "oxlint .",
+    "test": "vitest run",
+    "build": "vite --config vite.renderer.config.ts build"
+  },
+  "dependencies": {
+    "@molten-voice/shared": "workspace:*",
+    "@tanstack/react-router": "^1.139.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "effect": "^3.19.11",
+    "electron": "^39.2.7",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "vite": "^7.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3"
+  }
+}
