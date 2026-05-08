@@ -85,6 +85,12 @@ importers:
         specifier: ^3.21.2
         version: 3.21.2
 
+  packages/contracts:
+    dependencies:
+      effect:
+        specifier: ^3.21.2
+        version: 3.21.2
+
   packages/db:
     dependencies:
       '@molten-voice/shared':
@@ -110,11 +116,24 @@ importers:
 
   packages/settings:
     dependencies:
+      '@molten-voice/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      effect:
+        specifier: ^3.21.2
+        version: 3.21.2
       zod:
         specifier: ^4.4.3
         version: 4.4.3
 
-  packages/shared: {}
+  packages/shared:
+    dependencies:
+      '@molten-voice/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      effect:
+        specifier: ^3.21.2
+        version: 3.21.2
 
   packages/ui: {}
 

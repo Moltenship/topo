@@ -1,0 +1,26 @@
+import * as Schema from "effect/Schema";
+import { InsertionMode, LanguageCode, RecordingMode } from "./dictation";
+
+export const SilenceTimeoutMs = Schema.Literal(1200, 1500, 2000, 3000);
+export type SilenceTimeoutMs = typeof SilenceTimeoutMs.Type;
+
+export const PostProcessingMode = Schema.Literal("raw", "lightweight");
+export type PostProcessingMode = typeof PostProcessingMode.Type;
+
+export const AppSettings = Schema.Struct({
+  hotkey: Schema.optionalWith(Schema.String, { default: () => "CapsLock" }),
+  recordingMode: Schema.optionalWith(RecordingMode, { default: () => "push-to-talk" }),
+  silenceTimeoutMs: Schema.optionalWith(Schema.NullOr(SilenceTimeoutMs), { default: () => null }),
+  insertionMode: Schema.optionalWith(InsertionMode, { default: () => "paste" }),
+  postProcessingMode: Schema.optionalWith(PostProcessingMode, { default: () => "lightweight" }),
+  language: Schema.optionalWith(LanguageCode, { default: () => "auto" }),
+  historyEnabled: Schema.optionalWith(Schema.Boolean, { default: () => true }),
+  autoDeleteHistoryDays: Schema.optionalWith(Schema.NullOr(Schema.Int.pipe(Schema.positive())), {
+    default: () => null,
+  }),
+  modelDirectory: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
+  activeModelId: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
+});
+export type AppSettings = typeof AppSettings.Type;
+
+export const DEFAULT_APP_SETTINGS: AppSettings = Schema.decodeUnknownSync(AppSettings)({});

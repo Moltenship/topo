@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appSettingsSchema, defaultAppSettings } from "./settings-schema";
+import { defaultAppSettings, parseAppSettings } from "./settings-schema";
 
 describe("appSettingsSchema", () => {
   it("creates local-first defaults", () => {
@@ -18,6 +18,6 @@ describe("appSettingsSchema", () => {
   });
 
   it("rejects unsupported silence timeout values", () => {
-    expect(() => appSettingsSchema.parse({ silenceTimeoutMs: 900 })).toThrow();
+    expect(() => parseAppSettings({ silenceTimeoutMs: 900 })).toThrow();
   });
 });

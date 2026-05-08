@@ -4,10 +4,8 @@ export * from "./ipc";
 
 export type Platform = "macos" | "windows";
 
-export interface AppStateSnapshot {
-  readonly setupComplete: boolean;
-  readonly overlayState: import("./dictation").OverlayState;
-}
+import type { AppStateSnapshot } from "@molten-voice/contracts";
+export type { AppStateSnapshot };
 
 export interface MoltenVoiceApi {
   readonly appName: string;
