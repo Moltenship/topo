@@ -2,14 +2,21 @@ const bars = [18, 28, 42, 34, 50, 32, 24, 38, 20];
 
 export const OverlayView = () => {
   return (
-    <aside className="overlay-preview" aria-label="Recording overlay preview">
-      <span className="recording-dot" />
-      <div className="waveform" aria-hidden="true">
+    <aside
+      className="fixed bottom-4 left-1/2 grid -translate-x-1/2 grid-cols-[10px_auto_auto] items-center gap-3.5 rounded-full border bg-card/90 px-4 py-2.5 text-foreground shadow-sm backdrop-blur"
+      aria-label="Recording overlay preview"
+    >
+      <span className="size-2.5 rounded-full bg-destructive" />
+      <div className="flex h-11 items-center gap-1" aria-hidden="true">
         {bars.map((height, index) => (
-          <span key={`${height}-${index}`} style={{ height }} />
+          <span
+            className="w-1 rounded-full bg-primary"
+            key={`${height}-${index}`}
+            style={{ height }}
+          />
         ))}
       </div>
-      <strong>Recording</strong>
+      <strong className="text-sm">Recording</strong>
     </aside>
   );
 };

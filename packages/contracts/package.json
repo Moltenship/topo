@@ -1,10 +1,13 @@
 {
-  "name": "@molten-voice/shared",
+  "name": "@molten-voice/contracts",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./dictation": "./src/dictation.ts",
+    "./settings": "./src/settings.ts",
+    "./ipc": "./src/ipc.ts"
   },
   "scripts": {
     "typecheck": "tsgo --project tsconfig.json --noEmit",
@@ -14,7 +17,6 @@
     "build": "tsgo --project tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@molten-voice/contracts": "workspace:*",
     "effect": "^3.21.2"
   }
 }
