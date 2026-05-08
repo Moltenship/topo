@@ -1,3 +1,6 @@
+import type { DownloadSource } from "./download-source";
+import { resolveDownloadSourceUrl } from "./download-source";
+
 export type AsrRuntime = "whisperkit" | "whisper-cpp" | "parakeet";
 export type ModelQualityLabel = "fast" | "balanced" | "quality";
 export type ModelSpeedLabel = "fastest" | "fast" | "moderate";
@@ -9,6 +12,7 @@ export interface ModelCatalogEntry {
   readonly platforms: readonly ("macos" | "windows")[];
   readonly architectures: readonly string[];
   readonly languages: readonly ("en" | "ru")[];
+  readonly source: DownloadSource;
   readonly downloadUrl: string;
   readonly checksumSha256: string;
   readonly downloadSizeBytes: number;
@@ -30,6 +34,10 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     platforms: ["macos"],
     architectures: ["arm64"],
     languages: ["en", "ru"],
+    source: {
+      type: "direct-url",
+      url: "https://example.invalid/models/whisperkit-small",
+    },
     downloadUrl: "https://example.invalid/models/whisperkit-small",
     checksumSha256: "0000000000000000000000000000000000000000000000000000000000000001",
     downloadSizeBytes: Math.round(0.5 * gib),
@@ -47,6 +55,10 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     platforms: ["windows"],
     architectures: ["x64", "arm64"],
     languages: ["en", "ru"],
+    source: {
+      type: "direct-url",
+      url: "https://example.invalid/models/whisper-cpp-small",
+    },
     downloadUrl: "https://example.invalid/models/whisper-cpp-small",
     checksumSha256: "0000000000000000000000000000000000000000000000000000000000000002",
     downloadSizeBytes: Math.round(0.5 * gib),
@@ -64,6 +76,10 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     platforms: ["windows"],
     architectures: ["x64"],
     languages: ["en", "ru"],
+    source: {
+      type: "direct-url",
+      url: "https://example.invalid/models/parakeet-tdt-0-6b-v3",
+    },
     downloadUrl: "https://example.invalid/models/parakeet-tdt-0-6b-v3",
     checksumSha256: "0000000000000000000000000000000000000000000000000000000000000003",
     downloadSizeBytes: Math.round(1.5 * gib),
@@ -75,6 +91,9 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     experimental: true,
   },
 ];
+
+export const getCatalogModelDownloadUrl = (model: ModelCatalogEntry): string =>
+  resolveDownloadSourceUrl(model.source);
 
 export const findCatalogModel = (modelId: string): ModelCatalogEntry | undefined =>
   bundledModelCatalog.find((model) => model.id === modelId);

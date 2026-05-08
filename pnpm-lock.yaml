@@ -149,7 +149,11 @@ importers:
         specifier: ^7.6.13
         version: 7.6.13
 
-  packages/model-catalog: {}
+  packages/model-catalog:
+    dependencies:
+      effect:
+        specifier: ^3.19.7
+        version: 3.21.2
 
   packages/native-bridge:
     dependencies:

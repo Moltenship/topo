@@ -1,4 +1,5 @@
 import type { ModelCatalogEntry } from "./model-catalog";
+import { getCatalogModelDownloadUrl } from "./model-catalog";
 
 export type ModelInstallStatus = "not-installed" | "downloading" | "installed" | "corrupt";
 
@@ -35,7 +36,7 @@ export const createModelInstallPlan = (
 
   return {
     modelId: model.id,
-    downloadUrl: model.downloadUrl,
+    downloadUrl: getCatalogModelDownloadUrl(model),
     expectedChecksumSha256: model.checksumSha256,
     expectedSizeBytes: model.downloadSizeBytes,
     installDirectory,

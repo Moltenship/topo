@@ -2680,6 +2680,8 @@ Completed:
 - Electron dictation flow now routes completed transcripts through the native insertion boundary.
 - Model install planning and downloaded file size/checksum verification helpers.
 - Mock model install progress in Electron app state with typed IPC and renderer progress UI.
+- Bundled catalog download source metadata with GitHub Release URL resolution support.
+- Mock Effect model installer service that verifies downloaded file metadata before marking it installed.
 
 Verification completed:
 
