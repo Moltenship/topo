@@ -2705,7 +2705,7 @@ Updated on 2026-05-09 after deciding to keep the catalog bundled and avoid tray/
 
 ### Model Installation
 
-- [ ] Add a Hugging Face source type next to the existing direct URL and GitHub Release source types.
+- [x] Add a Hugging Face source type next to the existing direct URL and GitHub Release source types.
 - [ ] Store pinned upstream source metadata in the bundled catalog, not a remote catalog.
 - [ ] Add installed model persistence in SQLite:
   - model id;
@@ -2728,6 +2728,24 @@ Updated on 2026-05-09 after deciding to keep the catalog bundled and avoid tray/
 ### Candidate Upstream Model Sources
 
 These are candidate source links to prepare the bundled catalog. Checksums are not final until we download the exact files and compute sha256 locally.
+
+#### Whisper.cpp Small, Windows Default
+
+- Upstream runtime repository: `ggml-org/whisper.cpp`
+- Runtime source type: `github-release`
+- Runtime candidate tag: `v1.8.4`
+- Runtime browser link: `https://github.com/ggml-org/whisper.cpp/releases`
+- Model repository: `ggerganov/whisper.cpp`
+- Model source type: `huggingface-file`
+- Candidate revision: `main` for development only; replace with a pinned Hugging Face commit before release.
+- Candidate file: `ggml-small.bin`
+- Direct file candidate: `https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin`
+- Notes:
+  - This should be the first real Windows download/runtime integration target.
+  - Search results report `ggml-small.bin` around 466 MiB and about 852 MB memory use.
+  - The model repo reports MIT license metadata.
+  - Runtime package asset names must be resolved from the pinned GitHub release API before final catalog entry.
+  - `checksumSha256` is still placeholder until the exact pinned artifact is downloaded and hashed locally.
 
 #### WhisperKit Small, macOS Apple Silicon
 
@@ -2770,7 +2788,7 @@ These are candidate source links to prepare the bundled catalog. Checksums are n
 1. Add Hugging Face source metadata types and URL/snapshot planning helpers.
 2. Add installed model persistence in SQLite.
 3. Wire installed model state into `AppStateSnapshot` and the renderer model cards.
-4. Implement a real file downloader for single-file sources first, using Parakeet as the first integration target.
+4. Implement a real file downloader for single-file sources first, using Whisper.cpp Small as the first integration target.
 5. Implement snapshot/subfolder download support for WhisperKit Core ML directories.
 6. Compute and pin real sha256 values for the exact selected artifacts.
 7. Add notification boundary for install success/failure.

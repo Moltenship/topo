@@ -11,7 +11,25 @@ export interface DirectDownloadSource {
   readonly url: string;
 }
 
-export type DownloadSource = GithubReleaseSource | DirectDownloadSource;
+export interface HuggingFaceFileSource {
+  readonly type: "huggingface-file";
+  readonly repo: string;
+  readonly revision: string;
+  readonly filePath: string;
+}
+
+export interface HuggingFaceSnapshotSource {
+  readonly type: "huggingface-snapshot";
+  readonly repo: string;
+  readonly revision: string;
+  readonly subfolder: string;
+}
+
+export type DownloadSource =
+  | GithubReleaseSource
+  | DirectDownloadSource
+  | HuggingFaceFileSource
+  | HuggingFaceSnapshotSource;
 
 const encodePathSegment = (segment: string): string =>
   encodeURIComponent(segment).replaceAll("%2F", "/");
@@ -19,6 +37,18 @@ const encodePathSegment = (segment: string): string =>
 export const resolveDownloadSourceUrl = (source: DownloadSource): string => {
   if (source.type === "direct-url") {
     return source.url;
+  }
+
+  if (source.type === "huggingface-file") {
+    return `https://huggingface.co/${encodePathSegment(source.repo)}/resolve/${encodeURIComponent(
+      source.revision,
+    )}/${encodePathSegment(source.filePath)}`;
+  }
+
+  if (source.type === "huggingface-snapshot") {
+    return `https://huggingface.co/${encodePathSegment(source.repo)}/tree/${encodeURIComponent(
+      source.revision,
+    )}/${encodePathSegment(source.subfolder)}`;
   }
 
   return `https://github.com/${encodePathSegment(source.owner)}/${encodePathSegment(

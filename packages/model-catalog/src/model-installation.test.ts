@@ -14,7 +14,7 @@ describe("model installation planning", () => {
 
     expect(plan).toEqual({
       modelId: "whisper-cpp-small",
-      downloadUrl: "https://example.invalid/models/whisper-cpp-small",
+      downloadUrl: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
       expectedChecksumSha256: "0000000000000000000000000000000000000000000000000000000000000002",
       expectedSizeBytes: model.downloadSizeBytes,
       installDirectory: "C:/Users/me/AppData/Roaming/Molten Voice/models/whisper-cpp-small",
