@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { AppSettings } from "@molten-voice/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -9,15 +10,19 @@ import { setupSteps } from "./setup-steps";
 interface SetupFlowProps {
   readonly children?: ReactNode;
   readonly isRecording: boolean;
+  readonly settings: AppSettings | null;
   readonly onStartTestDictation: () => void;
   readonly onStopTestDictation: () => void;
+  readonly onSettingsChange: (settings: AppSettings) => void;
 }
 
 export const SetupFlow = ({
   children,
   isRecording,
+  settings,
   onStartTestDictation,
   onStopTestDictation,
+  onSettingsChange,
 }: SetupFlowProps) => {
   return (
     <>
@@ -97,7 +102,14 @@ export const SetupFlow = ({
             </strong>
           </CardFooter>
         </Card>
-        <ModelPicker />
+        <ModelPicker
+          activeModelId={settings?.activeModelId ?? null}
+          onSelectModel={(modelId) => {
+            if (settings) {
+              onSettingsChange({ ...settings, activeModelId: modelId });
+            }
+          }}
+        />
       </section>
       {children}
     </>

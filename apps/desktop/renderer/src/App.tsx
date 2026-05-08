@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AppStateSnapshot } from "@molten-voice/shared";
+import type { AppSettings, AppStateSnapshot } from "@molten-voice/shared";
 import { getRendererApi } from "./api/renderer-api";
 import { HistoryView } from "./features/history/HistoryView";
 import { OverlayView } from "./features/overlay/OverlayView";
@@ -30,6 +30,20 @@ export const App = () => {
     await refreshSnapshot();
   }, [refreshSnapshot]);
 
+  const updateSettings = useCallback(async (settings: AppSettings) => {
+    const nextSettings = await getRendererApi().updateSettings(settings);
+
+    setSnapshot((current) =>
+      current
+        ? {
+            ...current,
+            setupComplete: Boolean(nextSettings.activeModelId),
+            settings: nextSettings,
+          }
+        : current,
+    );
+  }, []);
+
   useEffect(() => {
     void refreshSnapshot();
   }, [refreshSnapshot]);
@@ -38,8 +52,10 @@ export const App = () => {
     <main className="grid min-h-screen grid-cols-[286px_minmax(0,1fr)_336px] overflow-hidden bg-background text-foreground max-[1040px]:grid-cols-[240px_minmax(0,1fr)] max-md:grid-cols-1 max-md:overflow-auto">
       <SetupFlow
         isRecording={snapshot?.overlayState === "recording"}
+        settings={snapshot?.settings ?? null}
         onStartTestDictation={startTestDictation}
         onStopTestDictation={stopTestDictation}
+        onSettingsChange={updateSettings}
       >
         <HistoryView
           query={historyQuery}
