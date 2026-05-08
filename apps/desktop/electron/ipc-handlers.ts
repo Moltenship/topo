@@ -1,11 +1,17 @@
 import { BrowserWindow, ipcMain } from "electron";
 import { Effect } from "effect";
+import * as Schema from "effect/Schema";
 import type { DictationOrchestrator } from "@molten-voice/asr";
 import type { AppDatabase } from "@molten-voice/db";
 import { bundledModelCatalog } from "@molten-voice/model-catalog";
 import type { AppSettings, AppStateSnapshot, TranscriptRecord } from "@molten-voice/shared";
 import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
-import { IpcChannels } from "@molten-voice/shared";
+import {
+  DeleteTranscriptRequest,
+  IpcChannels,
+  ListTranscriptsRequest,
+  UpdateSettingsRequest,
+} from "@molten-voice/shared";
 
 interface MainProcessState {
   setupComplete: boolean;
@@ -33,6 +39,14 @@ const clearOverlayHideTimer = () => {
     overlayHideTimer = null;
   }
 };
+
+const decodeIpcPayload = <A, I, R>(
+  schema: Schema.Schema<A, I, R>,
+  payload: unknown,
+): Effect.Effect<A, Error, R> =>
+  Schema.decodeUnknown(schema)(payload).pipe(
+    Effect.mapError((error) => new Error(`Invalid IPC payload: ${String(error)}`)),
+  );
 
 const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSettings> =>
   Effect.gen(function* () {
@@ -121,13 +135,21 @@ const stopTestDictation = (
 
 export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
   ipcMain.handle(IpcChannels.getAppState, () => Effect.runPromise(getAppState(dependencies)));
-  ipcMain.handle(IpcChannels.listTranscripts, (_event, input: { query?: string }) =>
-    Effect.runPromise(listTranscripts(dependencies, input.query)),
-  );
-  ipcMain.handle(IpcChannels.deleteTranscript, (_event, input: { id: string }) =>
+  ipcMain.handle(IpcChannels.listTranscripts, (_event, input: unknown) =>
     Effect.runPromise(
       Effect.gen(function* () {
-        yield* deleteTranscript(dependencies, input.id);
+        const payload = yield* decodeIpcPayload(ListTranscriptsRequest, input);
+
+        return yield* listTranscripts(dependencies, payload.query);
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.deleteTranscript, (_event, input: unknown) =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const payload = yield* decodeIpcPayload(DeleteTranscriptRequest, input);
+
+        yield* deleteTranscript(dependencies, payload.id);
         yield* publishAppState(dependencies);
       }),
     ),
@@ -140,9 +162,10 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
       }),
     ),
   );
-  ipcMain.handle(IpcChannels.updateSettings, (_event, settings: AppSettings) =>
+  ipcMain.handle(IpcChannels.updateSettings, (_event, input: unknown) =>
     Effect.runPromise(
       Effect.gen(function* () {
+        const settings = yield* decodeIpcPayload(UpdateSettingsRequest, input);
         const nextSettings = yield* updateSettings(dependencies, settings);
         yield* publishAppState(dependencies);
 
