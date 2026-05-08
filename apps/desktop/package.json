@@ -7,10 +7,12 @@
   "scripts": {
     "dev": "vite --config vite.renderer.config.ts",
     "typecheck": "tsgo --project tsconfig.json --noEmit",
-    "fmt": "oxfmt --check electron renderer/src vite.renderer.config.ts package.json tsconfig.json",
+    "fmt": "oxfmt --check electron renderer/src vite.electron.config.ts vite.renderer.config.ts package.json tsconfig.json",
     "lint": "oxlint .",
     "test": "vitest run --passWithNoTests",
-    "build": "vite --config vite.renderer.config.ts build"
+    "build": "pnpm run build:renderer && pnpm run build:electron",
+    "build:renderer": "vite --config vite.renderer.config.ts build",
+    "build:electron": "vite --config vite.electron.config.ts build"
   },
   "dependencies": {
     "@molten-voice/asr": "workspace:*",
