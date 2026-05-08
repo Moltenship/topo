@@ -1,3 +1,4 @@
+import Database from "better-sqlite3";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -48,5 +49,20 @@ describe("openAppDatabase", () => {
     expect(existsSync(database.path)).toBe(true);
     expect(transcripts).toHaveLength(1);
     expect(transcripts[0]?.text).toBe("persistent local transcript");
+  });
+
+  it("records applied migrations and can reopen the database idempotently", async () => {
+    const directory = makeTemporaryDirectory();
+    const firstDatabase = await Effect.runPromise(openAppDatabase(directory));
+    await Effect.runPromise(firstDatabase.close());
+
+    const secondDatabase = await Effect.runPromise(openAppDatabase(directory));
+    await Effect.runPromise(secondDatabase.close());
+
+    const sqlite = new Database(secondDatabase.path, { readonly: true });
+    const migrations = sqlite.prepare("SELECT id FROM _molten_migrations ORDER BY id").all();
+    sqlite.close();
+
+    expect(migrations).toEqual([{ id: "0001_initial_schema" }]);
   });
 });
