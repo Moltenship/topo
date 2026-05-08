@@ -50,6 +50,24 @@ const migrations: readonly Migration[] = [
       );
     `,
   },
+  {
+    id: "0002_expand_installed_models",
+    sql: `
+      DROP TABLE IF EXISTS installed_models;
+
+      CREATE TABLE installed_models (
+        id TEXT PRIMARY KEY,
+        model_id TEXT NOT NULL,
+        runtime TEXT NOT NULL,
+        source_type TEXT NOT NULL,
+        source_revision TEXT NOT NULL,
+        installed_path TEXT NOT NULL,
+        checksum_sha256 TEXT NOT NULL,
+        verification_status TEXT NOT NULL,
+        installed_at TEXT NOT NULL
+      );
+    `,
+  },
 ];
 
 const createMigrationTable = (sqlite: Database.Database) => {

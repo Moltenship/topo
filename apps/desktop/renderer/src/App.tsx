@@ -118,6 +118,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
       <main className="grid min-h-screen grid-cols-[286px_minmax(0,1fr)] overflow-hidden bg-background text-foreground max-md:grid-cols-1 max-md:overflow-auto">
         <SetupFlow
           errorMessage={effectiveErrorMessage}
+          installedModels={snapshot?.installedModels ?? []}
           isRecording={snapshot?.overlayState === "recording"}
           modelInstallProgress={snapshot?.modelInstallProgress ?? null}
           settings={snapshot?.settings ?? null}
@@ -143,6 +144,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
     >
       <SetupFlow
         errorMessage={effectiveErrorMessage}
+        installedModels={snapshot?.installedModels ?? []}
         isRecording={snapshot?.overlayState === "recording"}
         modelInstallProgress={snapshot?.modelInstallProgress ?? null}
         settings={snapshot?.settings ?? null}

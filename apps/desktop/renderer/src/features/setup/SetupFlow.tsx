@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { AppSettings, ModelInstallProgress } from "@molten-voice/shared";
+import type { AppSettings, InstalledModelRecord, ModelInstallProgress } from "@molten-voice/shared";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ interface SetupFlowProps {
   readonly children?: ReactNode;
   readonly isRecording: boolean;
   readonly errorMessage: string | null;
+  readonly installedModels: readonly InstalledModelRecord[];
   readonly settings: AppSettings | null;
   readonly modelInstallProgress?: ModelInstallProgress | null;
   readonly onDismissError: () => void;
@@ -27,6 +28,7 @@ export const SetupFlow = ({
   children,
   isRecording,
   errorMessage,
+  installedModels,
   settings,
   modelInstallProgress = null,
   onDismissError,
@@ -135,6 +137,7 @@ export const SetupFlow = ({
         </Card>
         <ModelPicker
           activeModelId={settings?.activeModelId ?? null}
+          installedModels={installedModels}
           installProgress={modelInstallProgress}
           onInstallModel={onInstallModel}
           onSelectModel={(modelId) => {

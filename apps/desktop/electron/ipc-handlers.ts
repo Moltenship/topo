@@ -64,12 +64,14 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
   Effect.gen(function* () {
     const settings = yield* getSettings(dependencies);
     const transcripts = yield* dependencies.database.transcripts.list();
+    const installedModels = yield* dependencies.database.installedModels.list();
 
     return {
       setupComplete: Boolean(settings.activeModelId),
       overlayState: state.overlayState,
       settings,
       transcripts,
+      installedModels,
       modelInstallProgress: dependencies.modelInstallJob.getCurrentProgress(),
       errorMessage: currentErrorMessage,
     };
@@ -203,7 +205,38 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
       Effect.gen(function* () {
         const payload = yield* decodeIpcPayload(InstallModelRequest, input);
         const progress = yield* dependencies.modelInstallJob.start(payload.modelId, () => {
-          void Effect.runPromise(publishAppState(dependencies));
+          void Effect.runPromise(
+            Effect.gen(function* () {
+              const installedProgress = dependencies.modelInstallJob.getCurrentProgress();
+
+              if (installedProgress?.status === "installed") {
+                const model = bundledModelCatalog.find(
+                  (model) => model.id === installedProgress.modelId,
+                );
+
+                if (model) {
+                  yield* dependencies.database.installedModels.upsert({
+                    id: `installed_${model.id}`,
+                    modelId: model.id,
+                    runtime: model.runtime,
+                    sourceType: model.source.type,
+                    sourceRevision:
+                      "revision" in model.source
+                        ? model.source.revision
+                        : "tag" in model.source
+                          ? model.source.tag
+                          : model.downloadUrl,
+                    installedPath: `mock://${model.id}`,
+                    checksumSha256: model.checksumSha256,
+                    verificationStatus: "verified",
+                    installedAt: new Date().toISOString(),
+                  });
+                }
+              }
+
+              yield* publishAppState(dependencies);
+            }),
+          );
         });
         yield* publishAppState(dependencies);
 

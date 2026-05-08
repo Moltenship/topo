@@ -2683,6 +2683,7 @@ Completed:
 - Bundled catalog download source metadata with GitHub Release URL resolution support.
 - Mock Effect model installer service that verifies downloaded file metadata before marking it installed.
 - Electron model install job extracted from IPC handlers for future real downloader replacement.
+- Installed model persistence with SQLite repository, app snapshot wiring, and renderer installed/repair model states.
 
 Verification completed:
 
@@ -2707,15 +2708,15 @@ Updated on 2026-05-09 after deciding to keep the catalog bundled and avoid tray/
 
 - [x] Add a Hugging Face source type next to the existing direct URL and GitHub Release source types.
 - [ ] Store pinned upstream source metadata in the bundled catalog, not a remote catalog.
-- [ ] Add installed model persistence in SQLite:
+- [x] Add installed model persistence in SQLite:
   - model id;
   - source type and pinned revision/tag;
   - installed path;
   - checksum;
   - installed-at timestamp;
   - verification status.
-- [ ] Include installed model records in `AppStateSnapshot`.
-- [ ] Update model cards to distinguish `Install`, `Installing`, `Installed`, `Repair`, and `Reinstall`.
+- [x] Include installed model records in `AppStateSnapshot`.
+- [x] Update model cards to distinguish `Install`, `Installing`, `Installed`, `Repair`, and `Reinstall`.
 - [ ] Replace the mock model install job with a real downloader that:
   - downloads to a temp directory;
   - streams progress into app state;

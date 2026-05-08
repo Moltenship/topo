@@ -1,4 +1,5 @@
 export * from "./app-database";
+export * from "./installed-model-repository";
 export * from "./migrations";
 export * from "./schema";
 export * from "./settings-repository";

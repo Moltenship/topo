@@ -10,8 +10,11 @@ export const installedModels = sqliteTable("installed_models", {
   id: text("id").primaryKey(),
   modelId: text("model_id").notNull(),
   runtime: text("runtime").notNull(),
-  directory: text("directory").notNull(),
+  sourceType: text("source_type").notNull(),
+  sourceRevision: text("source_revision").notNull(),
+  installedPath: text("installed_path").notNull(),
   checksumSha256: text("checksum_sha256").notNull(),
+  verificationStatus: text("verification_status").notNull(),
   installedAt: text("installed_at").notNull(),
 });
 

@@ -1,4 +1,4 @@
-import type { ModelInstallProgress } from "@molten-voice/shared";
+import type { InstalledModelRecord, ModelInstallProgress } from "@molten-voice/shared";
 import { bundledModelCatalog } from "@molten-voice/model-catalog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 interface ModelPickerProps {
   readonly activeModelId: string | null;
+  readonly installedModels: readonly InstalledModelRecord[];
   readonly installProgress: ModelInstallProgress | null;
   readonly onInstallModel: (modelId: string) => void;
   readonly onSelectModel: (modelId: string) => void;
@@ -16,6 +17,7 @@ const formatBytes = (bytes: number): string => `${Math.round(bytes / 1024 / 1024
 
 export const ModelPicker = ({
   activeModelId,
+  installedModels,
   installProgress,
   onInstallModel,
   onSelectModel,
@@ -24,6 +26,7 @@ export const ModelPicker = ({
     <div className="grid grid-cols-3 gap-2.5 max-md:grid-cols-1">
       {bundledModelCatalog.map((model) => {
         const progress = installProgress?.modelId === model.id ? installProgress : null;
+        const installedModel = installedModels.find((installed) => installed.modelId === model.id);
         const isInstalling =
           progress !== null && progress.status !== "installed" && progress.status !== "failed";
         const percent = Math.round((progress?.percent ?? 0) * 100);
@@ -48,7 +51,18 @@ export const ModelPicker = ({
             <CardHeader className="px-0">
               <div className="flex items-start justify-between gap-2">
                 <CardTitle className="text-sm">{model.displayName}</CardTitle>
-                {activeModelId === model.id ? <Badge>Active</Badge> : null}
+                <div className="flex flex-wrap justify-end gap-1">
+                  {installedModel ? (
+                    <Badge
+                      variant={
+                        installedModel.verificationStatus === "verified" ? "default" : "secondary"
+                      }
+                    >
+                      {installedModel.verificationStatus === "verified" ? "Installed" : "Repair"}
+                    </Badge>
+                  ) : null}
+                  {activeModelId === model.id ? <Badge>Active</Badge> : null}
+                </div>
               </div>
               <CardDescription className="text-xs">{model.runtime}</CardDescription>
             </CardHeader>
@@ -101,9 +115,13 @@ export const ModelPicker = ({
               >
                 {isInstalling
                   ? `${percent}%`
-                  : progress?.status === "installed"
-                    ? "Reinstall"
-                    : "Install"}
+                  : installedModel
+                    ? installedModel.verificationStatus === "verified"
+                      ? "Reinstall"
+                      : "Repair"
+                    : progress?.status === "installed"
+                      ? "Reinstall"
+                      : "Install"}
               </Button>
             </CardContent>
           </Card>

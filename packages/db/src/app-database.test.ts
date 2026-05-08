@@ -51,6 +51,31 @@ describe("openAppDatabase", () => {
     expect(transcripts[0]?.text).toBe("persistent local transcript");
   });
 
+  it("persists installed model records", async () => {
+    const directory = makeTemporaryDirectory();
+    const database = await Effect.runPromise(openAppDatabase(directory));
+
+    await Effect.runPromise(
+      database.installedModels.upsert({
+        id: "installed_whisper_cpp_small",
+        modelId: "whisper-cpp-small",
+        runtime: "whisper-cpp",
+        sourceType: "huggingface-file",
+        sourceRevision: "main",
+        installedPath: "C:/models/whisper-cpp-small/ggml-small.bin",
+        checksumSha256: "sha",
+        verificationStatus: "verified",
+        installedAt: "2026-05-09T00:00:00.000Z",
+      }),
+    );
+
+    const installedModels = await Effect.runPromise(database.installedModels.list());
+    await Effect.runPromise(database.close());
+
+    expect(installedModels).toHaveLength(1);
+    expect(installedModels[0]?.modelId).toBe("whisper-cpp-small");
+  });
+
   it("records applied migrations and can reopen the database idempotently", async () => {
     const directory = makeTemporaryDirectory();
     const firstDatabase = await Effect.runPromise(openAppDatabase(directory));
@@ -63,6 +88,9 @@ describe("openAppDatabase", () => {
     const migrations = sqlite.prepare("SELECT id FROM _molten_migrations ORDER BY id").all();
     sqlite.close();
 
-    expect(migrations).toEqual([{ id: "0001_initial_schema" }]);
+    expect(migrations).toEqual([
+      { id: "0001_initial_schema" },
+      { id: "0002_expand_installed_models" },
+    ]);
   });
 });
