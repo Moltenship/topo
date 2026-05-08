@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import type { AppSettings, AppStateSnapshot } from "@molten-voice/shared";
 import { getRendererApi } from "./api/renderer-api";
 import { HistoryView } from "./features/history/HistoryView";
-import { OverlayView } from "./features/overlay/OverlayView";
 import { SetupFlow } from "./features/setup/SetupFlow";
 
 export const App = () => {
@@ -78,7 +77,6 @@ export const App = () => {
           onQueryChange={searchHistory}
         />
       </SetupFlow>
-      <OverlayView state={snapshot?.overlayState ?? "hidden"} />
     </main>
   );
 };

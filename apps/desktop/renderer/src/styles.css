@@ -65,6 +65,10 @@
       sans-serif;
   }
 
+  html:has([aria-label="Recording overlay preview"]) {
+    background: transparent;
+  }
+
   button,
   input {
     font: inherit;
