@@ -2679,6 +2679,7 @@ Completed:
 - Native bridge Effect boundary for hold hotkeys, active application snapshots, and text insertion.
 - Electron dictation flow now routes completed transcripts through the native insertion boundary.
 - Model install planning and downloaded file size/checksum verification helpers.
+- Mock model install progress in Electron app state with typed IPC and renderer progress UI.
 
 Verification completed:
 

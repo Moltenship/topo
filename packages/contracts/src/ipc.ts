@@ -1,5 +1,6 @@
 import * as Schema from "effect/Schema";
 import { OverlayState, TranscriptRecord } from "./dictation";
+import { ModelInstallProgress } from "./model-installation";
 import { AppSettings } from "./settings";
 
 export const IpcChannels = {
@@ -10,6 +11,7 @@ export const IpcChannels = {
   updateSettings: "settings:update",
   startTestDictation: "dictation:start-test",
   stopTestDictation: "dictation:stop-test",
+  installModel: "models:install",
   appStateChanged: "app:state-changed",
 } as const;
 
@@ -20,6 +22,7 @@ export const AppStateSnapshot = Schema.Struct({
   overlayState: OverlayState,
   settings: AppSettings,
   transcripts: Schema.Array(TranscriptRecord),
+  modelInstallProgress: Schema.NullOr(ModelInstallProgress),
   errorMessage: Schema.NullOr(Schema.String),
 });
 export type AppStateSnapshot = typeof AppStateSnapshot.Type;
@@ -36,3 +39,8 @@ export type DeleteTranscriptRequest = typeof DeleteTranscriptRequest.Type;
 
 export const UpdateSettingsRequest = AppSettings;
 export type UpdateSettingsRequest = typeof UpdateSettingsRequest.Type;
+
+export const InstallModelRequest = Schema.Struct({
+  modelId: Schema.String,
+});
+export type InstallModelRequest = typeof InstallModelRequest.Type;

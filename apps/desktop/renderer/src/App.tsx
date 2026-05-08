@@ -85,6 +85,16 @@ export const App = ({ view = "workbench" }: AppProps) => {
     [runAction],
   );
 
+  const installModel = useCallback(
+    async (modelId: string) => {
+      await runAction(async () => {
+        await getRendererApi().installModel(modelId);
+        await refreshSnapshot();
+      });
+    },
+    [refreshSnapshot, runAction],
+  );
+
   useEffect(() => {
     void refreshSnapshot();
 
@@ -109,10 +119,12 @@ export const App = ({ view = "workbench" }: AppProps) => {
         <SetupFlow
           errorMessage={effectiveErrorMessage}
           isRecording={snapshot?.overlayState === "recording"}
+          modelInstallProgress={snapshot?.modelInstallProgress ?? null}
           settings={snapshot?.settings ?? null}
           onDismissError={() => setErrorMessage(null)}
           onStartTestDictation={startTestDictation}
           onStopTestDictation={stopTestDictation}
+          onInstallModel={installModel}
           onSettingsChange={updateSettings}
         />
         {historyView}
@@ -132,10 +144,12 @@ export const App = ({ view = "workbench" }: AppProps) => {
       <SetupFlow
         errorMessage={effectiveErrorMessage}
         isRecording={snapshot?.overlayState === "recording"}
+        modelInstallProgress={snapshot?.modelInstallProgress ?? null}
         settings={snapshot?.settings ?? null}
         onDismissError={() => setErrorMessage(null)}
         onStartTestDictation={startTestDictation}
         onStopTestDictation={stopTestDictation}
+        onInstallModel={installModel}
         onSettingsChange={updateSettings}
       >
         {view === "workbench" ? historyView : null}

@@ -9,10 +9,12 @@ import type { AppSettings, AppStateSnapshot, TranscriptRecord } from "@molten-vo
 import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
 import {
   DeleteTranscriptRequest,
+  InstallModelRequest,
   IpcChannels,
   ListTranscriptsRequest,
   UpdateSettingsRequest,
 } from "@molten-voice/shared";
+import type { ModelInstallProgress } from "@molten-voice/shared";
 
 interface MainProcessState {
   setupComplete: boolean;
@@ -27,6 +29,7 @@ const state: MainProcessState = {
 };
 
 let currentErrorMessage: string | null = null;
+let currentModelInstallProgress: ModelInstallProgress | null = null;
 
 interface IpcHandlerDependencies {
   readonly database: AppDatabase;
@@ -36,6 +39,7 @@ interface IpcHandlerDependencies {
 }
 
 let overlayHideTimer: NodeJS.Timeout | null = null;
+let modelInstallTimer: NodeJS.Timeout | null = null;
 
 const clearOverlayHideTimer = () => {
   if (overlayHideTimer) {
@@ -67,6 +71,7 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
       overlayState: state.overlayState,
       settings,
       transcripts,
+      modelInstallProgress: currentModelInstallProgress,
       errorMessage: currentErrorMessage,
     };
   });
@@ -154,6 +159,78 @@ const stopTestDictation = (
     return transcriptWithInsertion;
   });
 
+const startModelInstall = (
+  dependencies: IpcHandlerDependencies,
+  modelId: string,
+): Effect.Effect<ModelInstallProgress, Error> =>
+  Effect.gen(function* () {
+    const model = bundledModelCatalog.find((model) => model.id === modelId);
+
+    if (!model) {
+      return yield* Effect.fail(new Error(`Unknown model: ${modelId}`));
+    }
+
+    if (modelInstallTimer) {
+      clearInterval(modelInstallTimer);
+      modelInstallTimer = null;
+    }
+
+    const totalBytes = model.downloadSizeBytes;
+
+    currentModelInstallProgress = {
+      modelId,
+      status: "queued",
+      receivedBytes: 0,
+      totalBytes,
+      percent: 0,
+      errorMessage: null,
+    };
+
+    const publishProgress = () => {
+      void Effect.runPromise(publishAppState(dependencies));
+    };
+
+    publishProgress();
+
+    modelInstallTimer = setInterval(() => {
+      if (!currentModelInstallProgress || currentModelInstallProgress.modelId !== modelId) {
+        return;
+      }
+
+      const nextReceivedBytes = Math.min(
+        totalBytes,
+        currentModelInstallProgress.receivedBytes + Math.max(1, Math.round(totalBytes / 12)),
+      );
+      const percent = nextReceivedBytes / totalBytes;
+      const status =
+        percent >= 1
+          ? "installed"
+          : percent > 0.86
+            ? "installing"
+            : percent > 0.72
+              ? "verifying"
+              : "downloading";
+
+      currentModelInstallProgress = {
+        modelId,
+        status,
+        receivedBytes: nextReceivedBytes,
+        totalBytes,
+        percent,
+        errorMessage: null,
+      };
+
+      publishProgress();
+
+      if (status === "installed" && modelInstallTimer) {
+        clearInterval(modelInstallTimer);
+        modelInstallTimer = null;
+      }
+    }, 350);
+
+    return currentModelInstallProgress;
+  });
+
 export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
   ipcMain.handle(IpcChannels.getAppState, () => Effect.runPromise(getAppState(dependencies)));
   ipcMain.handle(IpcChannels.listTranscripts, (_event, input: unknown) =>
@@ -191,6 +268,17 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
         yield* publishAppState(dependencies);
 
         return nextSettings;
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.installModel, (_event, input: unknown) =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const payload = yield* decodeIpcPayload(InstallModelRequest, input);
+        const progress = yield* startModelInstall(dependencies, payload.modelId);
+        yield* publishAppState(dependencies);
+
+        return progress;
       }),
     ),
   );
