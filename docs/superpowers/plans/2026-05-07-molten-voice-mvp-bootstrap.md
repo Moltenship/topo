@@ -2652,3 +2652,39 @@ Expected: Commit succeeds.
 - Text insertion into active applications.
 - Real model downloads, checksums, helper packs, and AI SDK v6 provider wiring.
 - Real migrations and app data directory SQLite initialization.
+
+## Implementation Status
+
+Updated during implementation on 2026-05-08.
+
+Completed:
+
+- Repo/tooling baseline with pnpm workspaces, TypeScript, OxLint, OxFmt, Vitest.
+- Electron + React renderer shell with Tailwind v4 and shadcn-compatible local UI primitives.
+- Effect Schema contracts for dictation, settings, and IPC payloads.
+- SQLite-backed transcript history and app settings repositories.
+- Electron app database initialization in `app.getPath("userData")`.
+- Mock audio capture, mock transcription provider, transcript post-processing, and ASR orchestrator.
+- Typed preload API for app state, settings, history, and test dictation actions.
+- Runtime IPC payload validation with Effect Schema in Electron handlers.
+- Renderer workbench flow for model selection, dictation settings, test dictation, history search, delete, and clear.
+- App state broadcasting from main to renderer windows.
+- Separate overlay renderer app and overlay BrowserWindow visibility sync.
+- Workflow error propagation to app snapshots and renderer alert UI.
+- Electron main/preload Vite build pipeline, wired into `@molten-voice/desktop` build.
+
+Verification completed:
+
+- `pnpm --filter @molten-voice/desktop run build`
+- `pnpm run check`
+- `pnpm run test`
+
+Still deferred:
+
+- Real microphone capture and temporary audio file cleanup.
+- Native/global hotkey key-down/key-up listener.
+- Text insertion into the active application.
+- Real model download/checksum/helper pack management.
+- AI SDK v6 local transcription provider wrapper.
+- Versioned database migrations beyond idempotent bootstrap table creation.
+- Real TanStack Router routes for setup/settings/history screens.
