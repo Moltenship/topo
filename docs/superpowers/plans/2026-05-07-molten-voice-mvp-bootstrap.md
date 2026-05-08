@@ -2678,6 +2678,7 @@ Completed:
 - Captured audio cleanup boundary wired into the Effect-based dictation lifecycle.
 - Native bridge Effect boundary for hold hotkeys, active application snapshots, and text insertion.
 - Electron dictation flow now routes completed transcripts through the native insertion boundary.
+- Model install planning and downloaded file size/checksum verification helpers.
 
 Verification completed:
 
@@ -2690,6 +2691,6 @@ Still deferred:
 - Real microphone capture.
 - Real native/global hotkey key-down/key-up listener.
 - Real text insertion into the active application.
-- Real model download/checksum/helper pack management.
+- Real model download and helper pack management.
 - AI SDK v6 local transcription provider wrapper.
 - Real TanStack Router file-based route generation.
