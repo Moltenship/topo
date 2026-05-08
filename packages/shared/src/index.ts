@@ -18,6 +18,7 @@ export interface MoltenVoiceApi {
   readonly updateSettings: (settings: AppSettings) => Promise<AppSettings>;
   readonly startTestDictation: () => Promise<void>;
   readonly stopTestDictation: () => Promise<TranscriptRecord>;
+  readonly onAppStateChanged: (listener: (snapshot: AppStateSnapshot) => void) => () => void;
 }
 
 export const APP_NAME = "Molten Voice";

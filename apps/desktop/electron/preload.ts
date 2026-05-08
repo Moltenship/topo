@@ -11,6 +11,17 @@ const api: MoltenVoiceApi = {
   updateSettings: (settings) => ipcRenderer.invoke(IpcChannels.updateSettings, settings),
   startTestDictation: () => ipcRenderer.invoke(IpcChannels.startTestDictation),
   stopTestDictation: () => ipcRenderer.invoke(IpcChannels.stopTestDictation),
+  onAppStateChanged: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, snapshot: unknown) => {
+      listener(snapshot as Parameters<typeof listener>[0]);
+    };
+
+    ipcRenderer.on(IpcChannels.appStateChanged, handler);
+
+    return () => {
+      ipcRenderer.off(IpcChannels.appStateChanged, handler);
+    };
+  },
 };
 
 contextBridge.exposeInMainWorld("moltenVoice", api);

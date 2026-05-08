@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { BrowserWindow, ipcMain } from "electron";
 import { Effect } from "effect";
 import type { DictationOrchestrator } from "@molten-voice/asr";
 import type { AppDatabase } from "@molten-voice/db";
@@ -40,6 +40,15 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
       settings,
       transcripts,
     };
+  });
+
+const publishAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
+  Effect.gen(function* () {
+    const snapshot = yield* getAppState(dependencies);
+
+    for (const window of BrowserWindow.getAllWindows()) {
+      window.webContents.send(IpcChannels.appStateChanged, snapshot);
+    }
   });
 
 const listTranscripts = (
@@ -103,18 +112,47 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
     Effect.runPromise(listTranscripts(dependencies, input.query)),
   );
   ipcMain.handle(IpcChannels.deleteTranscript, (_event, input: { id: string }) =>
-    Effect.runPromise(deleteTranscript(dependencies, input.id)),
+    Effect.runPromise(
+      Effect.gen(function* () {
+        yield* deleteTranscript(dependencies, input.id);
+        yield* publishAppState(dependencies);
+      }),
+    ),
   );
   ipcMain.handle(IpcChannels.clearTranscripts, () =>
-    Effect.runPromise(clearTranscripts(dependencies)),
+    Effect.runPromise(
+      Effect.gen(function* () {
+        yield* clearTranscripts(dependencies);
+        yield* publishAppState(dependencies);
+      }),
+    ),
   );
   ipcMain.handle(IpcChannels.updateSettings, (_event, settings: AppSettings) =>
-    Effect.runPromise(updateSettings(dependencies, settings)),
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const nextSettings = yield* updateSettings(dependencies, settings);
+        yield* publishAppState(dependencies);
+
+        return nextSettings;
+      }),
+    ),
   );
   ipcMain.handle(IpcChannels.startTestDictation, () =>
-    Effect.runPromise(startTestDictation(dependencies)),
+    Effect.runPromise(
+      Effect.gen(function* () {
+        yield* startTestDictation(dependencies);
+        yield* publishAppState(dependencies);
+      }),
+    ),
   );
   ipcMain.handle(IpcChannels.stopTestDictation, () =>
-    Effect.runPromise(stopTestDictation(dependencies)),
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const transcript = yield* stopTestDictation(dependencies);
+        yield* publishAppState(dependencies);
+
+        return transcript;
+      }),
+    ),
   );
 };

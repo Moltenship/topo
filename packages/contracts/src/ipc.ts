@@ -10,6 +10,7 @@ export const IpcChannels = {
   updateSettings: "settings:update",
   startTestDictation: "dictation:start-test",
   stopTestDictation: "dictation:stop-test",
+  appStateChanged: "app:state-changed",
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];

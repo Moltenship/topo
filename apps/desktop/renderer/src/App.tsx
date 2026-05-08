@@ -58,6 +58,8 @@ export const App = () => {
 
   useEffect(() => {
     void refreshSnapshot();
+
+    return getRendererApi().onAppStateChanged(setSnapshot);
   }, [refreshSnapshot]);
 
   return (

@@ -13,11 +13,7 @@ export const OverlayApp = () => {
   useEffect(() => {
     void refreshSnapshot();
 
-    const intervalId = window.setInterval(() => {
-      void refreshSnapshot();
-    }, 500);
-
-    return () => window.clearInterval(intervalId);
+    return getRendererApi().onAppStateChanged(setSnapshot);
   }, [refreshSnapshot]);
 
   return (
