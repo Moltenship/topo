@@ -25,6 +25,15 @@ interface IpcHandlerDependencies {
   readonly onAppStateChanged?: (snapshot: AppStateSnapshot) => void;
 }
 
+let overlayHideTimer: NodeJS.Timeout | null = null;
+
+const clearOverlayHideTimer = () => {
+  if (overlayHideTimer) {
+    clearTimeout(overlayHideTimer);
+    overlayHideTimer = null;
+  }
+};
+
 const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSettings> =>
   Effect.gen(function* () {
     return (yield* dependencies.database.settings.get()) ?? DEFAULT_APP_SETTINGS;
@@ -78,6 +87,7 @@ const updateSettings = (
 
 const startTestDictation = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
   Effect.gen(function* () {
+    clearOverlayHideTimer();
     yield* dependencies.dictation.start();
     state.overlayState = "recording";
   });
@@ -153,6 +163,11 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
       Effect.gen(function* () {
         const transcript = yield* stopTestDictation(dependencies);
         yield* publishAppState(dependencies);
+        clearOverlayHideTimer();
+        overlayHideTimer = setTimeout(() => {
+          state.overlayState = "hidden";
+          void Effect.runPromise(publishAppState(dependencies));
+        }, 1600);
 
         return transcript;
       }),
