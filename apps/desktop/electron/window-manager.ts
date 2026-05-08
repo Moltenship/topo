@@ -1,6 +1,23 @@
 import { BrowserWindow } from "electron";
 import { join } from "node:path";
 
+const loadRenderer = (window: BrowserWindow, hash?: string) => {
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+
+  if (devServerUrl) {
+    const url = new URL(devServerUrl);
+
+    if (hash) {
+      url.hash = hash;
+    }
+
+    void window.loadURL(url.toString());
+    return;
+  }
+
+  void window.loadFile(join(__dirname, "../renderer/index.html"), hash ? { hash } : undefined);
+};
+
 export const createMainWindow = (): BrowserWindow => {
   const window = new BrowserWindow({
     width: 1120,
@@ -13,17 +30,16 @@ export const createMainWindow = (): BrowserWindow => {
     },
   });
 
-  if (process.env.VITE_DEV_SERVER_URL) {
-    void window.loadURL(process.env.VITE_DEV_SERVER_URL);
-  }
+  loadRenderer(window);
 
   return window;
 };
 
 export const createOverlayWindow = (): BrowserWindow => {
-  return new BrowserWindow({
+  const window = new BrowserWindow({
     width: 520,
     height: 96,
+    show: false,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -36,4 +52,8 @@ export const createOverlayWindow = (): BrowserWindow => {
       nodeIntegration: false,
     },
   });
+
+  loadRenderer(window, "overlay");
+
+  return window;
 };

@@ -4,7 +4,7 @@ import { createDictationOrchestrator, createMockTranscriptionProvider } from "@m
 import { createMockAudioCaptureService } from "@molten-voice/audio";
 import { openAppDatabase } from "@molten-voice/db";
 import { registerIpcHandlers } from "./ipc-handlers";
-import { createMainWindow } from "./window-manager";
+import { createMainWindow, createOverlayWindow } from "./window-manager";
 
 app.whenReady().then(() => {
   const database = Effect.runSync(openAppDatabase(app.getPath("userData")));
@@ -17,4 +17,5 @@ app.whenReady().then(() => {
 
   registerIpcHandlers({ database, dictation });
   createMainWindow();
+  createOverlayWindow();
 });
