@@ -1,5 +1,6 @@
 import * as Schema from "effect/Schema";
-import { OverlayState } from "./dictation";
+import { OverlayState, TranscriptRecord } from "./dictation";
+import { AppSettings } from "./settings";
 
 export const IpcChannels = {
   getAppState: "app:get-state",
@@ -16,5 +17,20 @@ export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];
 export const AppStateSnapshot = Schema.Struct({
   setupComplete: Schema.Boolean,
   overlayState: OverlayState,
+  settings: AppSettings,
+  transcripts: Schema.Array(TranscriptRecord),
 });
 export type AppStateSnapshot = typeof AppStateSnapshot.Type;
+
+export const ListTranscriptsRequest = Schema.Struct({
+  query: Schema.optional(Schema.String),
+});
+export type ListTranscriptsRequest = typeof ListTranscriptsRequest.Type;
+
+export const DeleteTranscriptRequest = Schema.Struct({
+  id: Schema.String,
+});
+export type DeleteTranscriptRequest = typeof DeleteTranscriptRequest.Type;
+
+export const UpdateSettingsRequest = AppSettings;
+export type UpdateSettingsRequest = typeof UpdateSettingsRequest.Type;

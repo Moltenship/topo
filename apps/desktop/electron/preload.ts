@@ -5,6 +5,12 @@ import type { MoltenVoiceApi } from "@molten-voice/shared";
 const api: MoltenVoiceApi = {
   appName: "Molten Voice",
   getAppState: () => ipcRenderer.invoke(IpcChannels.getAppState),
+  listTranscripts: (query) => ipcRenderer.invoke(IpcChannels.listTranscripts, { query }),
+  deleteTranscript: (id) => ipcRenderer.invoke(IpcChannels.deleteTranscript, { id }),
+  clearTranscripts: () => ipcRenderer.invoke(IpcChannels.clearTranscripts),
+  updateSettings: (settings) => ipcRenderer.invoke(IpcChannels.updateSettings, settings),
+  startTestDictation: () => ipcRenderer.invoke(IpcChannels.startTestDictation),
+  stopTestDictation: () => ipcRenderer.invoke(IpcChannels.stopTestDictation),
 };
 
 contextBridge.exposeInMainWorld("moltenVoice", api);
