@@ -1,10 +1,23 @@
 import { app } from "electron";
+import type { BrowserWindow } from "electron";
 import { Effect } from "effect";
 import { createDictationOrchestrator, createMockTranscriptionProvider } from "@molten-voice/asr";
 import { createMockAudioCaptureService } from "@molten-voice/audio";
 import { openAppDatabase } from "@molten-voice/db";
+import type { AppStateSnapshot } from "@molten-voice/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
 import { createMainWindow, createOverlayWindow } from "./window-manager";
+
+const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) => {
+  if (snapshot.overlayState === "hidden") {
+    window.hide();
+    return;
+  }
+
+  if (!window.isVisible()) {
+    window.showInactive();
+  }
+};
 
 app.whenReady().then(() => {
   const database = Effect.runSync(openAppDatabase(app.getPath("userData")));
@@ -15,7 +28,12 @@ app.whenReady().then(() => {
     createId: () => crypto.randomUUID(),
   });
 
-  registerIpcHandlers({ database, dictation });
   createMainWindow();
-  createOverlayWindow();
+  const overlayWindow = createOverlayWindow();
+
+  registerIpcHandlers({
+    database,
+    dictation,
+    onAppStateChanged: (snapshot) => syncOverlayWindow(overlayWindow, snapshot),
+  });
 });

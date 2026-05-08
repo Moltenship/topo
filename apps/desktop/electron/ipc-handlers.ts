@@ -22,6 +22,7 @@ const state: MainProcessState = {
 interface IpcHandlerDependencies {
   readonly database: AppDatabase;
   readonly dictation: DictationOrchestrator;
+  readonly onAppStateChanged?: (snapshot: AppStateSnapshot) => void;
 }
 
 const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSettings> =>
@@ -49,6 +50,8 @@ const publishAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<vo
     for (const window of BrowserWindow.getAllWindows()) {
       window.webContents.send(IpcChannels.appStateChanged, snapshot);
     }
+
+    dependencies.onAppStateChanged?.(snapshot);
   });
 
 const listTranscripts = (
