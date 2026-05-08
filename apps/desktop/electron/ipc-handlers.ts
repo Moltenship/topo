@@ -4,6 +4,7 @@ import * as Schema from "effect/Schema";
 import type { DictationOrchestrator } from "@molten-voice/asr";
 import type { AppDatabase } from "@molten-voice/db";
 import { bundledModelCatalog } from "@molten-voice/model-catalog";
+import type { NativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppSettings, AppStateSnapshot, TranscriptRecord } from "@molten-voice/shared";
 import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
 import {
@@ -30,6 +31,7 @@ let currentErrorMessage: string | null = null;
 interface IpcHandlerDependencies {
   readonly database: AppDatabase;
   readonly dictation: DictationOrchestrator;
+  readonly nativeBridge: NativeBridgeService;
   readonly onAppStateChanged?: (snapshot: AppStateSnapshot) => void;
 }
 
@@ -134,12 +136,22 @@ const stopTestDictation = (
       runtime: selectedModel.runtime,
       postProcessingMode: settings.postProcessingMode,
     });
+    const insertion = yield* dependencies.nativeBridge.insertText({
+      text: transcript.text,
+      mode: settings.insertionMode,
+    });
+    const transcriptWithInsertion: TranscriptRecord = {
+      ...transcript,
+      insertionMode: settings.insertionMode,
+      insertionStatus: insertion.inserted ? "inserted" : "failed",
+      targetAppName: insertion.targetAppName,
+    };
 
     state.overlayState = "inserted";
     currentErrorMessage = null;
-    yield* dependencies.database.transcripts.insert(transcript);
+    yield* dependencies.database.transcripts.insert(transcriptWithInsertion);
 
-    return transcript;
+    return transcriptWithInsertion;
   });
 
 export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {

@@ -41,6 +41,9 @@ importers:
       '@molten-voice/model-catalog':
         specifier: workspace:*
         version: link:../../packages/model-catalog
+      '@molten-voice/native-bridge':
+        specifier: workspace:*
+        version: link:../../packages/native-bridge
       '@molten-voice/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -148,7 +151,14 @@ importers:
 
   packages/model-catalog: {}
 
-  packages/native-bridge: {}
+  packages/native-bridge:
+    dependencies:
+      '@molten-voice/shared':
+        specifier: workspace:*
+        version: link:../shared
+      effect:
+        specifier: ^3.19.7
+        version: 3.21.2
 
   packages/settings:
     dependencies:

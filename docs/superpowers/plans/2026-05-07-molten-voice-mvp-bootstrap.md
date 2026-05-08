@@ -2676,6 +2676,8 @@ Completed:
 - TanStack Router code-based root route for the renderer workbench.
 - Dedicated TanStack Router routes for setup, settings, and history screens.
 - Captured audio cleanup boundary wired into the Effect-based dictation lifecycle.
+- Native bridge Effect boundary for hold hotkeys, active application snapshots, and text insertion.
+- Electron dictation flow now routes completed transcripts through the native insertion boundary.
 
 Verification completed:
 
@@ -2686,8 +2688,8 @@ Verification completed:
 Still deferred:
 
 - Real microphone capture.
-- Native/global hotkey key-down/key-up listener.
-- Text insertion into the active application.
+- Real native/global hotkey key-down/key-up listener.
+- Real text insertion into the active application.
 - Real model download/checksum/helper pack management.
 - AI SDK v6 local transcription provider wrapper.
 - Real TanStack Router file-based route generation.

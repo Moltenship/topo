@@ -12,5 +12,9 @@
     "lint": "oxlint .",
     "test": "vitest run --passWithNoTests",
     "build": "tsgo --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@molten-voice/shared": "workspace:*",
+    "effect": "^3.19.7"
   }
 }

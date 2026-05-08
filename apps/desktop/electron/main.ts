@@ -4,6 +4,7 @@ import { Effect } from "effect";
 import { createDictationOrchestrator, createMockTranscriptionProvider } from "@molten-voice/asr";
 import { createMockAudioCaptureService } from "@molten-voice/audio";
 import { openAppDatabase } from "@molten-voice/db";
+import { createMockNativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppStateSnapshot } from "@molten-voice/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
 import { createMainWindow, createOverlayWindow } from "./window-manager";
@@ -34,6 +35,7 @@ app.whenReady().then(() => {
   registerIpcHandlers({
     database,
     dictation,
+    nativeBridge: createMockNativeBridgeService(),
     onAppStateChanged: (snapshot) => syncOverlayWindow(overlayWindow, snapshot),
   });
 });

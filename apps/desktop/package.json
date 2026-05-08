@@ -19,6 +19,7 @@
     "@molten-voice/audio": "workspace:*",
     "@molten-voice/db": "workspace:*",
     "@molten-voice/model-catalog": "workspace:*",
+    "@molten-voice/native-bridge": "workspace:*",
     "@molten-voice/shared": "workspace:*",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
