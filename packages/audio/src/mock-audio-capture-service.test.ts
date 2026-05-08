@@ -19,4 +19,13 @@ describe("createMockAudioCaptureService", () => {
       durationMs: 1200,
     });
   });
+
+  it("exposes captured audio cleanup as part of the service boundary", async () => {
+    const service = createMockAudioCaptureService();
+
+    await Effect.runPromise(service.startRecording("session_1"));
+    const audio = await Effect.runPromise(service.stopRecording("hotkey-release"));
+
+    await expect(Effect.runPromise(service.cleanupCapturedAudio(audio))).resolves.toBeUndefined();
+  });
 });

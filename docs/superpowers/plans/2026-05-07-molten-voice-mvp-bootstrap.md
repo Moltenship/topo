@@ -2675,6 +2675,7 @@ Completed:
 - Versioned SQLite migration runner with an applied migrations table and idempotent reopen coverage.
 - TanStack Router code-based root route for the renderer workbench.
 - Dedicated TanStack Router routes for setup, settings, and history screens.
+- Captured audio cleanup boundary wired into the Effect-based dictation lifecycle.
 
 Verification completed:
 
@@ -2684,7 +2685,7 @@ Verification completed:
 
 Still deferred:
 
-- Real microphone capture and temporary audio file cleanup.
+- Real microphone capture.
 - Native/global hotkey key-down/key-up listener.
 - Text insertion into the active application.
 - Real model download/checksum/helper pack management.

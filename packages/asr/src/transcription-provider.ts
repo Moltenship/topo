@@ -14,7 +14,7 @@ export interface TranscriptionResult {
 }
 
 export interface TranscriptionProvider {
-  readonly transcribe: (input: TranscriptionInput) => Effect.Effect<TranscriptionResult>;
+  readonly transcribe: (input: TranscriptionInput) => Effect.Effect<TranscriptionResult, Error>;
 }
 
 export const createMockTranscriptionProvider = (): TranscriptionProvider => ({

@@ -1,3 +1,4 @@
+import type { AudioCaptureService, CapturedAudio } from "@molten-voice/audio";
 import { createMockAudioCaptureService } from "@molten-voice/audio";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
@@ -33,5 +34,45 @@ describe("createDictationOrchestrator", () => {
       durationMs: 1200,
       insertionStatus: "skipped",
     });
+  });
+
+  it("cleans up captured audio when transcription fails", async () => {
+    const capturedAudio: CapturedAudio = {
+      sessionId: "session_1",
+      audioPath: "file:///tmp/session_1.wav",
+      durationMs: 900,
+    };
+    const cleanedAudioPaths: string[] = [];
+    const audio: AudioCaptureService = {
+      startRecording: () => Effect.void,
+      stopRecording: () => Effect.succeed(capturedAudio),
+      cleanupCapturedAudio: (audio) =>
+        Effect.sync(() => {
+          cleanedAudioPaths.push(audio.audioPath);
+        }),
+      onLevelFrame: () => () => undefined,
+    };
+    const orchestrator = createDictationOrchestrator({
+      audio,
+      transcription: {
+        transcribe: () => Effect.fail(new Error("transcription failed")),
+      },
+      now: () => new Date("2026-05-07T00:00:00.000Z"),
+      createId: () => "session_1",
+    });
+
+    await Effect.runPromise(orchestrator.start());
+
+    await expect(
+      Effect.runPromise(
+        orchestrator.stop({
+          language: "en",
+          modelId: "whisper-cpp-small",
+          runtime: "whisper-cpp",
+          postProcessingMode: "lightweight",
+        }),
+      ),
+    ).rejects.toThrow("transcription failed");
+    expect(cleanedAudioPaths).toEqual(["file:///tmp/session_1.wav"]);
   });
 });

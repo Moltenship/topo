@@ -40,11 +40,20 @@ export const createDictationOrchestrator = (
         }
 
         const audio = yield* dependencies.audio.stopRecording("hotkey-release");
-        const result = yield* dependencies.transcription.transcribe({
-          audioPath: audio.audioPath,
-          language: input.language,
-          modelId: input.modelId,
-        });
+        const result = yield* Effect.acquireUseRelease(
+          Effect.succeed(audio),
+          (capturedAudio) =>
+            dependencies.transcription.transcribe({
+              audioPath: capturedAudio.audioPath,
+              language: input.language,
+              modelId: input.modelId,
+            }),
+          (capturedAudio) =>
+            Effect.catchAll(
+              dependencies.audio.cleanupCapturedAudio(capturedAudio),
+              () => Effect.void,
+            ),
+        );
 
         sessionId = null;
 

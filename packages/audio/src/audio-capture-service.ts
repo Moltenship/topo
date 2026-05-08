@@ -12,6 +12,7 @@ export type Unsubscribe = () => void;
 export interface AudioCaptureService {
   readonly startRecording: (sessionId: string) => Effect.Effect<void>;
   readonly stopRecording: (reason: StopReason) => Effect.Effect<CapturedAudio>;
+  readonly cleanupCapturedAudio: (audio: CapturedAudio) => Effect.Effect<void, Error>;
   readonly onLevelFrame: (listener: (frame: LevelFrame) => void) => Unsubscribe;
 }
 
@@ -42,6 +43,7 @@ export const createMockAudioCaptureService = (): AudioCaptureService => {
           durationMs: 1200,
         };
       }),
+    cleanupCapturedAudio: () => Effect.void,
     onLevelFrame: (listener) => {
       listeners.add(listener);
       return () => {
