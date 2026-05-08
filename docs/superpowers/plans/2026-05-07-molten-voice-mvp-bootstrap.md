@@ -2698,3 +2698,80 @@ Still deferred:
 - Real model download and helper pack management.
 - AI SDK v6 local transcription provider wrapper.
 - Real TanStack Router file-based route generation.
+
+## Next Implementation Plan
+
+Updated on 2026-05-09 after deciding to keep the catalog bundled and avoid tray/menu-bar download progress.
+
+### Model Installation
+
+- [ ] Add a Hugging Face source type next to the existing direct URL and GitHub Release source types.
+- [ ] Store pinned upstream source metadata in the bundled catalog, not a remote catalog.
+- [ ] Add installed model persistence in SQLite:
+  - model id;
+  - source type and pinned revision/tag;
+  - installed path;
+  - checksum;
+  - installed-at timestamp;
+  - verification status.
+- [ ] Include installed model records in `AppStateSnapshot`.
+- [ ] Update model cards to distinguish `Install`, `Installing`, `Installed`, `Repair`, and `Reinstall`.
+- [ ] Replace the mock model install job with a real downloader that:
+  - downloads to a temp directory;
+  - streams progress into app state;
+  - verifies size and sha256;
+  - atomically moves verified files into the app model directory;
+  - writes the installed model record only after verification succeeds.
+- [ ] Add retry/cancel/repair commands after the real downloader exists.
+- [ ] Add system notifications for install success/failure later. Notification copy and actions are intentionally deferred.
+
+### Candidate Upstream Model Sources
+
+These are candidate source links to prepare the bundled catalog. Checksums are not final until we download the exact files and compute sha256 locally.
+
+#### WhisperKit Small, macOS Apple Silicon
+
+- Upstream model repository: `argmaxinc/whisperkit-coreml`
+- Source type to add: `huggingface-snapshot`
+- Candidate pinned revision: `473f145758162af34aadf640d0e0970d89e8e453`
+- Candidate subfolder: `openai_whisper-small`
+- Browser link: `https://huggingface.co/argmaxinc/whisperkit-coreml/tree/473f145758162af34aadf640d0e0970d89e8e453/openai_whisper-small`
+- Notes:
+  - This is a directory of Core ML assets (`AudioEncoder.mlmodelc`, `MelSpectrogram.mlmodelc`, `TextDecoder.mlmodelc`, config files), not a single archive.
+  - Installer should download a pinned snapshot/subfolder or a generated package created from that snapshot.
+  - The search result reports this folder around 486 MB.
+
+#### WhisperKit Small Compressed, macOS Apple Silicon
+
+- Upstream model repository: `argmaxinc/whisperkit-coreml`
+- Source type to add: `huggingface-snapshot`
+- Candidate pinned revision: `4e186b908e840f4a90bce4fe58d86894cc97bef4`
+- Candidate subfolder: `openai_whisper-small_216MB`
+- Browser link: `https://huggingface.co/argmaxinc/whisperkit-coreml/tree/4e186b908e840f4a90bce4fe58d86894cc97bef4/openai_whisper-small_216MB`
+- Notes:
+  - Smaller candidate for faster first-run install.
+  - The search result reports this folder around 217 MB.
+
+#### Parakeet TDT 0.6B v3, Windows Experimental
+
+- Upstream model repository: `nvidia/parakeet-tdt-0.6b-v3`
+- Source type to add: `huggingface-file`
+- Candidate pinned revision: `593ce355afbff63a6412af0a395e635065cc0fc0`
+- Candidate file: `parakeet-tdt-0.6b-v3.nemo`
+- Browser link: `https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3/tree/593ce355afbff63a6412af0a395e635065cc0fc0`
+- Direct file candidate: `https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3/resolve/593ce355afbff63a6412af0a395e635065cc0fc0/parakeet-tdt-0.6b-v3.nemo`
+- Notes:
+  - Candidate file is about 2.51 GB in current search results.
+  - License/source review is required before making this a default recommendation.
+  - Runtime/helper support is still separate from downloading the model file.
+
+### Recommended Next Order
+
+1. Add Hugging Face source metadata types and URL/snapshot planning helpers.
+2. Add installed model persistence in SQLite.
+3. Wire installed model state into `AppStateSnapshot` and the renderer model cards.
+4. Implement a real file downloader for single-file sources first, using Parakeet as the first integration target.
+5. Implement snapshot/subfolder download support for WhisperKit Core ML directories.
+6. Compute and pin real sha256 values for the exact selected artifacts.
+7. Add notification boundary for install success/failure.
+8. Continue with real transcription provider and helper/runtime integration.
