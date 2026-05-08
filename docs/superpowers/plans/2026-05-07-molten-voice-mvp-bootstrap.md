@@ -2674,6 +2674,7 @@ Completed:
 - Electron main/preload Vite build pipeline, wired into `@molten-voice/desktop` build.
 - Versioned SQLite migration runner with an applied migrations table and idempotent reopen coverage.
 - TanStack Router code-based root route for the renderer workbench.
+- Dedicated TanStack Router routes for setup, settings, and history screens.
 
 Verification completed:
 
@@ -2688,4 +2689,4 @@ Still deferred:
 - Text insertion into the active application.
 - Real model download/checksum/helper pack management.
 - AI SDK v6 local transcription provider wrapper.
-- Expanded TanStack Router route tree for dedicated setup/settings/history screens.
+- Real TanStack Router file-based route generation.

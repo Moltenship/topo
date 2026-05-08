@@ -3,8 +3,13 @@ import type { AppSettings, AppStateSnapshot } from "@molten-voice/shared";
 import { getRendererApi } from "./api/renderer-api";
 import { HistoryView } from "./features/history/HistoryView";
 import { SetupFlow } from "./features/setup/SetupFlow";
+import { cn } from "./lib/utils";
 
-export const App = () => {
+interface AppProps {
+  readonly view?: "workbench" | "setup" | "history" | "settings";
+}
+
+export const App = ({ view = "workbench" }: AppProps) => {
   const [snapshot, setSnapshot] = useState<AppStateSnapshot | null>(null);
   const [historyQuery, setHistoryQuery] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -87,9 +92,43 @@ export const App = () => {
   }, [refreshSnapshot]);
 
   const effectiveErrorMessage = errorMessage ?? snapshot?.errorMessage ?? null;
+  const historyView = (
+    <HistoryView
+      query={historyQuery}
+      transcripts={snapshot?.transcripts ?? []}
+      variant={view === "history" ? "page" : "panel"}
+      onClear={clearTranscripts}
+      onDelete={deleteTranscript}
+      onQueryChange={searchHistory}
+    />
+  );
+
+  if (view === "history") {
+    return (
+      <main className="grid min-h-screen grid-cols-[286px_minmax(0,1fr)] overflow-hidden bg-background text-foreground max-md:grid-cols-1 max-md:overflow-auto">
+        <SetupFlow
+          errorMessage={effectiveErrorMessage}
+          isRecording={snapshot?.overlayState === "recording"}
+          settings={snapshot?.settings ?? null}
+          onDismissError={() => setErrorMessage(null)}
+          onStartTestDictation={startTestDictation}
+          onStopTestDictation={stopTestDictation}
+          onSettingsChange={updateSettings}
+        />
+        {historyView}
+      </main>
+    );
+  }
 
   return (
-    <main className="grid min-h-screen grid-cols-[286px_minmax(0,1fr)_336px] overflow-hidden bg-background text-foreground max-[1040px]:grid-cols-[240px_minmax(0,1fr)] max-md:grid-cols-1 max-md:overflow-auto">
+    <main
+      className={cn(
+        "grid min-h-screen overflow-hidden bg-background text-foreground max-md:grid-cols-1 max-md:overflow-auto",
+        view === "workbench"
+          ? "grid-cols-[286px_minmax(0,1fr)_336px] max-[1040px]:grid-cols-[240px_minmax(0,1fr)]"
+          : "grid-cols-[286px_minmax(0,1fr)] max-[1040px]:grid-cols-[240px_minmax(0,1fr)]",
+      )}
+    >
       <SetupFlow
         errorMessage={effectiveErrorMessage}
         isRecording={snapshot?.overlayState === "recording"}
@@ -99,13 +138,7 @@ export const App = () => {
         onStopTestDictation={stopTestDictation}
         onSettingsChange={updateSettings}
       >
-        <HistoryView
-          query={historyQuery}
-          transcripts={snapshot?.transcripts ?? []}
-          onClear={clearTranscripts}
-          onDelete={deleteTranscript}
-          onQueryChange={searchHistory}
-        />
+        {view === "workbench" ? historyView : null}
       </SetupFlow>
     </main>
   );

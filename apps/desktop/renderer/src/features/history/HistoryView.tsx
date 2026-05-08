@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 interface HistoryViewProps {
   readonly query: string;
   readonly transcripts: readonly TranscriptRecord[];
+  readonly variant?: "panel" | "page";
   readonly onClear: () => void;
   readonly onDelete: (id: string) => void;
   readonly onQueryChange: (query: string) => void;
@@ -15,12 +17,19 @@ interface HistoryViewProps {
 export const HistoryView = ({
   query,
   transcripts,
+  variant = "panel",
   onClear,
   onDelete,
   onQueryChange,
 }: HistoryViewProps) => {
   return (
-    <section className="min-w-0 border-l bg-card/70 p-3.5 max-[1040px]:hidden">
+    <section
+      className={cn(
+        "min-w-0 bg-card/70 p-3.5",
+        variant === "panel" && "border-l max-[1040px]:hidden",
+        variant === "page" && "min-h-screen",
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">

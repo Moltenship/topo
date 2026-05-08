@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { AppSettings } from "@molten-voice/shared";
+import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -44,21 +45,40 @@ export const SetupFlow = ({
             <h1 className="mt-0.5 text-[17px] font-semibold leading-none">Molten Voice</h1>
           </div>
         </div>
+        <nav className="mb-4 grid grid-cols-3 gap-1" aria-label="Workspace">
+          {[
+            { to: "/", label: "Flow" },
+            { to: "/history", label: "History" },
+            { to: "/settings", label: "Settings" },
+          ].map((item) => (
+            <Link
+              activeProps={{ className: "border-primary bg-primary/10 text-primary" }}
+              className="rounded-md border border-transparent px-2 py-1.5 text-center text-xs font-semibold text-muted-foreground"
+              key={item.to}
+              to={item.to}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
         <nav aria-label="Setup progress">
           <ol className="flex flex-col gap-1">
             {setupSteps.map((step, index) => (
-              <li
-                key={step.path}
+              <Link
+                activeProps={{ className: "border-primary bg-primary/10 text-primary" }}
                 className={cn(
                   "grid min-h-9 grid-cols-[24px_minmax(0,1fr)] items-center gap-2.5 rounded-md border border-transparent px-2 py-1.5 text-sm text-muted-foreground",
                   index < 2 && "border-border bg-secondary/45 text-foreground",
                 )}
+                key={step.path}
+                params={{ step: step.path.replace("/setup/", "") }}
+                to="/setup/$step"
               >
                 <span className="grid size-[22px] place-items-center rounded-md bg-secondary text-[11px] font-extrabold text-primary">
                   {index + 1}
                 </span>
                 <strong className="min-w-0 truncate font-semibold">{step.title}</strong>
-              </li>
+              </Link>
             ))}
           </ol>
         </nav>
