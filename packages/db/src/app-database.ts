@@ -3,11 +3,13 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { Effect } from "effect";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { createSettingsRepository, type SettingsRepository } from "./settings-repository";
 import { createTranscriptRepository, type TranscriptRepository } from "./transcript-repository";
-import { transcripts } from "./schema";
+import { settings, transcripts } from "./schema";
 
 export interface AppDatabase {
   readonly path: string;
+  readonly settings: SettingsRepository;
   readonly transcripts: TranscriptRepository;
   readonly close: () => Effect.Effect<void>;
 }
@@ -66,10 +68,11 @@ export const openAppDatabase = (appDataDirectory: string): Effect.Effect<AppData
     sqlite.pragma("foreign_keys = ON");
     createSchema(sqlite);
 
-    const db = drizzle(sqlite, { schema: { transcripts } });
+    const db = drizzle(sqlite, { schema: { settings, transcripts } });
 
     return {
       path,
+      settings: createSettingsRepository(db),
       transcripts: createTranscriptRepository(db),
       close: () =>
         Effect.sync(() => {

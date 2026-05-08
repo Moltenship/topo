@@ -120,6 +120,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@molten-voice/settings':
+        specifier: workspace:*
+        version: link:../settings
       '@molten-voice/shared':
         specifier: workspace:*
         version: link:../shared

@@ -24,14 +24,20 @@ interface IpcHandlerDependencies {
   readonly database: AppDatabase;
 }
 
+const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSettings> =>
+  Effect.gen(function* () {
+    return (yield* dependencies.database.settings.get()) ?? DEFAULT_APP_SETTINGS;
+  });
+
 const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppStateSnapshot> =>
   Effect.gen(function* () {
+    const settings = yield* getSettings(dependencies);
     const transcripts = yield* dependencies.database.transcripts.list();
 
     return {
-      setupComplete: state.setupComplete,
+      setupComplete: Boolean(settings.activeModelId),
       overlayState: state.overlayState,
-      settings: state.settings,
+      settings,
       transcripts,
     };
   });
@@ -47,12 +53,15 @@ const deleteTranscript = (dependencies: IpcHandlerDependencies, id: string): Eff
 const clearTranscripts = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
   dependencies.database.transcripts.clear();
 
-const updateSettings = (settings: AppSettings): Effect.Effect<AppSettings> =>
-  Effect.sync(() => {
+const updateSettings = (
+  dependencies: IpcHandlerDependencies,
+  settings: AppSettings,
+): Effect.Effect<AppSettings> =>
+  Effect.gen(function* () {
     state.settings = settings;
     state.setupComplete = Boolean(settings.activeModelId);
 
-    return state.settings;
+    return yield* dependencies.database.settings.set(settings);
   });
 
 const startTestDictation = (): Effect.Effect<void> =>
@@ -65,12 +74,14 @@ const stopTestDictation = (
   dependencies: IpcHandlerDependencies,
 ): Effect.Effect<TranscriptRecord, Error> =>
   Effect.gen(function* () {
+    const settings = yield* getSettings(dependencies);
+
     if (!state.activeTestSessionId) {
       return yield* Effect.fail(new Error("No active test dictation session"));
     }
 
     const selectedModel =
-      bundledModelCatalog.find((model) => model.id === state.settings.activeModelId) ??
+      bundledModelCatalog.find((model) => model.id === settings.activeModelId) ??
       bundledModelCatalog[0];
 
     if (!selectedModel) {
@@ -84,10 +95,10 @@ const stopTestDictation = (
       durationMs: 1200,
       modelId: selectedModel.id,
       runtime: selectedModel.runtime,
-      language: state.settings.language,
-      recordingMode: state.settings.recordingMode,
+      language: settings.language,
+      recordingMode: settings.recordingMode,
       stopReason: "hotkey-release",
-      insertionMode: state.settings.insertionMode,
+      insertionMode: settings.insertionMode,
       insertionStatus: "skipped",
       targetAppName: null,
     };
@@ -111,7 +122,7 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
     Effect.runPromise(clearTranscripts(dependencies)),
   );
   ipcMain.handle(IpcChannels.updateSettings, (_event, settings: AppSettings) =>
-    Effect.runPromise(updateSettings(settings)),
+    Effect.runPromise(updateSettings(dependencies, settings)),
   );
   ipcMain.handle(IpcChannels.startTestDictation, () => Effect.runPromise(startTestDictation()));
   ipcMain.handle(IpcChannels.stopTestDictation, () =>
