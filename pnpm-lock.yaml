@@ -29,6 +29,12 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@molten-voice/asr':
+        specifier: workspace:*
+        version: link:../../packages/asr
+      '@molten-voice/audio':
+        specifier: workspace:*
+        version: link:../../packages/audio
       '@molten-voice/db':
         specifier: workspace:*
         version: link:../../packages/db

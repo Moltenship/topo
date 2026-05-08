@@ -1,5 +1,6 @@
 import { ipcMain } from "electron";
 import { Effect } from "effect";
+import type { DictationOrchestrator } from "@molten-voice/asr";
 import type { AppDatabase } from "@molten-voice/db";
 import { bundledModelCatalog } from "@molten-voice/model-catalog";
 import type { AppSettings, AppStateSnapshot, TranscriptRecord } from "@molten-voice/shared";
@@ -10,18 +11,17 @@ interface MainProcessState {
   setupComplete: boolean;
   overlayState: AppStateSnapshot["overlayState"];
   settings: AppSettings;
-  activeTestSessionId: string | null;
 }
 
 const state: MainProcessState = {
   setupComplete: false,
   overlayState: "hidden",
   settings: DEFAULT_APP_SETTINGS,
-  activeTestSessionId: null,
 };
 
 interface IpcHandlerDependencies {
   readonly database: AppDatabase;
+  readonly dictation: DictationOrchestrator;
 }
 
 const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSettings> =>
@@ -64,9 +64,9 @@ const updateSettings = (
     return yield* dependencies.database.settings.set(settings);
   });
 
-const startTestDictation = (): Effect.Effect<void> =>
-  Effect.sync(() => {
-    state.activeTestSessionId = `test_${Date.now()}`;
+const startTestDictation = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
+  Effect.gen(function* () {
+    yield* dependencies.dictation.start();
     state.overlayState = "recording";
   });
 
@@ -76,10 +76,6 @@ const stopTestDictation = (
   Effect.gen(function* () {
     const settings = yield* getSettings(dependencies);
 
-    if (!state.activeTestSessionId) {
-      return yield* Effect.fail(new Error("No active test dictation session"));
-    }
-
     const selectedModel =
       bundledModelCatalog.find((model) => model.id === settings.activeModelId) ??
       bundledModelCatalog[0];
@@ -88,22 +84,13 @@ const stopTestDictation = (
       return yield* Effect.fail(new Error("No bundled transcription model is available"));
     }
 
-    const transcript: TranscriptRecord = {
-      id: `transcript_${Date.now()}`,
-      text: "Hello world",
-      createdAt: new Date().toISOString(),
-      durationMs: 1200,
+    const transcript = yield* dependencies.dictation.stop({
+      language: settings.language,
       modelId: selectedModel.id,
       runtime: selectedModel.runtime,
-      language: settings.language,
-      recordingMode: settings.recordingMode,
-      stopReason: "hotkey-release",
-      insertionMode: settings.insertionMode,
-      insertionStatus: "skipped",
-      targetAppName: null,
-    };
+      postProcessingMode: settings.postProcessingMode,
+    });
 
-    state.activeTestSessionId = null;
     state.overlayState = "inserted";
     yield* dependencies.database.transcripts.insert(transcript);
 
@@ -124,7 +111,9 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
   ipcMain.handle(IpcChannels.updateSettings, (_event, settings: AppSettings) =>
     Effect.runPromise(updateSettings(dependencies, settings)),
   );
-  ipcMain.handle(IpcChannels.startTestDictation, () => Effect.runPromise(startTestDictation()));
+  ipcMain.handle(IpcChannels.startTestDictation, () =>
+    Effect.runPromise(startTestDictation(dependencies)),
+  );
   ipcMain.handle(IpcChannels.stopTestDictation, () =>
     Effect.runPromise(stopTestDictation(dependencies)),
   );

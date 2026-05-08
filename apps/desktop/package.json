@@ -13,6 +13,8 @@
     "build": "vite --config vite.renderer.config.ts build"
   },
   "dependencies": {
+    "@molten-voice/asr": "workspace:*",
+    "@molten-voice/audio": "workspace:*",
     "@molten-voice/db": "workspace:*",
     "@molten-voice/model-catalog": "workspace:*",
     "@molten-voice/shared": "workspace:*",
