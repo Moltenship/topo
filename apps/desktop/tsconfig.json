@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["./renderer/src/*"]
+    }
   },
   "include": ["electron/**/*.ts", "renderer/src/**/*.ts", "renderer/src/**/*.tsx", "*.ts"]
 }

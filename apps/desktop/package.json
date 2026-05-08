@@ -15,12 +15,20 @@
   "dependencies": {
     "@molten-voice/model-catalog": "workspace:*",
     "@molten-voice/shared": "workspace:*",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@tailwindcss/vite": "^4.2.4",
     "@tanstack/react-router": "^1.139.3",
     "@vitejs/plugin-react": "^5.1.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "effect": "^3.19.11",
     "electron": "^39.2.7",
+    "lucide-react": "^1.14.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.4",
     "vite": "^7.3.0"
   },
   "devDependencies": {
