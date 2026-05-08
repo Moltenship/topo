@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ModelPicker } from "./ModelPicker";
@@ -7,9 +8,17 @@ import { setupSteps } from "./setup-steps";
 
 interface SetupFlowProps {
   readonly children?: ReactNode;
+  readonly isRecording: boolean;
+  readonly onStartTestDictation: () => void;
+  readonly onStopTestDictation: () => void;
 }
 
-export const SetupFlow = ({ children }: SetupFlowProps) => {
+export const SetupFlow = ({
+  children,
+  isRecording,
+  onStartTestDictation,
+  onStopTestDictation,
+}: SetupFlowProps) => {
   return (
     <>
       <aside className="min-h-screen border-r bg-card/70 p-3.5 max-md:min-h-auto">
@@ -52,9 +61,23 @@ export const SetupFlow = ({ children }: SetupFlowProps) => {
             <h2 className="mt-1 text-xl font-semibold leading-tight">Ready for local dictation</h2>
           </div>
           <div className="flex flex-wrap justify-end gap-1.5" aria-label="Dictation status">
-            <Badge variant="secondary">Offline</Badge>
+            <Badge variant={isRecording ? "default" : "secondary"}>
+              {isRecording ? "Recording" : "Offline"}
+            </Badge>
             <Badge variant="secondary">CapsLock</Badge>
             <Badge variant="secondary">Paste</Badge>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isRecording}
+              onClick={onStartTestDictation}
+              type="button"
+            >
+              Start test
+            </Button>
+            <Button size="sm" disabled={!isRecording} onClick={onStopTestDictation} type="button">
+              Stop
+            </Button>
           </div>
         </Card>
         <Card className="min-h-0 gap-0 overflow-hidden py-0">

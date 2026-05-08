@@ -4,10 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 interface HistoryViewProps {
+  readonly query: string;
   readonly transcripts: readonly TranscriptRecord[];
+  readonly onQueryChange: (query: string) => void;
 }
 
-export const HistoryView = ({ transcripts }: HistoryViewProps) => {
+export const HistoryView = ({ query, transcripts, onQueryChange }: HistoryViewProps) => {
   return (
     <section className="min-w-0 border-l bg-card/70 p-3.5 max-[1040px]:hidden">
       <div>
@@ -16,7 +18,12 @@ export const HistoryView = ({ transcripts }: HistoryViewProps) => {
         </p>
         <h2 className="mt-1 text-[17px] font-semibold leading-tight">Recent transcripts</h2>
       </div>
-      <Input className="my-4" placeholder="Search transcripts" />
+      <Input
+        className="my-4"
+        placeholder="Search transcripts"
+        value={query}
+        onChange={(event) => onQueryChange(event.currentTarget.value)}
+      />
       <Separator className="mb-3" />
       <div className="flex flex-col gap-2">
         {transcripts.map((item) => (
@@ -31,7 +38,7 @@ export const HistoryView = ({ transcripts }: HistoryViewProps) => {
         ))}
         {transcripts.length === 0 ? (
           <p className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
-            No local transcripts yet.
+            {query ? "No matching local transcripts." : "No local transcripts yet."}
           </p>
         ) : null}
       </div>
