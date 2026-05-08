@@ -30,6 +30,19 @@ export const App = () => {
     await refreshSnapshot();
   }, [refreshSnapshot]);
 
+  const deleteTranscript = useCallback(
+    async (id: string) => {
+      await getRendererApi().deleteTranscript(id);
+      await searchHistory(historyQuery);
+    },
+    [historyQuery, searchHistory],
+  );
+
+  const clearTranscripts = useCallback(async () => {
+    await getRendererApi().clearTranscripts();
+    await searchHistory(historyQuery);
+  }, [historyQuery, searchHistory]);
+
   const updateSettings = useCallback(async (settings: AppSettings) => {
     const nextSettings = await getRendererApi().updateSettings(settings);
 
@@ -60,6 +73,8 @@ export const App = () => {
         <HistoryView
           query={historyQuery}
           transcripts={snapshot?.transcripts ?? []}
+          onClear={clearTranscripts}
+          onDelete={deleteTranscript}
           onQueryChange={searchHistory}
         />
       </SetupFlow>

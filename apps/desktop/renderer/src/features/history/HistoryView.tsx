@@ -1,4 +1,5 @@
 import type { TranscriptRecord } from "@molten-voice/shared";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -6,17 +7,36 @@ import { Separator } from "@/components/ui/separator";
 interface HistoryViewProps {
   readonly query: string;
   readonly transcripts: readonly TranscriptRecord[];
+  readonly onClear: () => void;
+  readonly onDelete: (id: string) => void;
   readonly onQueryChange: (query: string) => void;
 }
 
-export const HistoryView = ({ query, transcripts, onQueryChange }: HistoryViewProps) => {
+export const HistoryView = ({
+  query,
+  transcripts,
+  onClear,
+  onDelete,
+  onQueryChange,
+}: HistoryViewProps) => {
   return (
     <section className="min-w-0 border-l bg-card/70 p-3.5 max-[1040px]:hidden">
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-          Local history
-        </p>
-        <h2 className="mt-1 text-[17px] font-semibold leading-tight">Recent transcripts</h2>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            Local history
+          </p>
+          <h2 className="mt-1 text-[17px] font-semibold leading-tight">Recent transcripts</h2>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={transcripts.length === 0}
+          onClick={onClear}
+          type="button"
+        >
+          Clear
+        </Button>
       </div>
       <Input
         className="my-4"
@@ -28,11 +48,19 @@ export const HistoryView = ({ query, transcripts, onQueryChange }: HistoryViewPr
       <div className="flex flex-col gap-2">
         {transcripts.map((item) => (
           <Card className="gap-2 px-3 py-3" key={item.id}>
-            <CardContent className="flex flex-col gap-2 px-0">
-              <p className="text-sm leading-snug">{item.text}</p>
-              <time className="text-xs text-muted-foreground" dateTime={item.createdAt}>
-                {item.createdAt}
-              </time>
+            <CardContent className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-0">
+              <div className="min-w-0">
+                <p className="text-sm leading-snug">{item.text}</p>
+                <time
+                  className="mt-2 block text-xs text-muted-foreground"
+                  dateTime={item.createdAt}
+                >
+                  {item.createdAt}
+                </time>
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => onDelete(item.id)} type="button">
+                Delete
+              </Button>
             </CardContent>
           </Card>
         ))}
