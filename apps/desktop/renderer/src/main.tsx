@@ -1,10 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { App } from "./App";
+import { RouterProvider } from "@tanstack/react-router";
 import { OverlayApp } from "./OverlayApp";
+import { router } from "./routes";
 import "./styles.css";
 
-const RootApp = window.location.hash === "#overlay" ? OverlayApp : App;
+const RootApp = () =>
+  window.location.hash === "#overlay" ? <OverlayApp /> : <RouterProvider router={router} />;
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
