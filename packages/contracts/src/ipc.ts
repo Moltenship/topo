@@ -20,6 +20,7 @@ export const AppStateSnapshot = Schema.Struct({
   overlayState: OverlayState,
   settings: AppSettings,
   transcripts: Schema.Array(TranscriptRecord),
+  errorMessage: Schema.NullOr(Schema.String),
 });
 export type AppStateSnapshot = typeof AppStateSnapshot.Type;
 

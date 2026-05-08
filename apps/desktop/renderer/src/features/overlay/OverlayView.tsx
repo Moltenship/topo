@@ -32,7 +32,9 @@ export const OverlayView = ({ state, variant = "preview" }: OverlayViewProps) =>
           />
         ))}
       </div>
-      <strong className="text-sm">{state === "recording" ? "Recording" : "Ready"}</strong>
+      <strong className="text-sm">
+        {state === "recording" ? "Recording" : state === "error" ? "Error" : "Ready"}
+      </strong>
     </aside>
   );
 };

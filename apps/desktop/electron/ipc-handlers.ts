@@ -25,6 +25,8 @@ const state: MainProcessState = {
   settings: DEFAULT_APP_SETTINGS,
 };
 
+let currentErrorMessage: string | null = null;
+
 interface IpcHandlerDependencies {
   readonly database: AppDatabase;
   readonly dictation: DictationOrchestrator;
@@ -63,6 +65,7 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
       overlayState: state.overlayState,
       settings,
       transcripts,
+      errorMessage: currentErrorMessage,
     };
   });
 
@@ -93,6 +96,7 @@ const updateSettings = (
   settings: AppSettings,
 ): Effect.Effect<AppSettings> =>
   Effect.gen(function* () {
+    currentErrorMessage = null;
     state.settings = settings;
     state.setupComplete = Boolean(settings.activeModelId);
 
@@ -101,6 +105,7 @@ const updateSettings = (
 
 const startTestDictation = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
   Effect.gen(function* () {
+    currentErrorMessage = null;
     clearOverlayHideTimer();
     yield* dependencies.dictation.start();
     state.overlayState = "recording";
@@ -117,6 +122,9 @@ const stopTestDictation = (
       bundledModelCatalog[0];
 
     if (!selectedModel) {
+      currentErrorMessage = "No bundled transcription model is available.";
+      state.overlayState = "error";
+
       return yield* Effect.fail(new Error("No bundled transcription model is available"));
     }
 
@@ -128,6 +136,7 @@ const stopTestDictation = (
     });
 
     state.overlayState = "inserted";
+    currentErrorMessage = null;
     yield* dependencies.database.transcripts.insert(transcript);
 
     return transcript;
@@ -184,7 +193,15 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
   ipcMain.handle(IpcChannels.stopTestDictation, () =>
     Effect.runPromise(
       Effect.gen(function* () {
-        const transcript = yield* stopTestDictation(dependencies);
+        const transcript = yield* stopTestDictation(dependencies).pipe(
+          Effect.tapError((error) =>
+            Effect.gen(function* () {
+              currentErrorMessage = error.message;
+              state.overlayState = "error";
+              yield* publishAppState(dependencies);
+            }),
+          ),
+        );
         yield* publishAppState(dependencies);
         clearOverlayHideTimer();
         overlayHideTimer = setTimeout(() => {
