@@ -7,11 +7,14 @@ import { cn } from "@/lib/utils";
 import { ModelPicker } from "./ModelPicker";
 import { SettingsStrip } from "./SettingsStrip";
 import { setupSteps } from "./setup-steps";
+import { WorkbenchAlert } from "./WorkbenchAlert";
 
 interface SetupFlowProps {
   readonly children?: ReactNode;
   readonly isRecording: boolean;
+  readonly errorMessage: string | null;
   readonly settings: AppSettings | null;
+  readonly onDismissError: () => void;
   readonly onStartTestDictation: () => void;
   readonly onStopTestDictation: () => void;
   readonly onSettingsChange: (settings: AppSettings) => void;
@@ -20,7 +23,9 @@ interface SetupFlowProps {
 export const SetupFlow = ({
   children,
   isRecording,
+  errorMessage,
   settings,
+  onDismissError,
   onStartTestDictation,
   onStopTestDictation,
   onSettingsChange,
@@ -86,6 +91,7 @@ export const SetupFlow = ({
             </Button>
           </div>
         </Card>
+        {errorMessage ? <WorkbenchAlert message={errorMessage} onDismiss={onDismissError} /> : null}
         <Card className="min-h-0 gap-0 overflow-hidden py-0">
           <CardContent className="flex min-h-0 flex-1 items-center justify-center gap-1.5 bg-accent/15 px-7 py-9">
             {Array.from({ length: 38 }, (_, index) => (

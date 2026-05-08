@@ -7,6 +7,17 @@ import { SetupFlow } from "./features/setup/SetupFlow";
 export const App = () => {
   const [snapshot, setSnapshot] = useState<AppStateSnapshot | null>(null);
   const [historyQuery, setHistoryQuery] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const runAction = useCallback(async (action: () => Promise<void>) => {
+    setErrorMessage(null);
+
+    try {
+      await action();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unexpected local workflow error.");
+    }
+  }, []);
 
   const refreshSnapshot = useCallback(async () => {
     setSnapshot(await getRendererApi().getAppState());
@@ -20,41 +31,54 @@ export const App = () => {
   }, []);
 
   const startTestDictation = useCallback(async () => {
-    await getRendererApi().startTestDictation();
-    await refreshSnapshot();
-  }, [refreshSnapshot]);
+    await runAction(async () => {
+      await getRendererApi().startTestDictation();
+      await refreshSnapshot();
+    });
+  }, [refreshSnapshot, runAction]);
 
   const stopTestDictation = useCallback(async () => {
-    await getRendererApi().stopTestDictation();
-    await refreshSnapshot();
-  }, [refreshSnapshot]);
+    await runAction(async () => {
+      await getRendererApi().stopTestDictation();
+      await refreshSnapshot();
+    });
+  }, [refreshSnapshot, runAction]);
 
   const deleteTranscript = useCallback(
     async (id: string) => {
-      await getRendererApi().deleteTranscript(id);
-      await searchHistory(historyQuery);
+      await runAction(async () => {
+        await getRendererApi().deleteTranscript(id);
+        await searchHistory(historyQuery);
+      });
     },
-    [historyQuery, searchHistory],
+    [historyQuery, runAction, searchHistory],
   );
 
   const clearTranscripts = useCallback(async () => {
-    await getRendererApi().clearTranscripts();
-    await searchHistory(historyQuery);
-  }, [historyQuery, searchHistory]);
+    await runAction(async () => {
+      await getRendererApi().clearTranscripts();
+      await searchHistory(historyQuery);
+    });
+  }, [historyQuery, runAction, searchHistory]);
 
-  const updateSettings = useCallback(async (settings: AppSettings) => {
-    const nextSettings = await getRendererApi().updateSettings(settings);
+  const updateSettings = useCallback(
+    async (settings: AppSettings) => {
+      await runAction(async () => {
+        const nextSettings = await getRendererApi().updateSettings(settings);
 
-    setSnapshot((current) =>
-      current
-        ? {
-            ...current,
-            setupComplete: Boolean(nextSettings.activeModelId),
-            settings: nextSettings,
-          }
-        : current,
-    );
-  }, []);
+        setSnapshot((current) =>
+          current
+            ? {
+                ...current,
+                setupComplete: Boolean(nextSettings.activeModelId),
+                settings: nextSettings,
+              }
+            : current,
+        );
+      });
+    },
+    [runAction],
+  );
 
   useEffect(() => {
     void refreshSnapshot();
@@ -65,8 +89,10 @@ export const App = () => {
   return (
     <main className="grid min-h-screen grid-cols-[286px_minmax(0,1fr)_336px] overflow-hidden bg-background text-foreground max-[1040px]:grid-cols-[240px_minmax(0,1fr)] max-md:grid-cols-1 max-md:overflow-auto">
       <SetupFlow
+        errorMessage={errorMessage}
         isRecording={snapshot?.overlayState === "recording"}
         settings={snapshot?.settings ?? null}
+        onDismissError={() => setErrorMessage(null)}
         onStartTestDictation={startTestDictation}
         onStopTestDictation={stopTestDictation}
         onSettingsChange={updateSettings}
