@@ -1,5 +1,6 @@
 import { ipcMain } from "electron";
 import { Effect } from "effect";
+import type { AppDatabase } from "@molten-voice/db";
 import { bundledModelCatalog } from "@molten-voice/model-catalog";
 import type { AppSettings, AppStateSnapshot, TranscriptRecord } from "@molten-voice/shared";
 import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
@@ -9,7 +10,6 @@ interface MainProcessState {
   setupComplete: boolean;
   overlayState: AppStateSnapshot["overlayState"];
   settings: AppSettings;
-  transcripts: TranscriptRecord[];
   activeTestSessionId: string | null;
 }
 
@@ -17,40 +17,35 @@ const state: MainProcessState = {
   setupComplete: false,
   overlayState: "hidden",
   settings: DEFAULT_APP_SETTINGS,
-  transcripts: [],
   activeTestSessionId: null,
 };
 
-const getAppState = (): Effect.Effect<AppStateSnapshot> =>
-  Effect.succeed({
-    setupComplete: state.setupComplete,
-    overlayState: state.overlayState,
-    settings: state.settings,
-    transcripts: state.transcripts,
+interface IpcHandlerDependencies {
+  readonly database: AppDatabase;
+}
+
+const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppStateSnapshot> =>
+  Effect.gen(function* () {
+    const transcripts = yield* dependencies.database.transcripts.list();
+
+    return {
+      setupComplete: state.setupComplete,
+      overlayState: state.overlayState,
+      settings: state.settings,
+      transcripts,
+    };
   });
 
-const listTranscripts = (query?: string): Effect.Effect<readonly TranscriptRecord[]> =>
-  Effect.sync(() => {
-    const normalizedQuery = query?.trim().toLowerCase();
+const listTranscripts = (
+  dependencies: IpcHandlerDependencies,
+  query?: string,
+): Effect.Effect<readonly TranscriptRecord[]> => dependencies.database.transcripts.list(query);
 
-    if (!normalizedQuery) {
-      return state.transcripts;
-    }
+const deleteTranscript = (dependencies: IpcHandlerDependencies, id: string): Effect.Effect<void> =>
+  dependencies.database.transcripts.deleteById(id);
 
-    return state.transcripts.filter((transcript) =>
-      transcript.text.toLowerCase().includes(normalizedQuery),
-    );
-  });
-
-const deleteTranscript = (id: string): Effect.Effect<void> =>
-  Effect.sync(() => {
-    state.transcripts = state.transcripts.filter((transcript) => transcript.id !== id);
-  });
-
-const clearTranscripts = (): Effect.Effect<void> =>
-  Effect.sync(() => {
-    state.transcripts = [];
-  });
+const clearTranscripts = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
+  dependencies.database.transcripts.clear();
 
 const updateSettings = (settings: AppSettings): Effect.Effect<AppSettings> =>
   Effect.sync(() => {
@@ -66,10 +61,12 @@ const startTestDictation = (): Effect.Effect<void> =>
     state.overlayState = "recording";
   });
 
-const stopTestDictation = (): Effect.Effect<TranscriptRecord, Error> =>
-  Effect.sync(() => {
+const stopTestDictation = (
+  dependencies: IpcHandlerDependencies,
+): Effect.Effect<TranscriptRecord, Error> =>
+  Effect.gen(function* () {
     if (!state.activeTestSessionId) {
-      throw new Error("No active test dictation session");
+      return yield* Effect.fail(new Error("No active test dictation session"));
     }
 
     const selectedModel =
@@ -77,7 +74,7 @@ const stopTestDictation = (): Effect.Effect<TranscriptRecord, Error> =>
       bundledModelCatalog[0];
 
     if (!selectedModel) {
-      throw new Error("No bundled transcription model is available");
+      return yield* Effect.fail(new Error("No bundled transcription model is available"));
     }
 
     const transcript: TranscriptRecord = {
@@ -97,23 +94,27 @@ const stopTestDictation = (): Effect.Effect<TranscriptRecord, Error> =>
 
     state.activeTestSessionId = null;
     state.overlayState = "inserted";
-    state.transcripts = [transcript, ...state.transcripts];
+    yield* dependencies.database.transcripts.insert(transcript);
 
     return transcript;
   });
 
-export const registerIpcHandlers = () => {
-  ipcMain.handle(IpcChannels.getAppState, () => Effect.runPromise(getAppState()));
+export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
+  ipcMain.handle(IpcChannels.getAppState, () => Effect.runPromise(getAppState(dependencies)));
   ipcMain.handle(IpcChannels.listTranscripts, (_event, input: { query?: string }) =>
-    Effect.runPromise(listTranscripts(input.query)),
+    Effect.runPromise(listTranscripts(dependencies, input.query)),
   );
   ipcMain.handle(IpcChannels.deleteTranscript, (_event, input: { id: string }) =>
-    Effect.runPromise(deleteTranscript(input.id)),
+    Effect.runPromise(deleteTranscript(dependencies, input.id)),
   );
-  ipcMain.handle(IpcChannels.clearTranscripts, () => Effect.runPromise(clearTranscripts()));
+  ipcMain.handle(IpcChannels.clearTranscripts, () =>
+    Effect.runPromise(clearTranscripts(dependencies)),
+  );
   ipcMain.handle(IpcChannels.updateSettings, (_event, settings: AppSettings) =>
     Effect.runPromise(updateSettings(settings)),
   );
   ipcMain.handle(IpcChannels.startTestDictation, () => Effect.runPromise(startTestDictation()));
-  ipcMain.handle(IpcChannels.stopTestDictation, () => Effect.runPromise(stopTestDictation()));
+  ipcMain.handle(IpcChannels.stopTestDictation, () =>
+    Effect.runPromise(stopTestDictation(dependencies)),
+  );
 };

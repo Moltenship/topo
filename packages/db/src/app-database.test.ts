@@ -1,0 +1,52 @@
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { Effect } from "effect";
+import { afterEach, describe, expect, it } from "vitest";
+import { openAppDatabase } from "./app-database";
+
+const temporaryDirectories: string[] = [];
+
+const makeTemporaryDirectory = () => {
+  const directory = mkdtempSync(join(tmpdir(), "molten-voice-db-"));
+  temporaryDirectories.push(directory);
+
+  return directory;
+};
+
+afterEach(() => {
+  for (const directory of temporaryDirectories.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+describe("openAppDatabase", () => {
+  it("creates a local sqlite database and stores transcript history", async () => {
+    const directory = makeTemporaryDirectory();
+    const database = await Effect.runPromise(openAppDatabase(directory));
+
+    await Effect.runPromise(
+      database.transcripts.insert({
+        id: "transcript_1",
+        text: "persistent local transcript",
+        createdAt: "2026-05-08T00:00:00.000Z",
+        durationMs: 1200,
+        modelId: "whisper-cpp-small",
+        runtime: "whisper-cpp",
+        language: "en",
+        recordingMode: "push-to-talk",
+        stopReason: "hotkey-release",
+        insertionMode: "paste",
+        insertionStatus: "skipped",
+        targetAppName: null,
+      }),
+    );
+
+    const transcripts = await Effect.runPromise(database.transcripts.list("persistent"));
+    await Effect.runPromise(database.close());
+
+    expect(existsSync(database.path)).toBe(true);
+    expect(transcripts).toHaveLength(1);
+    expect(transcripts[0]?.text).toBe("persistent local transcript");
+  });
+});
