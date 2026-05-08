@@ -2682,6 +2682,7 @@ Completed:
 - Mock model install progress in Electron app state with typed IPC and renderer progress UI.
 - Bundled catalog download source metadata with GitHub Release URL resolution support.
 - Mock Effect model installer service that verifies downloaded file metadata before marking it installed.
+- Electron model install job extracted from IPC handlers for future real downloader replacement.
 
 Verification completed:
 

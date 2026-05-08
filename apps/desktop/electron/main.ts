@@ -7,6 +7,7 @@ import { openAppDatabase } from "@molten-voice/db";
 import { createMockNativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppStateSnapshot } from "@molten-voice/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
+import { createMockModelInstallJob } from "./model-install-job";
 import { createMainWindow, createOverlayWindow } from "./window-manager";
 
 const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) => {
@@ -35,6 +36,7 @@ app.whenReady().then(() => {
   registerIpcHandlers({
     database,
     dictation,
+    modelInstallJob: createMockModelInstallJob(),
     nativeBridge: createMockNativeBridgeService(),
     onAppStateChanged: (snapshot) => syncOverlayWindow(overlayWindow, snapshot),
   });
