@@ -4,10 +4,11 @@ import { SetupFlow } from "./features/setup/SetupFlow";
 
 export const App = () => {
   return (
-    <>
-      <SetupFlow />
-      <HistoryView />
+    <main className="workbench-shell">
+      <SetupFlow>
+        <HistoryView />
+      </SetupFlow>
       <OverlayView />
-    </>
+    </main>
   );
 };

@@ -7,7 +7,7 @@ export const HistoryView = () => {
   return (
     <section className="history-panel">
       <div className="section-heading">
-        <p className="eyebrow">History</p>
+        <p className="eyebrow">Local history</p>
         <h2>Recent transcripts</h2>
       </div>
       <input className="search-input" placeholder="Search transcripts" />
