@@ -3,14 +3,21 @@ import { createMockAudioCaptureService } from "@molten-voice/audio";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 import { createDictationOrchestrator } from "./dictation-orchestrator";
+import type { TranscriptionInput } from "./transcription-provider";
 import { createMockTranscriptionProvider } from "./transcription-provider";
 
 describe("createDictationOrchestrator", () => {
   it("records, transcribes, normalizes, and returns a transcript record", async () => {
     const ids = ["session_1", "transcript_1"];
+    let transcriptionInput: TranscriptionInput | null = null;
     const orchestrator = createDictationOrchestrator({
       audio: createMockAudioCaptureService(),
-      transcription: createMockTranscriptionProvider(),
+      transcription: {
+        transcribe: (input) => {
+          transcriptionInput = input;
+          return createMockTranscriptionProvider().transcribe(input);
+        },
+      },
       now: () => new Date("2026-05-07T00:00:00.000Z"),
       createId: () => ids.shift() ?? "fallback",
     });
@@ -22,6 +29,8 @@ describe("createDictationOrchestrator", () => {
           language: "en",
           modelId: "whisper-cpp-small",
           runtime: "whisper-cpp",
+          installedModelPath: "C:\\models\\ggml-small.bin",
+          runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
           postProcessingMode: "lightweight",
         });
       }),
@@ -33,6 +42,10 @@ describe("createDictationOrchestrator", () => {
       createdAt: "2026-05-07T00:00:00.000Z",
       durationMs: 1200,
       insertionStatus: "skipped",
+    });
+    expect(transcriptionInput).toMatchObject({
+      installedModelPath: "C:\\models\\ggml-small.bin",
+      runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
     });
   });
 
@@ -69,6 +82,8 @@ describe("createDictationOrchestrator", () => {
           language: "en",
           modelId: "whisper-cpp-small",
           runtime: "whisper-cpp",
+          installedModelPath: "C:\\models\\ggml-small.bin",
+          runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
           postProcessingMode: "lightweight",
         }),
       ),

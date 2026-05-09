@@ -225,8 +225,7 @@ const stopTestDictation = (
     const catalog = getCatalog(dependencies);
     const settings = yield* getSettings(dependencies);
 
-    const selectedModel =
-      catalog.find((model) => model.id === settings.activeModelId) ?? catalog[0];
+    const selectedModel = catalog.find((model) => model.id === settings.activeModelId);
 
     if (!selectedModel) {
       currentErrorMessage = "No bundled transcription model is available.";
@@ -235,10 +234,53 @@ const stopTestDictation = (
       return yield* Effect.fail(new Error("No bundled transcription model is available"));
     }
 
+    const installedModel = yield* dependencies.database.installedModels.getByModelId(
+      selectedModel.id,
+    );
+
+    if (!installedModel || installedModel.verificationStatus !== "verified") {
+      currentErrorMessage = "model_not_installed";
+      state.overlayState = "error";
+
+      return yield* Effect.fail(new Error("model_not_installed"));
+    }
+
+    if (selectedModel.runtime !== "whisper-cpp" || !dependencies.whisperCppRuntimeResolver) {
+      currentErrorMessage = "runtime_missing";
+      state.overlayState = "error";
+
+      return yield* Effect.fail(new Error("runtime_missing"));
+    }
+
+    const whisperCppRuntimeReadinessCache =
+      dependencies.whisperCppRuntimeReadinessCache ?? defaultWhisperCppRuntimeReadinessCache;
+    const runtimeResult = yield* whisperCppRuntimeReadinessCache.resolve(
+      dependencies.whisperCppRuntimeResolver,
+    );
+
+    if (runtimeResult.status === "missing") {
+      currentErrorMessage = "runtime_missing";
+      state.overlayState = "error";
+
+      return yield* Effect.fail(new Error("runtime_missing"));
+    }
+
+    if (runtimeResult.status === "failed") {
+      currentErrorMessage = "runtime-failed";
+      state.overlayState = "error";
+
+      return yield* Effect.fail(new Error("runtime-failed"));
+    }
+
+    state.overlayState = "processing";
+    yield* publishAppState(dependencies);
+
     const transcript = yield* dependencies.dictation.stop({
       language: settings.language,
       modelId: selectedModel.id,
       runtime: selectedModel.runtime,
+      installedModelPath: installedModel.installedPath,
+      runtimeBinaryPath: runtimeResult.binaryPath,
       postProcessingMode: settings.postProcessingMode,
     });
     const insertion = yield* dependencies.nativeBridge.insertText({

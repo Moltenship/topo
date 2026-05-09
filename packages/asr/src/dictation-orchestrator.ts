@@ -17,6 +17,8 @@ export interface DictationOrchestrator {
     readonly language: LanguageCode;
     readonly modelId: string;
     readonly runtime: string;
+    readonly installedModelPath: string;
+    readonly runtimeBinaryPath: string;
     readonly postProcessingMode: PostProcessingMode;
   }) => Effect.Effect<TranscriptRecord, Error>;
 }
@@ -47,6 +49,8 @@ export const createDictationOrchestrator = (
               audioPath: capturedAudio.audioPath,
               language: input.language,
               modelId: input.modelId,
+              installedModelPath: input.installedModelPath,
+              runtimeBinaryPath: input.runtimeBinaryPath,
             }),
           (capturedAudio) =>
             Effect.catchAll(
