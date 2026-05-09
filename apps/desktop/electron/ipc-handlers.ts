@@ -252,11 +252,7 @@ const stopTestDictation = (
       return yield* Effect.fail(new Error("runtime_missing"));
     }
 
-    const whisperCppRuntimeReadinessCache =
-      dependencies.whisperCppRuntimeReadinessCache ?? defaultWhisperCppRuntimeReadinessCache;
-    const runtimeResult = yield* whisperCppRuntimeReadinessCache.resolve(
-      dependencies.whisperCppRuntimeResolver,
-    );
+    const runtimeResult = yield* dependencies.whisperCppRuntimeResolver.resolve();
 
     if (runtimeResult.status === "missing") {
       currentErrorMessage = "runtime_missing";
