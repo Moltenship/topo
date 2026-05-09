@@ -25,10 +25,14 @@ const loadRenderer = (window: BrowserWindow, hash?: string) => {
 };
 
 export const createMainWindow = (): BrowserWindow => {
+  const isMac = process.platform === "darwin";
   const window = new BrowserWindow({
     width: 1120,
     height: 760,
+    frame: isMac,
     title: "Molten Voice",
+    titleBarStyle: isMac ? "hiddenInset" : "hidden",
+    ...(isMac ? { trafficLightPosition: { x: 14, y: 13 } } : {}),
     webPreferences: {
       preload: join(currentDirectory, "../preload/preload.cjs"),
       contextIsolation: true,

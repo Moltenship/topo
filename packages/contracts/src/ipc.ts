@@ -14,6 +14,9 @@ export const IpcChannels = {
   stopTestDictation: "dictation:stop-test",
   installModel: "models:install",
   cancelModelInstall: "models:cancel-install",
+  windowMinimize: "window:minimize",
+  windowMaximize: "window:maximize",
+  windowClose: "window:close",
   appStateChanged: "app:state-changed",
 } as const;
 

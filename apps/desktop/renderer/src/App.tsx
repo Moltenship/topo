@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppSettings, AppStateSnapshot } from "@molten-voice/shared";
+import { AppTitleBar } from "./components/AppTitleBar";
 import { getRendererApi } from "./api/renderer-api";
 import { HistoryView } from "./features/history/HistoryView";
 import { SettingsPage } from "./features/settings/SettingsPage";
@@ -9,6 +10,13 @@ import { cn } from "./lib/utils";
 interface AppProps {
   readonly view?: "workbench" | "setup" | "history" | "settings";
 }
+
+const AppChrome = ({ children }: { readonly children: React.ReactNode }) => (
+  <div className="grid h-screen grid-rows-[36px_minmax(0,1fr)] overflow-hidden bg-background text-foreground">
+    <AppTitleBar />
+    {children}
+  </div>
+);
 
 export const App = ({ view = "workbench" }: AppProps) => {
   const [snapshot, setSnapshot] = useState<AppStateSnapshot | null>(null);
@@ -126,54 +134,60 @@ export const App = ({ view = "workbench" }: AppProps) => {
 
   if (view === "history") {
     return (
-      <main className="h-screen overflow-hidden bg-background text-foreground">{historyView}</main>
+      <AppChrome>
+        <main className="h-full overflow-hidden bg-background text-foreground">{historyView}</main>
+      </AppChrome>
     );
   }
 
   if (view === "settings") {
     return (
-      <SettingsPage
-        errorMessage={effectiveErrorMessage}
-        installedModels={snapshot?.installedModels ?? []}
-        isRecording={snapshot?.overlayState === "recording"}
-        modelInstallProgress={snapshot?.modelInstallProgress ?? null}
-        settings={snapshot?.settings ?? null}
-        transcriptCount={snapshot?.transcripts.length ?? 0}
-        onCancelModelInstall={cancelModelInstall}
-        onClearTranscripts={clearTranscripts}
-        onDismissError={() => setErrorMessage(null)}
-        onInstallModel={installModel}
-        onSettingsChange={updateSettings}
-        onStartTestDictation={startTestDictation}
-        onStopTestDictation={stopTestDictation}
-      />
+      <AppChrome>
+        <SettingsPage
+          errorMessage={effectiveErrorMessage}
+          installedModels={snapshot?.installedModels ?? []}
+          isRecording={snapshot?.overlayState === "recording"}
+          modelInstallProgress={snapshot?.modelInstallProgress ?? null}
+          settings={snapshot?.settings ?? null}
+          transcriptCount={snapshot?.transcripts.length ?? 0}
+          onCancelModelInstall={cancelModelInstall}
+          onClearTranscripts={clearTranscripts}
+          onDismissError={() => setErrorMessage(null)}
+          onInstallModel={installModel}
+          onSettingsChange={updateSettings}
+          onStartTestDictation={startTestDictation}
+          onStopTestDictation={stopTestDictation}
+        />
+      </AppChrome>
     );
   }
 
   return (
-    <main
-      className={cn(
-        "grid min-h-screen overflow-hidden bg-background text-foreground max-md:grid-cols-1 max-md:overflow-auto",
-        view === "workbench"
-          ? "grid-cols-[286px_minmax(0,1fr)_336px] max-[1040px]:grid-cols-[240px_minmax(0,1fr)]"
-          : "grid-cols-[286px_minmax(0,1fr)] max-[1040px]:grid-cols-[240px_minmax(0,1fr)]",
-      )}
-    >
-      <SetupFlow
-        errorMessage={effectiveErrorMessage}
-        installedModels={snapshot?.installedModels ?? []}
-        isRecording={snapshot?.overlayState === "recording"}
-        modelInstallProgress={snapshot?.modelInstallProgress ?? null}
-        settings={snapshot?.settings ?? null}
-        onDismissError={() => setErrorMessage(null)}
-        onCancelModelInstall={cancelModelInstall}
-        onStartTestDictation={startTestDictation}
-        onStopTestDictation={stopTestDictation}
-        onInstallModel={installModel}
-        onSettingsChange={updateSettings}
+    <AppChrome>
+      <main
+        className={cn(
+          "grid h-full overflow-hidden bg-background text-foreground max-md:grid-cols-1 max-md:overflow-auto",
+          view === "workbench"
+            ? "grid-cols-[286px_minmax(0,1fr)_336px] max-[1040px]:grid-cols-[240px_minmax(0,1fr)]"
+            : "grid-cols-[286px_minmax(0,1fr)] max-[1040px]:grid-cols-[240px_minmax(0,1fr)]",
+        )}
       >
-        {view === "workbench" ? historyView : null}
-      </SetupFlow>
-    </main>
+        <SetupFlow
+          errorMessage={effectiveErrorMessage}
+          installedModels={snapshot?.installedModels ?? []}
+          isRecording={snapshot?.overlayState === "recording"}
+          modelInstallProgress={snapshot?.modelInstallProgress ?? null}
+          settings={snapshot?.settings ?? null}
+          onDismissError={() => setErrorMessage(null)}
+          onCancelModelInstall={cancelModelInstall}
+          onStartTestDictation={startTestDictation}
+          onStopTestDictation={stopTestDictation}
+          onInstallModel={installModel}
+          onSettingsChange={updateSettings}
+        >
+          {view === "workbench" ? historyView : null}
+        </SetupFlow>
+      </main>
+    </AppChrome>
   );
 };

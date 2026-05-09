@@ -136,8 +136,8 @@ export const SettingsPage = ({
   };
 
   return (
-    <main className="grid h-screen grid-cols-[208px_minmax(0,1fr)] overflow-hidden bg-background text-foreground max-md:h-auto max-md:min-h-screen max-md:grid-cols-1 max-md:overflow-auto">
-      <aside className="flex h-screen flex-col overflow-hidden border-r bg-card/70 px-3 py-4 max-md:h-auto max-md:min-h-auto">
+    <main className="grid h-full grid-cols-[208px_minmax(0,1fr)] overflow-hidden bg-background text-foreground max-md:h-auto max-md:min-h-full max-md:grid-cols-1 max-md:overflow-auto">
+      <aside className="flex h-full flex-col overflow-hidden border-r bg-card/70 px-3 py-4 max-md:h-auto max-md:min-h-auto">
         <div className="mb-6 flex items-center gap-2 px-1">
           <span className="grid size-7 place-items-center rounded-md border bg-secondary text-[11px] font-extrabold text-foreground">
             MV
@@ -174,7 +174,7 @@ export const SettingsPage = ({
           </Button>
         </div>
       </aside>
-      <section className="h-screen overflow-y-auto px-6 py-8 max-md:h-auto max-md:min-h-auto max-sm:px-4">
+      <section className="h-full overflow-y-auto px-6 py-8 max-md:h-auto max-md:min-h-auto max-sm:px-4">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
           <div className="flex min-h-9 items-center justify-between gap-4">
             <h1 className="text-sm font-semibold">Settings</h1>

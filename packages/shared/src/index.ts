@@ -4,7 +4,7 @@ export * from "./installed-model";
 export * from "./ipc";
 export * from "./model-installation";
 
-export type Platform = "macos" | "windows";
+export type Platform = "linux" | "macos" | "windows";
 
 import type { AppStateSnapshot } from "@molten-voice/contracts";
 import type {
@@ -24,6 +24,7 @@ export type {
 
 export interface MoltenVoiceApi {
   readonly appName: string;
+  readonly platform: Platform;
   readonly getAppState: () => Promise<AppStateSnapshot>;
   readonly listTranscripts: (query?: string) => Promise<readonly TranscriptRecord[]>;
   readonly deleteTranscript: (id: string) => Promise<void>;
@@ -33,6 +34,9 @@ export interface MoltenVoiceApi {
   readonly cancelModelInstall: (modelId: string) => Promise<void>;
   readonly startTestDictation: () => Promise<void>;
   readonly stopTestDictation: () => Promise<TranscriptRecord>;
+  readonly minimizeWindow: () => Promise<void>;
+  readonly toggleMaximizeWindow: () => Promise<void>;
+  readonly closeWindow: () => Promise<void>;
   readonly onAppStateChanged: (listener: (snapshot: AppStateSnapshot) => void) => () => void;
 }
 
