@@ -2717,12 +2717,13 @@ Updated on 2026-05-09 after deciding to keep the catalog bundled and avoid tray/
   - verification status.
 - [x] Include installed model records in `AppStateSnapshot`.
 - [x] Update model cards to distinguish `Install`, `Installing`, `Installed`, `Repair`, and `Reinstall`.
-- [ ] Replace the mock model install job with a real downloader that:
+- [x] Replace the mock model install job with a real single-file downloader that:
   - downloads to a temp directory;
   - streams progress into app state;
   - verifies size and sha256;
   - atomically moves verified files into the app model directory;
   - writes the installed model record only after verification succeeds.
+- [ ] Add snapshot/subfolder downloader support for WhisperKit Core ML directories.
 - [ ] Add retry/cancel/repair commands after the real downloader exists.
 - [ ] Add system notifications for install success/failure later. Notification copy and actions are intentionally deferred.
 
@@ -2789,7 +2790,7 @@ These are candidate source links to prepare the bundled catalog. Checksums are n
 1. Add Hugging Face source metadata types and URL/snapshot planning helpers.
 2. Add installed model persistence in SQLite.
 3. Wire installed model state into `AppStateSnapshot` and the renderer model cards.
-4. Implement a real file downloader for single-file sources first, using Whisper.cpp Small as the first integration target.
+4. [x] Implement a real file downloader for single-file sources first, using Whisper.cpp Small as the first integration target.
 5. Implement snapshot/subfolder download support for WhisperKit Core ML directories.
 6. Compute and pin real sha256 values for the exact selected artifacts.
 7. Add notification boundary for install success/failure.

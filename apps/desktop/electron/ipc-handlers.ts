@@ -226,7 +226,9 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
                         : "tag" in model.source
                           ? model.source.tag
                           : model.downloadUrl,
-                    installedPath: `mock://${model.id}`,
+                    installedPath:
+                      dependencies.modelInstallJob.getInstalledModelPath(model.id) ??
+                      model.downloadUrl,
                     checksumSha256: model.checksumSha256,
                     verificationStatus: "verified",
                     installedAt: new Date().toISOString(),

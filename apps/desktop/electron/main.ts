@@ -1,5 +1,6 @@
 import { app } from "electron";
 import type { BrowserWindow } from "electron";
+import { join } from "node:path";
 import { Effect } from "effect";
 import { createDictationOrchestrator, createMockTranscriptionProvider } from "@molten-voice/asr";
 import { createMockAudioCaptureService } from "@molten-voice/audio";
@@ -7,7 +8,7 @@ import { openAppDatabase } from "@molten-voice/db";
 import { createMockNativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppStateSnapshot } from "@molten-voice/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
-import { createMockModelInstallJob } from "./model-install-job";
+import { createFileModelInstallJob } from "./model-install-job";
 import { createMainWindow, createOverlayWindow } from "./window-manager";
 
 const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) => {
@@ -22,7 +23,8 @@ const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) =>
 };
 
 app.whenReady().then(() => {
-  const database = Effect.runSync(openAppDatabase(app.getPath("userData")));
+  const userDataDirectory = app.getPath("userData");
+  const database = Effect.runSync(openAppDatabase(userDataDirectory));
   const dictation = createDictationOrchestrator({
     audio: createMockAudioCaptureService(),
     transcription: createMockTranscriptionProvider(),
@@ -36,7 +38,10 @@ app.whenReady().then(() => {
   registerIpcHandlers({
     database,
     dictation,
-    modelInstallJob: createMockModelInstallJob(),
+    modelInstallJob: createFileModelInstallJob({
+      installRoot: join(userDataDirectory, "models"),
+      fetch,
+    }),
     nativeBridge: createMockNativeBridgeService(),
     onAppStateChanged: (snapshot) => syncOverlayWindow(overlayWindow, snapshot),
   });

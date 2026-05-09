@@ -1,0 +1,102 @@
+import { createHash } from "node:crypto";
+import { mkdtemp, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { ModelCatalogEntry } from "@molten-voice/model-catalog";
+import { createFileModelInstallJob } from "./model-install-job";
+
+const sha256 = (content: string): string => createHash("sha256").update(content).digest("hex");
+
+const createTestModel = (content: string): ModelCatalogEntry => ({
+  id: "test-model",
+  displayName: "Test Model",
+  runtime: "whisper-cpp",
+  platforms: ["windows"],
+  architectures: ["x64"],
+  languages: ["en", "ru"],
+  source: {
+    type: "direct-url",
+    url: "https://example.test/model.bin",
+  },
+  downloadUrl: "https://example.test/model.bin",
+  checksumSha256: sha256(content),
+  downloadSizeBytes: Buffer.byteLength(content),
+  diskSizeBytes: Buffer.byteLength(content),
+  estimatedMemoryBytes: 1024,
+  qualityLabel: "fast",
+  speedLabel: "fastest",
+  badges: [],
+  experimental: false,
+});
+
+describe("createFileModelInstallJob", () => {
+  it("downloads, verifies, and installs a single-file model", async () => {
+    const content = "tiny model payload";
+    const installRoot = await mkdtemp(join(tmpdir(), "molten-model-install-"));
+    const model = createTestModel(content);
+    const progressStatuses: string[] = [];
+    const job = createFileModelInstallJob({
+      installRoot,
+      catalog: [model],
+      fetch: async () =>
+        new Response(content, {
+          headers: {
+            "content-length": String(Buffer.byteLength(content)),
+          },
+        }),
+    });
+
+    const result = await Effect.runPromise(
+      job.start(model.id, () => {
+        const progress = job.getCurrentProgress();
+
+        if (progress) {
+          progressStatuses.push(progress.status);
+        }
+      }),
+    );
+    const installedPath = job.getInstalledModelPath(model.id);
+
+    expect(result.status).toBe("installed");
+    expect(progressStatuses).toEqual([
+      "queued",
+      "resolving",
+      "downloading",
+      "downloading",
+      "verifying",
+      "installing",
+      "installed",
+    ]);
+    expect(installedPath).toBe(`${installRoot}/test-model/test-model.bin`);
+    await expect(readFile(installedPath ?? "", "utf8")).resolves.toBe(content);
+  });
+
+  it("fails and removes the temp file when verification fails", async () => {
+    const installRoot = await mkdtemp(join(tmpdir(), "molten-model-install-"));
+    const model = {
+      ...createTestModel("expected"),
+      checksumSha256: sha256("different"),
+    };
+    const job = createFileModelInstallJob({
+      installRoot,
+      catalog: [model],
+      fetch: async () =>
+        new Response("expected", {
+          headers: {
+            "content-length": String(Buffer.byteLength("expected")),
+          },
+        }),
+    });
+
+    await expect(Effect.runPromise(job.start(model.id, () => undefined))).rejects.toThrow(
+      "checksum-mismatch",
+    );
+    expect(job.getCurrentProgress()).toMatchObject({
+      modelId: model.id,
+      status: "failed",
+    });
+    await expect(readFile(`${installRoot}/test-model/test-model.bin.download`)).rejects.toThrow();
+  });
+});
