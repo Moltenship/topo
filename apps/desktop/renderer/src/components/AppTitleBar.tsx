@@ -1,6 +1,7 @@
 import { Minus, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getRendererApi } from "@/api/renderer-api";
+import { BrandMark } from "./BrandMark";
 import { cn } from "@/lib/utils";
 
 const titleBarButtonClass =
@@ -16,10 +17,7 @@ export const AppTitleBar = () => {
         <span className="grid size-5 place-items-center rounded border bg-secondary text-[9px] font-extrabold text-primary">
           MV
         </span>
-        <span className="text-[12px] font-semibold">Molten Voice</span>
-        <span className="rounded-sm border px-1 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-          Alpha
-        </span>
+        <BrandMark className="text-[12px]" />
       </div>
       <div className="text-[11px] font-semibold text-muted-foreground">Local dictation</div>
       {isMac ? (
