@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make `Test dictation` use real microphone capture and `whisper.cpp` when the active model and runtime binary are ready.
+**Goal:** Make `Test dictation` use real microphone capture and AI SDK transcription backed by local `whisper.cpp` when the active model and runtime binary are ready.
 
-**Architecture:** Keep the existing renderer and dictation orchestrator shape, but replace mock-only runtime dependencies with focused services. Electron main owns local runtime discovery and database-backed readiness; `packages/asr` owns `whisper.cpp` command execution; `packages/audio` owns temp WAV capture behind the existing `AudioCaptureService` interface.
+**Architecture:** Keep the existing renderer and dictation orchestrator shape, but replace mock-only runtime dependencies with focused services. Electron main owns local runtime discovery and database-backed readiness; `packages/asr` exposes a local AI SDK transcription provider whose `whisper.cpp` model adapter executes the CLI; `packages/audio` owns temp WAV capture behind the existing `AudioCaptureService` interface.
 
-**Tech Stack:** Electron main, React renderer, Effect TS, Vitest, Node `child_process`, Node filesystem APIs, existing SQLite repositories, existing shadcn/Base UI settings surface.
+**Tech Stack:** Electron main, React renderer, Effect TS, AI SDK Core transcription, Vitest, Node `child_process`, Node filesystem APIs, existing SQLite repositories, existing shadcn/Base UI settings surface.
 
 ---
 
