@@ -1,6 +1,6 @@
 import type { AppSettings, InstalledModelRecord, ModelInstallProgress } from "@molten-voice/shared";
 import { getBundledModelCatalog } from "@molten-voice/model-catalog";
-import { Check, RotateCcw } from "lucide-react";
+import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,13 +53,6 @@ export const SettingsPage = ({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
-      <div className="flex min-h-9 items-center justify-between gap-4">
-        <h1 className="text-sm font-semibold">General</h1>
-        <Button size="sm" variant="outline" type="button">
-          <RotateCcw className="size-3.5" />
-          Restore defaults
-        </Button>
-      </div>
       {errorMessage ? (
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground">
           <div className="flex items-start justify-between gap-3">
