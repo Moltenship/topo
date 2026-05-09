@@ -67,8 +67,16 @@
       sans-serif;
   }
 
-  html:has([aria-label="Recording overlay preview"]) {
+  html:has([aria-label="Recording overlay preview"]),
+  body:has([aria-label="Recording overlay preview"]),
+  body:has([aria-label="Recording overlay preview"]) #root {
     background: transparent;
+  }
+
+  html:has([aria-label="Recording overlay preview"]),
+  body:has([aria-label="Recording overlay preview"]),
+  body:has([aria-label="Recording overlay preview"]) #root {
+    overflow: hidden;
   }
 
   button,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DEFAULT_APP_SETTINGS,
   type AppSettings,
@@ -37,6 +37,11 @@ interface SettingsPageProps {
 }
 
 const formatBytes = (bytes: number): string => `${Math.round(bytes / 1024 / 1024)} MB`;
+
+interface MicrophoneDeviceOption {
+  readonly label: string;
+  readonly value: string | null;
+}
 
 const readinessLabels = {
   "not-installed": "Not installed",
@@ -106,10 +111,21 @@ export const SettingsPage = ({
 }: SettingsPageProps) => {
   const modelCatalog = getBundledModelCatalog({ includeDev: import.meta.env.DEV });
   const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
+  const [microphoneDevices, setMicrophoneDevices] = useState<readonly MediaDeviceInfo[]>([]);
   const activeModelReadiness = modelReadiness.find(
     (readiness) => readiness.modelId === settings?.activeModelId,
   );
   const canStartTestDictation = activeModelReadiness?.status === "ready";
+  const microphoneOptions = useMemo<readonly MicrophoneDeviceOption[]>(() => {
+    const deviceOptions = microphoneDevices
+      .filter((device) => device.kind === "audioinput")
+      .map((device, index) => ({
+        label: device.label || `Microphone ${index + 1}`,
+        value: device.deviceId,
+      }));
+
+    return [{ label: "System default", value: null }, ...deviceOptions];
+  }, [microphoneDevices]);
 
   const updateSettings = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     if (settings) {
@@ -123,6 +139,29 @@ export const SettingsPage = ({
     settings && settings[key] !== DEFAULT_APP_SETTINGS[key] ? (
       <SettingResetButton label={label} onClick={() => resetSetting(key)} />
     ) : null;
+
+  useEffect(() => {
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      return;
+    }
+
+    let disposed = false;
+
+    const refreshMicrophones = async () => {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      if (!disposed) {
+        setMicrophoneDevices(devices.filter((device) => device.kind === "audioinput"));
+      }
+    };
+
+    void refreshMicrophones();
+    navigator.mediaDevices.addEventListener?.("devicechange", refreshMicrophones);
+
+    return () => {
+      disposed = true;
+      navigator.mediaDevices.removeEventListener?.("devicechange", refreshMicrophones);
+    };
+  }, []);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
@@ -323,6 +362,18 @@ export const SettingsPage = ({
         })}
       </SettingsSection>
       <SettingsSection id="dictation" title="Dictation">
+        <SettingsRow
+          title="Microphone"
+          description="Choose the input device that will be used for local dictation recording."
+          resetAction={getResetAction("microphoneDeviceId", "microphone")}
+        >
+          <SettingsSelect
+            disabled={!settings}
+            value={settings?.microphoneDeviceId ?? null}
+            options={microphoneOptions}
+            onChange={(value) => updateSettings("microphoneDeviceId", value)}
+          />
+        </SettingsRow>
         <SettingsRow
           title="Insertion mode"
           description="Paste is fastest; typing mode is useful for fields that block clipboard insertion."

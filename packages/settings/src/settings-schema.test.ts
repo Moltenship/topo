@@ -14,7 +14,12 @@ describe("appSettingsSchema", () => {
       autoDeleteHistoryDays: null,
       modelDirectory: null,
       activeModelId: null,
+      microphoneDeviceId: null,
     });
+  });
+
+  it("accepts a selected microphone device id", () => {
+    expect(parseAppSettings({ microphoneDeviceId: "default" }).microphoneDeviceId).toBe("default");
   });
 
   it("rejects unsupported silence timeout values", () => {

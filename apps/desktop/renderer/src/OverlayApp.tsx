@@ -17,7 +17,7 @@ export const OverlayApp = () => {
   }, [refreshSnapshot]);
 
   return (
-    <main className="min-h-screen bg-transparent">
+    <main className="h-screen w-screen overflow-hidden bg-transparent">
       <OverlayView state={snapshot?.overlayState ?? "hidden"} variant="window" />
     </main>
   );

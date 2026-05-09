@@ -47,11 +47,13 @@ export const createMainWindow = (): BrowserWindow => {
 
 export const createOverlayWindow = (): BrowserWindow => {
   const window = new BrowserWindow({
-    width: 520,
-    height: 96,
+    width: 496,
+    height: 80,
     show: false,
     frame: false,
     transparent: true,
+    backgroundColor: "#00000000",
+    hasShadow: false,
     alwaysOnTop: true,
     focusable: false,
     skipTaskbar: true,

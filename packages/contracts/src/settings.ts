@@ -20,6 +20,7 @@ export const AppSettings = Schema.Struct({
   }),
   modelDirectory: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
   activeModelId: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
+  microphoneDeviceId: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
 });
 export type AppSettings = typeof AppSettings.Type;
 
