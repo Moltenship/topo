@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface SegmentedOption<T extends string | number | boolean | null> {
@@ -28,21 +28,46 @@ export const SettingsSection = ({
 export const SettingsRow = ({
   children,
   description,
+  resetAction,
   title,
 }: {
   readonly children: ReactNode;
   readonly description: string;
+  readonly resetAction?: ReactNode;
   readonly title: ReactNode;
 }) => (
   <div className="grid min-h-[68px] grid-cols-[minmax(0,1fr)_auto] items-center gap-6 border-t px-4 py-3.5 first:border-t-0 sm:px-5 max-sm:grid-cols-1 max-sm:gap-3">
     <div className="min-w-0">
-      <h3 className="text-[13px] font-semibold tracking-normal text-foreground">{title}</h3>
+      <div className="flex min-h-5 items-center gap-1.5">
+        <h3 className="text-[13px] font-semibold tracking-normal text-foreground">{title}</h3>
+        <span className="inline-flex size-5 shrink-0 items-center justify-center">
+          {resetAction}
+        </span>
+      </div>
       <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted-foreground/80">
         {description}
       </p>
     </div>
     <div className="flex min-w-0 justify-end max-sm:justify-start">{children}</div>
   </div>
+);
+
+export const SettingResetButton = ({
+  label,
+  onClick,
+}: {
+  readonly label: string;
+  readonly onClick: () => void;
+}) => (
+  <button
+    aria-label={`Reset ${label} to default`}
+    className="flex size-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+    title="Reset to default"
+    type="button"
+    onClick={onClick}
+  >
+    <Undo2 className="size-3" />
+  </button>
 );
 
 export const SegmentedControl = <T extends string | number | boolean | null>({

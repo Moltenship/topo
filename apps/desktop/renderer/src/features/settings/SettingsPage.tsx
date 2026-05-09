@@ -1,10 +1,16 @@
 import { useState } from "react";
-import type { AppSettings, InstalledModelRecord, ModelInstallProgress } from "@molten-voice/shared";
+import {
+  DEFAULT_APP_SETTINGS,
+  type AppSettings,
+  type InstalledModelRecord,
+  type ModelInstallProgress,
+} from "@molten-voice/shared";
 import { getBundledModelCatalog } from "@molten-voice/model-catalog";
 import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  SettingResetButton,
   SettingsRow,
   SettingsSection,
   SettingsSelect,
@@ -52,6 +58,13 @@ export const SettingsPage = ({
       onSettingsChange({ ...settings, [key]: value });
     }
   };
+  const resetSetting = <K extends keyof AppSettings>(key: K) => {
+    updateSettings(key, DEFAULT_APP_SETTINGS[key]);
+  };
+  const getResetAction = <K extends keyof AppSettings>(key: K, label: string) =>
+    settings && settings[key] !== DEFAULT_APP_SETTINGS[key] ? (
+      <SettingResetButton label={label} onClick={() => resetSetting(key)} />
+    ) : null;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
@@ -69,6 +82,7 @@ export const SettingsPage = ({
         <SettingsRow
           title="Active model"
           description="Choose the local speech model used for new dictation sessions."
+          resetAction={getResetAction("activeModelId", "active model")}
         >
           <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
             {settings?.activeModelId ?? "Not selected"}
@@ -77,6 +91,7 @@ export const SettingsPage = ({
         <SettingsRow
           title="Language"
           description="Auto keeps language detection enabled; explicit languages can reduce ambiguity."
+          resetAction={getResetAction("language", "language")}
         >
           <SettingsSelect
             disabled={!settings}
@@ -92,6 +107,7 @@ export const SettingsPage = ({
         <SettingsRow
           title="Text cleanup"
           description="Lightweight processing fixes obvious dictation artifacts before insertion."
+          resetAction={getResetAction("postProcessingMode", "text cleanup")}
         >
           <SettingsSelect
             disabled={!settings}
@@ -249,6 +265,7 @@ export const SettingsPage = ({
         <SettingsRow
           title="Insertion mode"
           description="Paste is fastest; typing mode is useful for fields that block clipboard insertion."
+          resetAction={getResetAction("insertionMode", "insertion mode")}
         >
           <SettingsSelect
             disabled={!settings}
@@ -264,6 +281,7 @@ export const SettingsPage = ({
         <SettingsRow
           title="Recording mode"
           description="Push-to-talk keeps the recorder scoped to the current hold action."
+          resetAction={getResetAction("recordingMode", "recording mode")}
         >
           <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold">
             {settings?.recordingMode ?? "push-to-talk"}
@@ -296,6 +314,7 @@ export const SettingsPage = ({
         <SettingsRow
           title="Transcript history"
           description="History stores final text transcripts locally for review and deletion."
+          resetAction={getResetAction("historyEnabled", "transcript history")}
         >
           <SettingsSwitch
             disabled={!settings}
@@ -306,6 +325,7 @@ export const SettingsPage = ({
         <SettingsRow
           title="Auto-delete"
           description="Remove local transcripts after the selected retention period."
+          resetAction={getResetAction("autoDeleteHistoryDays", "history auto-delete")}
         >
           <SettingsSelect
             disabled={!settings}
@@ -332,6 +352,7 @@ export const SettingsPage = ({
         <SettingsRow
           title="Model directory"
           description="Leave empty to keep installed models in the app-managed local storage directory."
+          resetAction={getResetAction("modelDirectory", "model directory")}
         >
           <span className="max-w-[320px] truncate rounded-md border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
             {settings?.modelDirectory ?? "App managed"}
@@ -340,6 +361,7 @@ export const SettingsPage = ({
         <SettingsRow
           title="Hotkey"
           description="Global hold key used to open the overlay and start a dictation session."
+          resetAction={getResetAction("hotkey", "hotkey")}
         >
           <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold">
             {settings?.hotkey ?? "CapsLock"}
