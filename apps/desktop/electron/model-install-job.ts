@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rename, rm, stat } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, join, normalize } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Effect } from "effect";
 import {
@@ -24,6 +24,7 @@ export interface ModelInstallJob {
 
 export interface FileModelInstallJobOptions {
   readonly installRoot: string;
+  readonly resourcesRoot?: string;
   readonly fetch: typeof fetch;
   readonly catalog?: readonly ModelCatalogEntry[];
 }
@@ -68,6 +69,7 @@ const readContentLength = (response: Response): number | null => {
 
 export const createFileModelInstallJob = ({
   installRoot,
+  resourcesRoot,
   fetch,
   catalog = bundledModelCatalog,
 }: FileModelInstallJobOptions): ModelInstallJob => {
@@ -135,64 +137,101 @@ export const createFileModelInstallJob = ({
           onProgressChanged,
         );
 
-        const response = yield* Effect.tryPromise({
-          try: () => fetch(plan.downloadUrl, { signal: abortController.signal }),
-          catch: (error) => (error instanceof Error ? error : new Error(String(error))),
-        });
+        if (model.source.type === "local-file") {
+          if (!resourcesRoot) {
+            return yield* Effect.fail(new Error("Local model resources root is not configured"));
+          }
 
-        if (!response.ok || !response.body) {
-          return yield* Effect.fail(
-            new Error(`Failed to download model ${modelId}: HTTP ${response.status}`),
+          const sourcePath = normalize(join(resourcesRoot, model.source.relativePath));
+
+          setProgress(
+            createProgress(modelId, "downloading", 0, plan.expectedSizeBytes),
+            onProgressChanged,
           );
-        }
 
-        const responseSizeBytes = readContentLength(response) ?? plan.expectedSizeBytes;
-        const reader = response.body.getReader();
-        const writeStream = createWriteStream(tempFilePath);
-        let receivedBytes = 0;
+          yield* Effect.tryPromise({
+            try: async () => {
+              const readStream = createReadStream(sourcePath);
+              const writeStream = createWriteStream(tempFilePath);
+              let receivedBytes = 0;
 
-        setProgress(
-          createProgress(modelId, "downloading", 0, responseSizeBytes),
-          onProgressChanged,
-        );
-
-        yield* Effect.tryPromise({
-          try: async () => {
-            try {
-              while (true) {
-                if (abortController.signal.aborted) {
-                  throw new Error("Model install canceled");
-                }
-
-                const { done, value } = await reader.read();
-
-                if (done) {
-                  break;
-                }
-
-                receivedBytes += value.byteLength;
-                if (!writeStream.write(value)) {
-                  await new Promise<void>((resolve) => writeStream.once("drain", resolve));
-                }
-
+              readStream.on("data", (chunk) => {
+                receivedBytes += chunk.length;
                 setProgress(
-                  createProgress(modelId, "downloading", receivedBytes, responseSizeBytes),
+                  createProgress(modelId, "downloading", receivedBytes, plan.expectedSizeBytes),
                   onProgressChanged,
                 );
-              }
-            } finally {
-              writeStream.end();
-              await new Promise<void>((resolve, reject) => {
-                writeStream.once("finish", resolve);
-                writeStream.once("error", reject);
               });
-            }
-          },
-          catch: (error) => (error instanceof Error ? error : new Error(String(error))),
-        });
+
+              await pipeline(readStream, writeStream);
+            },
+            catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+          });
+        } else {
+          const response = yield* Effect.tryPromise({
+            try: () => fetch(plan.downloadUrl, { signal: abortController.signal }),
+            catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+          });
+
+          if (!response.ok || !response.body) {
+            return yield* Effect.fail(
+              new Error(`Failed to download model ${modelId}: HTTP ${response.status}`),
+            );
+          }
+
+          const responseSizeBytes = readContentLength(response) ?? plan.expectedSizeBytes;
+          const reader = response.body.getReader();
+          const writeStream = createWriteStream(tempFilePath);
+          let receivedBytes = 0;
+
+          setProgress(
+            createProgress(modelId, "downloading", 0, responseSizeBytes),
+            onProgressChanged,
+          );
+
+          yield* Effect.tryPromise({
+            try: async () => {
+              try {
+                while (true) {
+                  if (abortController.signal.aborted) {
+                    throw new Error("Model install canceled");
+                  }
+
+                  const { done, value } = await reader.read();
+
+                  if (done) {
+                    break;
+                  }
+
+                  receivedBytes += value.byteLength;
+                  if (!writeStream.write(value)) {
+                    await new Promise<void>((resolve) => writeStream.once("drain", resolve));
+                  }
+
+                  setProgress(
+                    createProgress(modelId, "downloading", receivedBytes, responseSizeBytes),
+                    onProgressChanged,
+                  );
+                }
+              } finally {
+                writeStream.end();
+                await new Promise<void>((resolve, reject) => {
+                  writeStream.once("finish", resolve);
+                  writeStream.once("error", reject);
+                });
+              }
+            },
+            catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+          });
+        }
 
         setProgress(
-          createProgress(modelId, "verifying", receivedBytes, plan.expectedSizeBytes),
+          createProgress(
+            modelId,
+            "verifying",
+            currentProgress?.receivedBytes ?? plan.expectedSizeBytes,
+            plan.expectedSizeBytes,
+          ),
           onProgressChanged,
         );
 
@@ -219,7 +258,12 @@ export const createFileModelInstallJob = ({
         }
 
         setProgress(
-          createProgress(modelId, "installing", receivedBytes, plan.expectedSizeBytes),
+          createProgress(
+            modelId,
+            "installing",
+            currentProgress?.receivedBytes ?? plan.expectedSizeBytes,
+            plan.expectedSizeBytes,
+          ),
           onProgressChanged,
         );
         yield* Effect.tryPromise({

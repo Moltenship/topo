@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { bundledModelCatalog, findCatalogModel, getCatalogModelDownloadUrl } from "./model-catalog";
+import {
+  bundledDevModelCatalog,
+  bundledModelCatalog,
+  findCatalogModel,
+  getBundledModelCatalog,
+  getCatalogModelDownloadUrl,
+} from "./model-catalog";
 
 describe("bundledModelCatalog", () => {
   it("contains English and Russian capable models", () => {
@@ -19,7 +25,19 @@ describe("bundledModelCatalog", () => {
 
   it("derives each model download URL from its bundled source metadata", () => {
     expect(
-      bundledModelCatalog.every((model) => getCatalogModelDownloadUrl(model) === model.downloadUrl),
+      getBundledModelCatalog({ includeDev: true }).every(
+        (model) => getCatalogModelDownloadUrl(model) === model.downloadUrl,
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps dev-only smoke models out of the production catalog", () => {
+    expect(bundledDevModelCatalog.every((model) => model.devOnly)).toBe(true);
+    expect(getBundledModelCatalog({ includeDev: false }).some((model) => model.devOnly)).toBe(
+      false,
+    );
+    expect(
+      getBundledModelCatalog({ includeDev: true }).some((model) => model.id === "dev-smoke-model"),
     ).toBe(true);
   });
 });

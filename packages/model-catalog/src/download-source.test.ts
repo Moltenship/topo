@@ -45,4 +45,13 @@ describe("resolveDownloadSourceUrl", () => {
       "https://huggingface.co/argmaxinc/whisperkit-coreml/tree/473f145758162af34aadf640d0e0970d89e8e453/openai_whisper-small",
     );
   });
+
+  it("builds a local file URL for dev-only install smoke models", () => {
+    expect(
+      resolveDownloadSourceUrl({
+        type: "local-file",
+        relativePath: "dev-models/dev-smoke-model.bin",
+      }),
+    ).toBe("local-file://dev-models/dev-smoke-model.bin");
+  });
 });

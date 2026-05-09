@@ -22,6 +22,7 @@ export interface ModelCatalogEntry {
   readonly speedLabel: ModelSpeedLabel;
   readonly badges: readonly string[];
   readonly experimental: boolean;
+  readonly devOnly?: boolean;
 }
 
 const gib = 1024 * 1024 * 1024;
@@ -94,6 +95,38 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     experimental: true,
   },
 ];
+
+export const bundledDevModelCatalog: readonly ModelCatalogEntry[] = [
+  {
+    id: "dev-smoke-model",
+    displayName: "Dev Smoke Model",
+    runtime: "whisper-cpp",
+    platforms: ["windows", "macos"],
+    architectures: ["x64", "arm64"],
+    languages: ["en", "ru"],
+    source: {
+      type: "local-file",
+      relativePath: "dev-models/dev-smoke-model.bin",
+    },
+    downloadUrl: "local-file://dev-models/dev-smoke-model.bin",
+    checksumSha256: "e990a6df2e0b07318792697887c41705a2d238e7441eb5a2fd2fb5fd31e6e6b0",
+    downloadSizeBytes: 512000,
+    diskSizeBytes: 512000,
+    estimatedMemoryBytes: 16 * 1024 * 1024,
+    qualityLabel: "fast",
+    speedLabel: "fastest",
+    badges: ["dev", "smoke"],
+    experimental: true,
+    devOnly: true,
+  },
+];
+
+export const getBundledModelCatalog = ({
+  includeDev,
+}: {
+  readonly includeDev: boolean;
+}): readonly ModelCatalogEntry[] =>
+  includeDev ? [...bundledModelCatalog, ...bundledDevModelCatalog] : bundledModelCatalog;
 
 export const getCatalogModelDownloadUrl = (model: ModelCatalogEntry): string =>
   resolveDownloadSourceUrl(model.source);

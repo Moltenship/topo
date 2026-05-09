@@ -5,6 +5,7 @@ import { Effect } from "effect";
 import { createDictationOrchestrator, createMockTranscriptionProvider } from "@molten-voice/asr";
 import { createMockAudioCaptureService } from "@molten-voice/audio";
 import { openAppDatabase } from "@molten-voice/db";
+import { getBundledModelCatalog } from "@molten-voice/model-catalog";
 import { createMockNativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppStateSnapshot } from "@molten-voice/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
@@ -40,6 +41,8 @@ app.whenReady().then(() => {
     dictation,
     modelInstallJob: createFileModelInstallJob({
       installRoot: join(userDataDirectory, "models"),
+      resourcesRoot: join(app.getAppPath(), "resources"),
+      catalog: getBundledModelCatalog({ includeDev: !app.isPackaged }),
       fetch,
     }),
     nativeBridge: createMockNativeBridgeService(),

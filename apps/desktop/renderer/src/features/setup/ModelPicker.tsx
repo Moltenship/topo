@@ -1,5 +1,5 @@
 import type { InstalledModelRecord, ModelInstallProgress } from "@molten-voice/shared";
-import { bundledModelCatalog } from "@molten-voice/model-catalog";
+import { getBundledModelCatalog } from "@molten-voice/model-catalog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,9 +24,11 @@ export const ModelPicker = ({
   onInstallModel,
   onSelectModel,
 }: ModelPickerProps) => {
+  const modelCatalog = getBundledModelCatalog({ includeDev: import.meta.env.DEV });
+
   return (
     <div className="grid grid-cols-3 gap-2.5 max-md:grid-cols-1">
-      {bundledModelCatalog.map((model) => {
+      {modelCatalog.map((model) => {
         const progress = installProgress?.modelId === model.id ? installProgress : null;
         const installedModel = installedModels.find((installed) => installed.modelId === model.id);
         const isInstalling =
@@ -63,6 +65,7 @@ export const ModelPicker = ({
                       {installedModel.verificationStatus === "verified" ? "Installed" : "Repair"}
                     </Badge>
                   ) : null}
+                  {model.devOnly ? <Badge variant="secondary">Dev</Badge> : null}
                   {activeModelId === model.id ? <Badge>Active</Badge> : null}
                 </div>
               </div>
