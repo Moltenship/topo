@@ -1,19 +1,17 @@
 import type { AppSettings, InstalledModelRecord, ModelInstallProgress } from "@molten-voice/shared";
 import { getBundledModelCatalog } from "@molten-voice/model-catalog";
-import { Check, RotateCcw } from "lucide-react";
+import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl, SettingsRow, SettingsSection } from "@/components/settings-layout";
 
-interface SettingsPageProps {
+interface DictationPageProps {
   readonly errorMessage: string | null;
   readonly installedModels: readonly InstalledModelRecord[];
   readonly isRecording: boolean;
   readonly modelInstallProgress: ModelInstallProgress | null;
   readonly settings: AppSettings | null;
-  readonly transcriptCount: number;
   readonly onCancelModelInstall: (modelId: string) => void;
-  readonly onClearTranscripts: () => void;
   readonly onDismissError: () => void;
   readonly onInstallModel: (modelId: string) => void;
   readonly onSettingsChange: (settings: AppSettings) => void;
@@ -23,21 +21,19 @@ interface SettingsPageProps {
 
 const formatBytes = (bytes: number): string => `${Math.round(bytes / 1024 / 1024)} MB`;
 
-export const SettingsPage = ({
+export const DictationPage = ({
   errorMessage,
   installedModels,
   isRecording,
   modelInstallProgress,
   settings,
-  transcriptCount,
   onCancelModelInstall,
-  onClearTranscripts,
   onDismissError,
   onInstallModel,
   onSettingsChange,
   onStartTestDictation,
   onStopTestDictation,
-}: SettingsPageProps) => {
+}: DictationPageProps) => {
   const modelCatalog = getBundledModelCatalog({ includeDev: import.meta.env.DEV });
 
   const updateSettings = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
@@ -49,11 +45,29 @@ export const SettingsPage = ({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <div className="flex min-h-9 items-center justify-between gap-4">
-        <h1 className="text-sm font-semibold">Settings</h1>
-        <Button size="sm" variant="outline" type="button">
-          <RotateCcw className="size-3.5" />
-          Restore defaults
-        </Button>
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            Dictation
+          </p>
+          <h1 className="mt-1 text-sm font-semibold">Local voice workflow</h1>
+        </div>
+        <div className="flex flex-wrap justify-end gap-1.5">
+          <Badge variant={isRecording ? "default" : "secondary"}>
+            {isRecording ? "Recording" : "Idle"}
+          </Badge>
+          <Button
+            disabled={isRecording}
+            size="sm"
+            variant="outline"
+            type="button"
+            onClick={onStartTestDictation}
+          >
+            Start test
+          </Button>
+          <Button disabled={!isRecording} size="sm" type="button" onClick={onStopTestDictation}>
+            Stop
+          </Button>
+        </div>
       </div>
       {errorMessage ? (
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground">
@@ -65,43 +79,41 @@ export const SettingsPage = ({
           </div>
         </div>
       ) : null}
-      <SettingsSection id="general" title="General">
+      <SettingsSection id="recorder" title="Recorder">
         <SettingsRow
-          title="Active model"
-          description="Choose the local speech model used for new dictation sessions."
+          title="Hold-to-talk"
+          description="Run a local microphone check without leaving the app surface."
         >
-          <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-            {settings?.activeModelId ?? "Not selected"}
-          </span>
+          <div className="flex flex-wrap justify-end gap-1.5 max-sm:justify-start">
+            <Badge variant="secondary">{settings?.hotkey ?? "CapsLock"}</Badge>
+            <Badge variant="secondary">{settings?.insertionMode ?? "paste"}</Badge>
+            <Button
+              disabled={isRecording}
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={onStartTestDictation}
+            >
+              Start test
+            </Button>
+            <Button disabled={!isRecording} size="sm" type="button" onClick={onStopTestDictation}>
+              Stop
+            </Button>
+          </div>
         </SettingsRow>
         <SettingsRow
-          title="Language"
-          description="Auto keeps language detection enabled; explicit languages can reduce ambiguity."
+          title="Input preview"
+          description="The test recorder keeps audio temporary and stores final text transcripts only."
         >
-          <SegmentedControl
-            disabled={!settings}
-            value={settings?.language ?? "auto"}
-            options={[
-              { label: "Auto", value: "auto" },
-              { label: "English", value: "en" },
-              { label: "Russian", value: "ru" },
-            ]}
-            onChange={(value) => updateSettings("language", value)}
-          />
-        </SettingsRow>
-        <SettingsRow
-          title="Text cleanup"
-          description="Lightweight processing fixes obvious dictation artifacts before insertion."
-        >
-          <SegmentedControl
-            disabled={!settings}
-            value={settings?.postProcessingMode ?? "lightweight"}
-            options={[
-              { label: "Clean", value: "lightweight" },
-              { label: "Raw", value: "raw" },
-            ]}
-            onChange={(value) => updateSettings("postProcessingMode", value)}
-          />
+          <div className="flex h-12 w-[220px] items-center justify-center gap-1 rounded-lg border bg-background">
+            {Array.from({ length: 26 }, (_, index) => (
+              <span
+                className="w-1 rounded-full bg-primary/80"
+                key={index}
+                style={{ height: `${10 + ((index * 13) % 28)}px` }}
+              />
+            ))}
+          </div>
         </SettingsRow>
       </SettingsSection>
       <SettingsSection id="models" title="Models">
@@ -195,10 +207,22 @@ export const SettingsPage = ({
           );
         })}
       </SettingsSection>
-      <SettingsSection id="dictation" title="Dictation">
+      <SettingsSection id="preferences" title="Preferences">
+        <SettingsRow title="Language" description="Auto keeps language detection enabled.">
+          <SegmentedControl
+            disabled={!settings}
+            value={settings?.language ?? "auto"}
+            options={[
+              { label: "Auto", value: "auto" },
+              { label: "English", value: "en" },
+              { label: "Russian", value: "ru" },
+            ]}
+            onChange={(value) => updateSettings("language", value)}
+          />
+        </SettingsRow>
         <SettingsRow
           title="Insertion mode"
-          description="Paste is fastest; typing mode is useful for fields that block clipboard insertion."
+          description="Paste is fastest; typing is useful for fields that block clipboard insertion."
         >
           <SegmentedControl
             disabled={!settings}
@@ -210,78 +234,6 @@ export const SettingsPage = ({
             ]}
             onChange={(value) => updateSettings("insertionMode", value)}
           />
-        </SettingsRow>
-        <SettingsRow
-          title="Recording mode"
-          description="Push-to-talk keeps the recorder scoped to the current hold action."
-        >
-          <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold">
-            {settings?.recordingMode ?? "push-to-talk"}
-          </span>
-        </SettingsRow>
-        <SettingsRow
-          title="Test dictation"
-          description="Start a local recording session from settings to verify microphone and insertion flow."
-        >
-          <div className="flex flex-wrap justify-end gap-1.5 max-sm:justify-start">
-            <Badge variant={isRecording ? "default" : "secondary"}>
-              {isRecording ? "Recording" : "Idle"}
-            </Badge>
-            <Button
-              disabled={isRecording}
-              size="sm"
-              variant="outline"
-              type="button"
-              onClick={onStartTestDictation}
-            >
-              Start test
-            </Button>
-            <Button disabled={!isRecording} size="sm" type="button" onClick={onStopTestDictation}>
-              Stop
-            </Button>
-          </div>
-        </SettingsRow>
-      </SettingsSection>
-      <SettingsSection id="history" title="History">
-        <SettingsRow
-          title="Transcript history"
-          description="History stores final text transcripts locally for review and deletion."
-        >
-          <SegmentedControl
-            disabled={!settings}
-            value={settings?.historyEnabled ?? true}
-            options={[
-              { label: "On", value: true },
-              { label: "Off", value: false },
-            ]}
-            onChange={(value) => updateSettings("historyEnabled", value)}
-          />
-        </SettingsRow>
-        <SettingsRow
-          title="Stored transcripts"
-          description={`${transcriptCount} local transcript${transcriptCount === 1 ? "" : "s"} currently visible in history.`}
-        >
-          <Button size="sm" variant="outline" type="button" onClick={onClearTranscripts}>
-            Clear
-          </Button>
-        </SettingsRow>
-      </SettingsSection>
-      <SettingsSection id="advanced" title="Advanced">
-        <SettingsRow
-          title="Model directory"
-          description="Leave empty to keep installed models in the app-managed local storage directory."
-        >
-          <span className="max-w-[320px] truncate rounded-md border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-            {settings?.modelDirectory ?? "App managed"}
-          </span>
-        </SettingsRow>
-        <SettingsRow
-          title="Hotkey"
-          description="Global hold key used to open the overlay and start a dictation session."
-        >
-          <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold">
-            {settings?.hotkey ?? "CapsLock"}
-          </span>
         </SettingsRow>
       </SettingsSection>
     </div>

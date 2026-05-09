@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppSettings, AppStateSnapshot } from "@molten-voice/shared";
+import { AppShell } from "./components/AppShell";
 import { AppTitleBar } from "./components/AppTitleBar";
 import { getRendererApi } from "./api/renderer-api";
+import { DictationPage } from "./features/dictation/DictationPage";
 import { HistoryView } from "./features/history/HistoryView";
 import { SettingsPage } from "./features/settings/SettingsPage";
-import { SetupFlow } from "./features/setup/SetupFlow";
-import { cn } from "./lib/utils";
 
 interface AppProps {
   readonly view?: "workbench" | "setup" | "history" | "settings";
@@ -135,7 +135,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
   if (view === "history") {
     return (
       <AppChrome>
-        <main className="h-full overflow-hidden bg-background text-foreground">{historyView}</main>
+        <AppShell>{historyView}</AppShell>
       </AppChrome>
     );
   }
@@ -143,36 +143,31 @@ export const App = ({ view = "workbench" }: AppProps) => {
   if (view === "settings") {
     return (
       <AppChrome>
-        <SettingsPage
-          errorMessage={effectiveErrorMessage}
-          installedModels={snapshot?.installedModels ?? []}
-          isRecording={snapshot?.overlayState === "recording"}
-          modelInstallProgress={snapshot?.modelInstallProgress ?? null}
-          settings={snapshot?.settings ?? null}
-          transcriptCount={snapshot?.transcripts.length ?? 0}
-          onCancelModelInstall={cancelModelInstall}
-          onClearTranscripts={clearTranscripts}
-          onDismissError={() => setErrorMessage(null)}
-          onInstallModel={installModel}
-          onSettingsChange={updateSettings}
-          onStartTestDictation={startTestDictation}
-          onStopTestDictation={stopTestDictation}
-        />
+        <AppShell>
+          <SettingsPage
+            errorMessage={effectiveErrorMessage}
+            installedModels={snapshot?.installedModels ?? []}
+            isRecording={snapshot?.overlayState === "recording"}
+            modelInstallProgress={snapshot?.modelInstallProgress ?? null}
+            settings={snapshot?.settings ?? null}
+            transcriptCount={snapshot?.transcripts.length ?? 0}
+            onCancelModelInstall={cancelModelInstall}
+            onClearTranscripts={clearTranscripts}
+            onDismissError={() => setErrorMessage(null)}
+            onInstallModel={installModel}
+            onSettingsChange={updateSettings}
+            onStartTestDictation={startTestDictation}
+            onStopTestDictation={stopTestDictation}
+          />
+        </AppShell>
       </AppChrome>
     );
   }
 
   return (
     <AppChrome>
-      <main
-        className={cn(
-          "grid h-full overflow-hidden bg-background text-foreground max-md:grid-cols-1 max-md:overflow-auto",
-          view === "workbench"
-            ? "grid-cols-[286px_minmax(0,1fr)_336px] max-[1040px]:grid-cols-[240px_minmax(0,1fr)]"
-            : "grid-cols-[286px_minmax(0,1fr)] max-[1040px]:grid-cols-[240px_minmax(0,1fr)]",
-        )}
-      >
-        <SetupFlow
+      <AppShell>
+        <DictationPage
           errorMessage={effectiveErrorMessage}
           installedModels={snapshot?.installedModels ?? []}
           isRecording={snapshot?.overlayState === "recording"}
@@ -184,10 +179,8 @@ export const App = ({ view = "workbench" }: AppProps) => {
           onStopTestDictation={stopTestDictation}
           onInstallModel={installModel}
           onSettingsChange={updateSettings}
-        >
-          {view === "workbench" ? historyView : null}
-        </SetupFlow>
-      </main>
+        />
+      </AppShell>
     </AppChrome>
   );
 };
