@@ -51,6 +51,8 @@ describe("createWhisperCppRuntimeResolver", () => {
       source: "env",
       probeOutput: "usage: whisper-cli",
     });
+    expect(result.checkedAt).toEqual(expect.any(String));
+    expect(new Date(result.checkedAt).toISOString()).toBe(result.checkedAt);
     expect(probedPaths).toEqual([envBinary]);
     expect(result.status === "available" ? result.binaryPath : null).not.toBe(bundledBinary);
   });

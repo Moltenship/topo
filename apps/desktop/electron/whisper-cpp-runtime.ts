@@ -19,14 +19,14 @@ export interface WhisperCppRuntimeAvailable {
   readonly binaryPath: string;
   readonly source: WhisperCppRuntimeSource;
   readonly probeOutput: string;
-  readonly checkedAt: Date;
+  readonly checkedAt: string;
 }
 
 export interface WhisperCppRuntimeMissing {
   readonly status: "missing";
   readonly checkedCandidates: readonly string[];
   readonly message: string;
-  readonly checkedAt: Date;
+  readonly checkedAt: string;
 }
 
 export interface WhisperCppRuntimeFailed {
@@ -35,16 +35,18 @@ export interface WhisperCppRuntimeFailed {
   readonly source: WhisperCppRuntimeSource;
   readonly checkedCandidates: readonly string[];
   readonly message: string;
-  readonly checkedAt: Date;
+  readonly checkedAt: string;
 }
 
-export type WhisperCppRuntimeResolution =
+export type WhisperCppRuntimeResult =
   | WhisperCppRuntimeAvailable
   | WhisperCppRuntimeMissing
   | WhisperCppRuntimeFailed;
 
+export type WhisperCppRuntimeResolution = WhisperCppRuntimeResult;
+
 export interface WhisperCppRuntimeResolver {
-  readonly resolve: () => Effect.Effect<WhisperCppRuntimeResolution, never>;
+  readonly resolve: () => Effect.Effect<WhisperCppRuntimeResult, never>;
 }
 
 export interface WhisperCppRuntimeResolverOptions {
@@ -67,6 +69,8 @@ const binaryNames = [
   "main.exe",
   "main",
 ] as const;
+
+const now = (): Date => new Date();
 
 const compactOutput = ({ stdout, stderr, exitCode }: RuntimeProbeResult): string => {
   const output = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
@@ -211,7 +215,7 @@ export const createWhisperCppRuntimeResolver = ({
           return cachedAvailable;
         }
 
-        const checkedAt = new Date();
+        const checkedAt = now().toISOString();
         const candidates = createCandidates(resourcesRoot, env);
         const checkedCandidates: string[] = [];
 
