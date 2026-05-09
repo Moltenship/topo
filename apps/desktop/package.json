@@ -11,6 +11,7 @@
     "fmt": "oxfmt --check electron renderer/src electron.vite.config.ts package.json tsconfig.json",
     "lint": "oxlint .",
     "test": "vitest run --passWithNoTests",
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3",
     "build": "electron-vite build"
   },
   "dependencies": {
@@ -25,6 +26,7 @@
     "@tailwindcss/vite": "^4.2.4",
     "@tanstack/react-router": "^1.139.3",
     "@vitejs/plugin-react": "^5.1.2",
+    "better-sqlite3": "12.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "effect": "^3.19.11",
@@ -38,6 +40,7 @@
     "vite": "^8.0.11"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.4",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3"
   }
