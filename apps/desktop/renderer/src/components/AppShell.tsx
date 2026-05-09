@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Archive, Mic2, Settings2 } from "lucide-react";
-import { BrandMark } from "./BrandMark";
 import { cn } from "@/lib/utils";
 
 interface AppShellProps {
@@ -17,9 +16,6 @@ const navItems = [
 export const AppShell = ({ children }: AppShellProps) => (
   <main className="grid h-full grid-cols-[208px_minmax(0,1fr)] overflow-hidden bg-background text-foreground max-md:h-auto max-md:min-h-full max-md:grid-cols-1 max-md:overflow-auto">
     <aside className="flex h-full flex-col overflow-hidden border-r bg-card/70 px-3 py-4 max-md:h-auto max-md:min-h-auto">
-      <div className="mb-6 px-1">
-        <BrandMark />
-      </div>
       <nav className="grid gap-1" aria-label="Application sections">
         {navItems.map((item) => {
           const Icon = item.icon;
