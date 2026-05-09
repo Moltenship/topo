@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Check, ChevronDown, Undo2 } from "lucide-react";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChevronDown, Undo2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export interface SegmentedOption<T extends string | number | boolean | null> {
@@ -76,7 +77,7 @@ export const SettingResetButton = ({
         </button>
       }
     />
-    <TooltipPopup side="top">Reset to default</TooltipPopup>
+    <TooltipContent side="top">Reset to default</TooltipContent>
   </Tooltip>
 );
 
@@ -190,25 +191,4 @@ export const SettingsSwitch = ({
   readonly checked: boolean;
   readonly disabled?: boolean;
   readonly onChange: (checked: boolean) => void;
-}) => (
-  <button
-    aria-checked={checked}
-    className={cn(
-      "relative h-6 w-11 rounded-full border border-transparent bg-secondary transition-colors disabled:pointer-events-none disabled:opacity-50",
-      checked ? "bg-primary" : "bg-secondary",
-    )}
-    disabled={disabled}
-    role="switch"
-    type="button"
-    onClick={() => onChange(!checked)}
-  >
-    <span
-      className={cn(
-        "absolute top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full bg-foreground text-background shadow-sm transition-transform",
-        checked ? "translate-x-[20px]" : "translate-x-0.5 bg-muted-foreground/40",
-      )}
-    >
-      {checked ? <Check className="size-3" /> : null}
-    </span>
-  </button>
-);
+}) => <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />;
