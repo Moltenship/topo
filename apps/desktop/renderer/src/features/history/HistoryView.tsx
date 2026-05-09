@@ -27,7 +27,7 @@ export const HistoryView = ({
       className={cn(
         "min-w-0 bg-card/70 p-3.5",
         variant === "panel" && "border-l max-[1040px]:hidden",
-        variant === "page" && "min-h-screen",
+        variant === "page" && "h-screen overflow-y-auto",
       )}
     >
       <div className="flex items-start justify-between gap-3">

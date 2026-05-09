@@ -126,22 +126,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
 
   if (view === "history") {
     return (
-      <main className="grid min-h-screen grid-cols-[286px_minmax(0,1fr)] overflow-hidden bg-background text-foreground max-md:grid-cols-1 max-md:overflow-auto">
-        <SetupFlow
-          errorMessage={effectiveErrorMessage}
-          installedModels={snapshot?.installedModels ?? []}
-          isRecording={snapshot?.overlayState === "recording"}
-          modelInstallProgress={snapshot?.modelInstallProgress ?? null}
-          settings={snapshot?.settings ?? null}
-          onDismissError={() => setErrorMessage(null)}
-          onCancelModelInstall={cancelModelInstall}
-          onStartTestDictation={startTestDictation}
-          onStopTestDictation={stopTestDictation}
-          onInstallModel={installModel}
-          onSettingsChange={updateSettings}
-        />
-        {historyView}
-      </main>
+      <main className="h-screen overflow-hidden bg-background text-foreground">{historyView}</main>
     );
   }
 
