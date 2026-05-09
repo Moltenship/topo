@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 
 const loadRenderer = (window: BrowserWindow, hash?: string) => {
-  const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+  const devServerUrl = process.env.ELECTRON_RENDERER_URL ?? process.env.VITE_DEV_SERVER_URL;
 
   if (devServerUrl) {
     const url = new URL(devServerUrl);
@@ -19,7 +19,7 @@ const loadRenderer = (window: BrowserWindow, hash?: string) => {
   }
 
   void window.loadFile(
-    join(currentDirectory, "../dist/renderer/index.html"),
+    join(currentDirectory, "../renderer/index.html"),
     hash ? { hash } : undefined,
   );
 };
@@ -30,7 +30,7 @@ export const createMainWindow = (): BrowserWindow => {
     height: 760,
     title: "Molten Voice",
     webPreferences: {
-      preload: join(currentDirectory, "preload.js"),
+      preload: join(currentDirectory, "../preload/preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -53,7 +53,7 @@ export const createOverlayWindow = (): BrowserWindow => {
     skipTaskbar: true,
     resizable: false,
     webPreferences: {
-      preload: join(currentDirectory, "preload.js"),
+      preload: join(currentDirectory, "../preload/preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },

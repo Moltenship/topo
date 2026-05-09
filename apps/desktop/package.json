@@ -3,16 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "dist-electron/main.js",
+  "main": "dist/main/main.js",
   "scripts": {
-    "dev": "vite --config vite.renderer.config.ts",
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
     "typecheck": "tsgo --project tsconfig.json --noEmit",
-    "fmt": "oxfmt --check electron renderer/src vite.electron.config.ts vite.renderer.config.ts package.json tsconfig.json",
+    "fmt": "oxfmt --check electron renderer/src electron.vite.config.ts package.json tsconfig.json",
     "lint": "oxlint .",
     "test": "vitest run --passWithNoTests",
-    "build": "pnpm run build:renderer && pnpm run build:electron",
-    "build:renderer": "vite --config vite.renderer.config.ts build",
-    "build:electron": "vite --config vite.electron.config.ts build"
+    "build": "electron-vite build"
   },
   "dependencies": {
     "@molten-voice/asr": "workspace:*",
@@ -30,12 +29,13 @@
     "clsx": "^2.1.1",
     "effect": "^3.19.11",
     "electron": "^39.2.7",
+    "electron-vite": "^5.0.0",
     "lucide-react": "^1.14.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.4",
-    "vite": "^7.3.0"
+    "vite": "^8.0.11"
   },
   "devDependencies": {
     "@types/react": "^19.2.7",
