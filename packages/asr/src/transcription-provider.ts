@@ -4,6 +4,8 @@ export interface TranscriptionInput {
   readonly audioPath: string;
   readonly language: "en" | "ru" | "auto";
   readonly modelId: string;
+  readonly installedModelPath?: string | null;
+  readonly runtimeBinaryPath?: string | null;
 }
 
 export interface TranscriptionResult {

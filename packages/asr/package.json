@@ -16,6 +16,7 @@
   "dependencies": {
     "@molten-voice/audio": "workspace:*",
     "@molten-voice/shared": "workspace:*",
+    "ai": "^6.0.177",
     "effect": "^3.21.2"
   }
 }
