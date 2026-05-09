@@ -2,7 +2,10 @@ import { app } from "electron";
 import type { BrowserWindow } from "electron";
 import { join } from "node:path";
 import { Effect } from "effect";
-import { createDictationOrchestrator, createMockTranscriptionProvider } from "@molten-voice/asr";
+import {
+  createDictationOrchestrator,
+  createWhisperCppTranscriptionProvider,
+} from "@molten-voice/asr";
 import { createMockAudioCaptureService } from "@molten-voice/audio";
 import { openAppDatabase } from "@molten-voice/db";
 import { getBundledModelCatalog } from "@molten-voice/model-catalog";
@@ -30,7 +33,7 @@ app.whenReady().then(() => {
   const database = Effect.runSync(openAppDatabase(userDataDirectory));
   const dictation = createDictationOrchestrator({
     audio: createMockAudioCaptureService(),
-    transcription: createMockTranscriptionProvider(),
+    transcription: createWhisperCppTranscriptionProvider(),
     now: () => new Date(),
     createId: () => crypto.randomUUID(),
   });
