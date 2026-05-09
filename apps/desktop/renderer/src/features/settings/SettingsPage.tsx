@@ -1,6 +1,7 @@
+import { useState } from "react";
 import type { AppSettings, InstalledModelRecord, ModelInstallProgress } from "@molten-voice/shared";
 import { getBundledModelCatalog } from "@molten-voice/model-catalog";
-import { Check } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +45,7 @@ export const SettingsPage = ({
   onStopTestDictation,
 }: SettingsPageProps) => {
   const modelCatalog = getBundledModelCatalog({ includeDev: import.meta.env.DEV });
+  const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
 
   const updateSettings = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     if (settings) {
@@ -112,88 +114,134 @@ export const SettingsPage = ({
             progress !== null && progress.status !== "installed" && progress.status !== "failed";
           const percent = Math.round((progress?.percent ?? 0) * 100);
           const isActive = settings?.activeModelId === model.id;
+          const isInstalled = installedModel?.verificationStatus === "verified";
+          const needsRepair =
+            installedModel !== undefined && installedModel.verificationStatus !== "verified";
           const canInstall = !model.devOnly;
+          const isExpanded = expandedModelId === model.id;
+          const statusLabel = isInstalling
+            ? `${progress.status} ${percent}%`
+            : isInstalled
+              ? "Installed"
+              : needsRepair
+                ? "Needs repair"
+                : model.devOnly
+                  ? "Dev smoke model"
+                  : "Not installed";
 
           return (
-            <SettingsRow
-              key={model.id}
-              title={
-                <span className="inline-flex flex-wrap items-center gap-2">
-                  <span>{model.displayName}</span>
-                  {model.devOnly ? <Badge variant="secondary">Dev</Badge> : null}
-                  {installedModel ? (
-                    <Badge
-                      variant={
-                        installedModel.verificationStatus === "verified" ? "default" : "secondary"
-                      }
-                    >
-                      {installedModel.verificationStatus === "verified" ? "Installed" : "Repair"}
-                    </Badge>
-                  ) : null}
-                </span>
-              }
-              description={`${model.runtime} · ${formatBytes(model.estimatedMemoryBytes)} memory target`}
-            >
-              <div className="flex w-[300px] max-w-full flex-col items-end gap-2 max-sm:items-start">
-                {progress ? (
-                  <div className="w-full">
-                    <div className="mb-1 flex items-center justify-between gap-3 text-[11px]">
-                      <span className="font-semibold capitalize">{progress.status}</span>
-                      <span className="text-muted-foreground">
-                        {formatBytes(progress.receivedBytes)} / {formatBytes(progress.totalBytes)}
-                      </span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
-                      <div
-                        className="h-full rounded-full bg-primary"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  </div>
-                ) : null}
-                <div className="flex flex-wrap justify-end gap-1.5 max-sm:justify-start">
-                  <Button
-                    disabled={!settings}
-                    size="sm"
-                    variant={isActive ? "secondary" : "outline"}
+            <div className="border-t border-border/60 first:border-t-0" key={model.id}>
+              <div className="px-4 py-3.5 sm:px-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    className="min-w-0 flex-1 text-left"
                     type="button"
-                    onClick={() => updateSettings("activeModelId", model.id)}
+                    onClick={() => setExpandedModelId(isExpanded ? null : model.id)}
                   >
-                    {isActive ? <Check className="size-3.5" /> : null}
-                    {isActive ? "Selected" : "Select"}
-                  </Button>
-                  {canInstall ? (
-                    <Button
-                      disabled={isInstalling}
-                      size="sm"
-                      variant="outline"
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className={
+                          isInstalled
+                            ? "size-2 shrink-0 rounded-full bg-emerald-500"
+                            : needsRepair
+                              ? "size-2 shrink-0 rounded-full bg-amber-500"
+                              : isInstalling
+                                ? "size-2 shrink-0 rounded-full bg-primary"
+                                : "size-2 shrink-0 rounded-full bg-muted-foreground/35"
+                        }
+                        aria-hidden="true"
+                      />
+                      <span className="truncate text-[13px] font-semibold text-foreground">
+                        {model.displayName}
+                      </span>
+                      {model.devOnly ? (
+                        <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground bg-muted">
+                          Dev
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {statusLabel} - {model.runtime} - {formatBytes(model.estimatedMemoryBytes)}{" "}
+                      memory target
+                    </p>
+                  </button>
+                  <div className="flex shrink-0 items-center justify-end gap-2 max-sm:justify-start">
+                    <button
+                      aria-expanded={isExpanded}
+                      aria-label={`${isExpanded ? "Collapse" : "Expand"} ${model.displayName}`}
+                      className="app-region-no-drag flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       type="button"
-                      onClick={() => onInstallModel(model.id)}
+                      onClick={() => setExpandedModelId(isExpanded ? null : model.id)}
                     >
-                      {isInstalling
-                        ? `${percent}%`
-                        : installedModel
-                          ? installedModel.verificationStatus === "verified"
-                            ? "Reinstall"
-                            : "Repair"
-                          : progress?.status === "installed"
-                            ? "Reinstall"
-                            : "Install"}
-                    </Button>
-                  ) : null}
-                  {isInstalling ? (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      type="button"
-                      onClick={() => onCancelModelInstall(model.id)}
-                    >
-                      Cancel
-                    </Button>
-                  ) : null}
+                      <ChevronDown
+                        className={`size-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    <SettingsSwitch
+                      checked={isActive}
+                      disabled={!settings || !isInstalled}
+                      onChange={(checked) =>
+                        updateSettings("activeModelId", checked ? model.id : null)
+                      }
+                    />
+                  </div>
                 </div>
               </div>
-            </SettingsRow>
+              {isExpanded ? (
+                <div className="border-t border-border/60 px-4 py-3.5 sm:px-5">
+                  {progress ? (
+                    <div className="mb-3">
+                      <div className="mb-1 flex items-center justify-between gap-3 text-[11px]">
+                        <span className="font-semibold capitalize">{progress.status}</span>
+                        <span className="text-muted-foreground">
+                          {formatBytes(progress.receivedBytes)} / {formatBytes(progress.totalBytes)}
+                        </span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canInstall ? (
+                      <Button
+                        disabled={isInstalling}
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        onClick={() => onInstallModel(model.id)}
+                      >
+                        {isInstalling
+                          ? `${percent}%`
+                          : installedModel
+                            ? installedModel.verificationStatus === "verified"
+                              ? "Reinstall"
+                              : "Repair"
+                            : progress?.status === "installed"
+                              ? "Reinstall"
+                              : "Install"}
+                      </Button>
+                    ) : null}
+                    {isInstalling ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        type="button"
+                        onClick={() => onCancelModelInstall(model.id)}
+                      >
+                        Cancel
+                      </Button>
+                    ) : null}
+                    <p className="text-xs text-muted-foreground">
+                      Installed models can be activated from the switch in the row header.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           );
         })}
       </SettingsSection>
