@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { AppSettings, AppStateSnapshot } from "@molten-voice/shared";
 import { getRendererApi } from "./api/renderer-api";
 import { HistoryView } from "./features/history/HistoryView";
+import { SettingsPage } from "./features/settings/SettingsPage";
 import { SetupFlow } from "./features/setup/SetupFlow";
 import { cn } from "./lib/utils";
 
@@ -141,6 +142,26 @@ export const App = ({ view = "workbench" }: AppProps) => {
         />
         {historyView}
       </main>
+    );
+  }
+
+  if (view === "settings") {
+    return (
+      <SettingsPage
+        errorMessage={effectiveErrorMessage}
+        installedModels={snapshot?.installedModels ?? []}
+        isRecording={snapshot?.overlayState === "recording"}
+        modelInstallProgress={snapshot?.modelInstallProgress ?? null}
+        settings={snapshot?.settings ?? null}
+        transcriptCount={snapshot?.transcripts.length ?? 0}
+        onCancelModelInstall={cancelModelInstall}
+        onClearTranscripts={clearTranscripts}
+        onDismissError={() => setErrorMessage(null)}
+        onInstallModel={installModel}
+        onSettingsChange={updateSettings}
+        onStartTestDictation={startTestDictation}
+        onStopTestDictation={stopTestDictation}
+      />
     );
   }
 
