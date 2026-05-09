@@ -1,6 +1,11 @@
 import type { InstalledModelRecord } from "@molten-voice/shared";
+import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
-import { computeModelReadiness } from "./model-readiness";
+import {
+  computeModelReadiness,
+  computeModelReadinessForCatalog,
+  createWhisperCppRuntimeReadinessCache,
+} from "./model-readiness";
 import type { WhisperCppRuntimeResult } from "./whisper-cpp-runtime";
 
 const installedModel = (
@@ -113,6 +118,84 @@ describe("computeModelReadiness", () => {
       lamp: "yellow",
       message: "parakeet runtime is not implemented yet.",
       runtimeBinaryPath: null,
+    });
+  });
+});
+
+describe("createWhisperCppRuntimeReadinessCache", () => {
+  it("does not call the resolver repeatedly within the TTL for missing runtime results", async () => {
+    let nowMs = 1_000;
+    let resolveCount = 0;
+    const missingRuntime: WhisperCppRuntimeResult = {
+      status: "missing",
+      checkedCandidates: ["C:/tools/whisper-cli.exe"],
+      message: "whisper.cpp runtime was not found.",
+      checkedAt: "2026-05-09T11:00:00.000Z",
+    };
+    const cache = createWhisperCppRuntimeReadinessCache({
+      ttlMs: 30_000,
+      now: () => nowMs,
+    });
+    const resolver = {
+      resolve: () =>
+        Effect.sync(() => {
+          resolveCount += 1;
+
+          return missingRuntime;
+        }),
+    };
+
+    await Effect.runPromise(cache.resolve(resolver));
+    await Effect.runPromise(cache.resolve(resolver));
+    nowMs += 30_001;
+    await Effect.runPromise(cache.resolve(resolver));
+
+    expect(resolveCount).toBe(2);
+  });
+});
+
+describe("computeModelReadinessForCatalog", () => {
+  it("includes models from the effective catalog in readiness", () => {
+    const records = computeModelReadinessForCatalog({
+      catalog: [
+        {
+          id: "dev-smoke-model",
+          displayName: "Dev Smoke Model",
+          runtime: "whisper-cpp",
+          platforms: ["windows"],
+          architectures: ["x64"],
+          languages: ["en"],
+          source: {
+            type: "local-file",
+            relativePath: "dev-models/dev-smoke-model.bin",
+          },
+          downloadUrl: "local-file://dev-models/dev-smoke-model.bin",
+          checksumSha256: "abc123",
+          downloadSizeBytes: 512000,
+          diskSizeBytes: 512000,
+          estimatedMemoryBytes: 16 * 1024 * 1024,
+          qualityLabel: "fast",
+          speedLabel: "fastest",
+          badges: ["dev"],
+          experimental: true,
+          devOnly: true,
+        },
+      ],
+      installedModels: [
+        {
+          ...installedModel(),
+          id: "installed-dev-smoke-model",
+          modelId: "dev-smoke-model",
+        },
+      ],
+      whisperCppRuntimeResult: availableRuntime,
+    });
+
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({
+      modelId: "dev-smoke-model",
+      status: "ready",
+      lamp: "green",
     });
   });
 });

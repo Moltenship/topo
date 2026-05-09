@@ -26,6 +26,7 @@ const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) =>
 
 app.whenReady().then(() => {
   const userDataDirectory = app.getPath("userData");
+  const catalog = getBundledModelCatalog({ includeDev: !app.isPackaged });
   const database = Effect.runSync(openAppDatabase(userDataDirectory));
   const dictation = createDictationOrchestrator({
     audio: createMockAudioCaptureService(),
@@ -40,10 +41,11 @@ app.whenReady().then(() => {
   registerIpcHandlers({
     database,
     dictation,
+    catalog,
     modelInstallJob: createFileModelInstallJob({
       installRoot: join(userDataDirectory, "models"),
       resourcesRoot: join(app.getAppPath(), "resources"),
-      catalog: getBundledModelCatalog({ includeDev: !app.isPackaged }),
+      catalog,
       fetch,
     }),
     nativeBridge: createMockNativeBridgeService(),

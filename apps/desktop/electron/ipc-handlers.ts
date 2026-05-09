@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import * as Schema from "effect/Schema";
 import type { DictationOrchestrator } from "@molten-voice/asr";
 import type { AppDatabase } from "@molten-voice/db";
-import { bundledModelCatalog } from "@molten-voice/model-catalog";
+import { bundledModelCatalog, type ModelCatalogEntry } from "@molten-voice/model-catalog";
 import type { NativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppSettings, AppStateSnapshot, TranscriptRecord } from "@molten-voice/shared";
 import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
@@ -18,7 +18,12 @@ import {
   UpdateSettingsRequest,
 } from "@molten-voice/shared";
 import type { ModelInstallJob } from "./model-install-job";
-import { computeModelReadiness } from "./model-readiness";
+import {
+  computeModelReadinessForCatalog,
+  createWhisperCppRuntimeReadinessCache,
+  shouldResolveWhisperCppRuntimeForCatalog,
+  type WhisperCppRuntimeReadinessCache,
+} from "./model-readiness";
 import type { WhisperCppRuntimeResolver } from "./whisper-cpp-runtime";
 
 interface MainProcessState {
@@ -40,6 +45,8 @@ interface IpcHandlerDependencies {
   readonly dictation: DictationOrchestrator;
   readonly modelInstallJob: ModelInstallJob;
   readonly nativeBridge: NativeBridgeService;
+  readonly catalog?: readonly ModelCatalogEntry[];
+  readonly whisperCppRuntimeReadinessCache?: WhisperCppRuntimeReadinessCache;
   readonly whisperCppRuntimeResolver?: WhisperCppRuntimeResolver;
   readonly onAppStateChanged?: (snapshot: AppStateSnapshot) => void;
 }
@@ -92,32 +99,33 @@ const listTranscripts = (
     return yield* dependencies.database.transcripts.list(query);
   });
 
+const getCatalog = (dependencies: IpcHandlerDependencies): readonly ModelCatalogEntry[] =>
+  dependencies.catalog ?? bundledModelCatalog;
+
+const defaultWhisperCppRuntimeReadinessCache = createWhisperCppRuntimeReadinessCache();
+
 const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppStateSnapshot> =>
   Effect.gen(function* () {
+    const catalog = getCatalog(dependencies);
     const settings = yield* getSettings(dependencies);
     yield* pruneExpiredTranscripts(dependencies, settings);
     const transcripts = yield* dependencies.database.transcripts.list();
     const installedModels = yield* dependencies.database.installedModels.list();
-    const installedModelsByModelId = new Map(
-      installedModels.map((model) => [model.modelId, model] as const),
-    );
-    const shouldProbeWhisperCppRuntime = bundledModelCatalog.some((model) => {
-      const installedModel = installedModelsByModelId.get(model.id);
-
-      return model.runtime === "whisper-cpp" && installedModel?.verificationStatus === "verified";
+    const shouldProbeWhisperCppRuntime = shouldResolveWhisperCppRuntimeForCatalog({
+      catalog,
+      installedModels,
     });
+    const whisperCppRuntimeReadinessCache =
+      dependencies.whisperCppRuntimeReadinessCache ?? defaultWhisperCppRuntimeReadinessCache;
     const whisperCppRuntimeResult =
       shouldProbeWhisperCppRuntime && dependencies.whisperCppRuntimeResolver
-        ? yield* dependencies.whisperCppRuntimeResolver.resolve()
+        ? yield* whisperCppRuntimeReadinessCache.resolve(dependencies.whisperCppRuntimeResolver)
         : null;
-    const modelReadiness = bundledModelCatalog.map((model) =>
-      computeModelReadiness({
-        modelId: model.id,
-        runtime: model.runtime,
-        installedModel: installedModelsByModelId.get(model.id) ?? null,
-        runtimeResult: model.runtime === "whisper-cpp" ? whisperCppRuntimeResult : null,
-      }),
-    );
+    const modelReadiness = computeModelReadinessForCatalog({
+      catalog,
+      installedModels,
+      whisperCppRuntimeResult,
+    });
 
     return {
       setupComplete: Boolean(settings.activeModelId),
@@ -214,11 +222,11 @@ const stopTestDictation = (
   dependencies: IpcHandlerDependencies,
 ): Effect.Effect<TranscriptRecord, Error> =>
   Effect.gen(function* () {
+    const catalog = getCatalog(dependencies);
     const settings = yield* getSettings(dependencies);
 
     const selectedModel =
-      bundledModelCatalog.find((model) => model.id === settings.activeModelId) ??
-      bundledModelCatalog[0];
+      catalog.find((model) => model.id === settings.activeModelId) ?? catalog[0];
 
     if (!selectedModel) {
       currentErrorMessage = "No bundled transcription model is available.";
@@ -342,7 +350,7 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
               const installedProgress = dependencies.modelInstallJob.getCurrentProgress();
 
               if (installedProgress?.status === "installed") {
-                const model = bundledModelCatalog.find(
+                const model = getCatalog(dependencies).find(
                   (model) => model.id === installedProgress.modelId,
                 );
 

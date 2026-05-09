@@ -1,6 +1,7 @@
-import type { AsrRuntime } from "@molten-voice/model-catalog";
+import { Effect } from "effect";
+import type { AsrRuntime, ModelCatalogEntry } from "@molten-voice/model-catalog";
 import type { InstalledModelRecord, ModelReadinessRecord } from "@molten-voice/shared";
-import type { WhisperCppRuntimeResult } from "./whisper-cpp-runtime";
+import type { WhisperCppRuntimeResolver, WhisperCppRuntimeResult } from "./whisper-cpp-runtime";
 
 export interface ComputeModelReadinessInput {
   readonly modelId: string;
@@ -8,6 +9,31 @@ export interface ComputeModelReadinessInput {
   readonly installedModel: InstalledModelRecord | null;
   readonly runtimeResult: WhisperCppRuntimeResult | null;
 }
+
+export interface ComputeModelReadinessForCatalogInput {
+  readonly catalog: readonly ModelCatalogEntry[];
+  readonly installedModels: readonly InstalledModelRecord[];
+  readonly whisperCppRuntimeResult: WhisperCppRuntimeResult | null;
+}
+
+export interface WhisperCppRuntimeReadinessCache {
+  readonly resolve: (
+    resolver: WhisperCppRuntimeResolver,
+  ) => Effect.Effect<WhisperCppRuntimeResult, never>;
+  readonly clear: () => void;
+}
+
+export interface WhisperCppRuntimeReadinessCacheOptions {
+  readonly ttlMs?: number;
+  readonly now?: () => number;
+}
+
+interface CachedWhisperCppRuntimeResult {
+  readonly result: WhisperCppRuntimeResult;
+  readonly expiresAtMs: number;
+}
+
+export const defaultWhisperCppRuntimeReadinessTtlMs = 30_000;
 
 const nowIso = (): string => new Date().toISOString();
 
@@ -73,5 +99,69 @@ export const computeModelReadiness = ({
     message: "Model and whisper.cpp runtime are ready.",
     runtimeBinaryPath: runtimeResult.binaryPath,
     checkedAt: runtimeResult.checkedAt,
+  };
+};
+
+export const computeModelReadinessForCatalog = ({
+  catalog,
+  installedModels,
+  whisperCppRuntimeResult,
+}: ComputeModelReadinessForCatalogInput): readonly ModelReadinessRecord[] => {
+  const installedModelsByModelId = new Map(
+    installedModels.map((model) => [model.modelId, model] as const),
+  );
+
+  return catalog.map((model) =>
+    computeModelReadiness({
+      modelId: model.id,
+      runtime: model.runtime,
+      installedModel: installedModelsByModelId.get(model.id) ?? null,
+      runtimeResult: model.runtime === "whisper-cpp" ? whisperCppRuntimeResult : null,
+    }),
+  );
+};
+
+export const shouldResolveWhisperCppRuntimeForCatalog = ({
+  catalog,
+  installedModels,
+}: Pick<ComputeModelReadinessForCatalogInput, "catalog" | "installedModels">): boolean => {
+  const installedModelsByModelId = new Map(
+    installedModels.map((model) => [model.modelId, model] as const),
+  );
+
+  return catalog.some((model) => {
+    const installedModel = installedModelsByModelId.get(model.id);
+
+    return model.runtime === "whisper-cpp" && installedModel?.verificationStatus === "verified";
+  });
+};
+
+export const createWhisperCppRuntimeReadinessCache = ({
+  ttlMs = defaultWhisperCppRuntimeReadinessTtlMs,
+  now = Date.now,
+}: WhisperCppRuntimeReadinessCacheOptions = {}): WhisperCppRuntimeReadinessCache => {
+  let cachedResult: CachedWhisperCppRuntimeResult | null = null;
+
+  return {
+    resolve: (resolver) =>
+      Effect.gen(function* () {
+        const nowMs = now();
+
+        if (cachedResult && cachedResult.expiresAtMs > nowMs) {
+          return cachedResult.result;
+        }
+
+        const result = yield* resolver.resolve();
+
+        cachedResult = {
+          result,
+          expiresAtMs: nowMs + ttlMs,
+        };
+
+        return result;
+      }),
+    clear: () => {
+      cachedResult = null;
+    },
   };
 };
