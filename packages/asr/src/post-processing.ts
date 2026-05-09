@@ -20,7 +20,7 @@ export const normalizeTranscript = (text: string, mode: PostProcessingMode): str
 };
 
 const isNoSpeechHallucination = (text: string): boolean =>
-  /^(you|thank you|thanks|okay|ok)[.!?]?$/i.test(text);
+  /^(\[blank_audio\]|\(blank_audio\)|blank_audio|you|thank you|thanks|okay|ok)[.!?]?$/i.test(text);
 
 const capitalizeFirstLetter = (text: string): string => {
   if (text.length === 0) {

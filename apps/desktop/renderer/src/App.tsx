@@ -185,6 +185,21 @@ export const App = ({ view = "workbench" }: AppProps) => {
     return getRendererApi().onAppStateChanged(setSnapshot);
   }, [refreshSnapshot]);
 
+  useEffect(
+    () =>
+      getRendererApi().onGlobalHotkeyEvent((event) => {
+        if (event.phase === "down" && !testAudioRecorderRef.current) {
+          void startTestDictation();
+          return;
+        }
+
+        if (event.phase === "up" && testAudioRecorderRef.current) {
+          void stopTestDictation();
+        }
+      }),
+    [startTestDictation, stopTestDictation],
+  );
+
   const effectiveErrorMessage = errorMessage ?? snapshot?.errorMessage ?? null;
   const canRestoreDefaults = !settingsEqual(snapshot?.settings ?? null, DEFAULT_APP_SETTINGS);
   const historyView = (

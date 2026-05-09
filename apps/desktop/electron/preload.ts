@@ -36,6 +36,17 @@ const api: MoltenVoiceApi = {
       ipcRenderer.off(IpcChannels.appStateChanged, handler);
     };
   },
+  onGlobalHotkeyEvent: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, payload: unknown) => {
+      listener(payload as Parameters<typeof listener>[0]);
+    };
+
+    ipcRenderer.on(IpcChannels.globalHotkeyEvent, handler);
+
+    return () => {
+      ipcRenderer.off(IpcChannels.globalHotkeyEvent, handler);
+    };
+  },
 };
 
 contextBridge.exposeInMainWorld("moltenVoice", api);

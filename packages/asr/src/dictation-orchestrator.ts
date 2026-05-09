@@ -1,5 +1,5 @@
 import type { AudioCaptureService } from "@molten-voice/audio";
-import type { LanguageCode, TranscriptRecord } from "@molten-voice/shared";
+import type { LanguageCode, RecordingMode, TranscriptRecord } from "@molten-voice/shared";
 import { Effect } from "effect";
 import { normalizeTranscript, type PostProcessingMode } from "./post-processing";
 import type { TranscriptionProvider } from "./transcription-provider";
@@ -20,6 +20,7 @@ export interface DictationOrchestrator {
     readonly installedModelPath: string;
     readonly runtimeBinaryPath: string;
     readonly postProcessingMode: PostProcessingMode;
+    readonly recordingMode: RecordingMode;
   }) => Effect.Effect<TranscriptRecord, Error>;
 }
 
@@ -69,7 +70,7 @@ export const createDictationOrchestrator = (
           modelId: input.modelId,
           runtime: input.runtime,
           language: result.language,
-          recordingMode: "push-to-talk",
+          recordingMode: input.recordingMode,
           stopReason: "hotkey-release",
           insertionMode: "paste",
           insertionStatus: "skipped",

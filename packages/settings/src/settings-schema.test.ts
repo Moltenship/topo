@@ -5,7 +5,7 @@ describe("appSettingsSchema", () => {
   it("creates local-first defaults", () => {
     expect(defaultAppSettings()).toEqual({
       hotkey: "CapsLock",
-      recordingMode: "push-to-talk",
+      recordingMode: "toggle-to-talk",
       silenceTimeoutMs: null,
       insertionMode: "paste",
       postProcessingMode: "lightweight",

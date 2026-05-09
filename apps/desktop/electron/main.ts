@@ -9,9 +9,9 @@ import {
 import { createSubmittedAudioCaptureService } from "@molten-voice/audio";
 import { openAppDatabase } from "@molten-voice/db";
 import { getBundledModelCatalog } from "@molten-voice/model-catalog";
-import { createMockNativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppStateSnapshot } from "@molten-voice/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
+import { createElectronHotkeyBridge } from "./electron-hotkey-bridge";
 import { createFileModelInstallJob } from "./model-install-job";
 import {
   getNearestOverlayPosition,
@@ -67,6 +67,8 @@ app.whenReady().then(() => {
   createMainWindow();
   const overlayWindow = createOverlayWindow();
 
+  const nativeBridge = createElectronHotkeyBridge();
+
   registerIpcHandlers({
     database,
     dictation,
@@ -78,7 +80,7 @@ app.whenReady().then(() => {
       catalog,
       fetch,
     }),
-    nativeBridge: createMockNativeBridgeService(),
+    nativeBridge,
     whisperCppRuntimeResolver: createWhisperCppRuntimeResolver({
       resourcesRoot: join(app.getAppPath(), "resources"),
     }),

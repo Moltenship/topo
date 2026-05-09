@@ -30,6 +30,10 @@ describe("normalizeTranscript", () => {
     expect(normalizeTranscript(" thank you ", "lightweight")).toBe("");
   });
 
+  it("drops whisper blank audio markers", () => {
+    expect(normalizeTranscript("[BLANK_AUDIO]", "lightweight")).toBe("");
+  });
+
   it("capitalizes standalone english i", () => {
     expect(normalizeTranscript("i think i can test it", "lightweight")).toBe(
       "I think I can test it",

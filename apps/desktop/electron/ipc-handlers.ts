@@ -5,7 +5,12 @@ import type { DictationOrchestrator } from "@molten-voice/asr";
 import type { AppDatabase } from "@molten-voice/db";
 import { bundledModelCatalog, type ModelCatalogEntry } from "@molten-voice/model-catalog";
 import type { NativeBridgeService } from "@molten-voice/native-bridge";
-import type { AppSettings, AppStateSnapshot, TranscriptRecord } from "@molten-voice/shared";
+import type {
+  AppSettings,
+  AppStateSnapshot,
+  NativeHotkeyEvent,
+  TranscriptRecord,
+} from "@molten-voice/shared";
 import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
 import type { SubmittedAudioCaptureService } from "@molten-voice/audio";
 import {
@@ -60,6 +65,7 @@ interface IpcHandlerDependencies {
 }
 
 let overlayHideTimer: NodeJS.Timeout | null = null;
+let hotkeyUnsubscribe: (() => void) | null = null;
 
 const clearOverlayHideTimer = () => {
   if (overlayHideTimer) {
@@ -105,7 +111,13 @@ const decodeStopTestDictationInput = (
 
 const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSettings> =>
   Effect.gen(function* () {
-    return (yield* dependencies.database.settings.get()) ?? DEFAULT_APP_SETTINGS;
+    const settings = (yield* dependencies.database.settings.get()) ?? DEFAULT_APP_SETTINGS;
+
+    if (settings.recordingMode === "push-to-talk") {
+      return { ...settings, recordingMode: "toggle-to-talk" };
+    }
+
+    return settings;
   });
 
 const pruneExpiredTranscripts = (
@@ -185,6 +197,23 @@ const publishAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<vo
     dependencies.onAppStateChanged?.(snapshot);
   });
 
+const publishGlobalHotkeyEvent = (event: NativeHotkeyEvent) => {
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.webContents.send(IpcChannels.globalHotkeyEvent, event);
+  }
+};
+
+const registerNativeHotkey = (
+  dependencies: IpcHandlerDependencies,
+  hotkey: string,
+): Effect.Effect<void, Error> =>
+  Effect.gen(function* () {
+    hotkeyUnsubscribe?.();
+    hotkeyUnsubscribe = yield* dependencies.nativeBridge.registerHotkey(hotkey, (event) => {
+      publishGlobalHotkeyEvent(event);
+    });
+  });
+
 const deleteTranscript = (dependencies: IpcHandlerDependencies, id: string): Effect.Effect<void> =>
   dependencies.database.transcripts.deleteById(id);
 
@@ -236,13 +265,16 @@ const reinsertTranscript = (
 const updateSettings = (
   dependencies: IpcHandlerDependencies,
   settings: AppSettings,
-): Effect.Effect<AppSettings> =>
+): Effect.Effect<AppSettings, Error> =>
   Effect.gen(function* () {
     currentErrorMessage = null;
     state.settings = settings;
     state.setupComplete = Boolean(settings.activeModelId);
 
-    return yield* dependencies.database.settings.set(settings);
+    const nextSettings = yield* dependencies.database.settings.set(settings);
+    yield* registerNativeHotkey(dependencies, nextSettings.hotkey);
+
+    return nextSettings;
   });
 
 const showOverlayPreview = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
@@ -348,7 +380,16 @@ const stopTestDictation = (
       installedModelPath: installedModel.installedPath,
       runtimeBinaryPath: runtimeResult.binaryPath,
       postProcessingMode: settings.postProcessingMode,
+      recordingMode: settings.recordingMode,
     });
+
+    if (transcript.text.trim().length === 0) {
+      currentErrorMessage = "No speech detected. Hold the hotkey and speak before releasing it.";
+      state.overlayState = "error";
+
+      return yield* Effect.fail(new Error(currentErrorMessage));
+    }
+
     const insertion = yield* dependencies.nativeBridge.insertText({
       text: transcript.text,
       mode: settings.insertionMode,
@@ -371,6 +412,13 @@ const stopTestDictation = (
   });
 
 export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
+  void Effect.runPromise(
+    Effect.gen(function* () {
+      const settings = yield* getSettings(dependencies);
+      yield* registerNativeHotkey(dependencies, settings.hotkey);
+    }),
+  );
+
   ipcMain.handle(IpcChannels.windowMinimize, (event) => {
     BrowserWindow.fromWebContents(event.sender)?.minimize();
   });

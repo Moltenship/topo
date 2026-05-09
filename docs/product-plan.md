@@ -90,6 +90,10 @@ The app supports true hold-to-talk.
 Recording modes:
 
 ```txt
+Toggle-to-talk:
+  first hotkey press = start
+  second hotkey press = stop
+
 Push-to-talk:
   start = hotkey down
   stop = hotkey up
@@ -101,7 +105,7 @@ Smart dictation:
 
 Default:
 
-- Push-to-talk.
+- Toggle-to-talk until native key down/up hooks are available.
 - Silence timeout disabled.
 
 Configurable silence timeout options:

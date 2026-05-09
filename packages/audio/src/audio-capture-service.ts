@@ -60,6 +60,12 @@ export const createSubmittedAudioCaptureService = (): SubmittedAudioCaptureServi
           activeSessionId = null;
           submittedAudio = null;
 
+          if (durationMs < 250 || wavBytes.byteLength <= 44) {
+            throw new Error(
+              "Recording is too short. Hold the hotkey and speak before releasing it.",
+            );
+          }
+
           return {
             sessionId,
             audioPath: await writeWavBytes(sessionId, wavBytes, "submitted-captures"),

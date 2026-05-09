@@ -16,6 +16,7 @@ export const IpcChannels = {
   commitOverlayPreviewPosition: "overlay:commit-preview-position",
   startTestDictation: "dictation:start-test",
   stopTestDictation: "dictation:stop-test",
+  globalHotkeyEvent: "dictation:global-hotkey-event",
   installModel: "models:install",
   cancelModelInstall: "models:cancel-install",
   windowMinimize: "window:minimize",

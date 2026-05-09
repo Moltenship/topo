@@ -32,6 +32,7 @@ describe("createDictationOrchestrator", () => {
           installedModelPath: "C:\\models\\ggml-small.bin",
           runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
           postProcessingMode: "lightweight",
+          recordingMode: "toggle-to-talk",
         });
       }),
     );
@@ -42,6 +43,7 @@ describe("createDictationOrchestrator", () => {
       createdAt: "2026-05-07T00:00:00.000Z",
       durationMs: 1200,
       insertionStatus: "skipped",
+      recordingMode: "toggle-to-talk",
     });
     expect(transcriptionInput).toMatchObject({
       installedModelPath: "C:\\models\\ggml-small.bin",
@@ -85,6 +87,7 @@ describe("createDictationOrchestrator", () => {
           installedModelPath: "C:\\models\\ggml-small.bin",
           runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
           postProcessingMode: "lightweight",
+          recordingMode: "toggle-to-talk",
         }),
       ),
     ).rejects.toThrow("transcription failed");

@@ -1,13 +1,5 @@
 import { Effect } from "effect";
-import type { InsertionMode } from "@molten-voice/shared";
-
-export type NativeHotkeyPhase = "down" | "up";
-
-export interface NativeHotkeyEvent {
-  readonly hotkey: string;
-  readonly phase: NativeHotkeyPhase;
-  readonly timestampMs: number;
-}
+import type { InsertionMode, NativeHotkeyEvent, NativeHotkeyPhase } from "@molten-voice/shared";
 
 export interface ActiveApplicationSnapshot {
   readonly appName: string | null;

@@ -19,7 +19,7 @@ export type OverlayPosition = typeof OverlayPosition.Type;
 
 export const AppSettings = Schema.Struct({
   hotkey: Schema.optionalWith(Schema.String, { default: () => "CapsLock" }),
-  recordingMode: Schema.optionalWith(RecordingMode, { default: () => "push-to-talk" }),
+  recordingMode: Schema.optionalWith(RecordingMode, { default: () => "toggle-to-talk" }),
   silenceTimeoutMs: Schema.optionalWith(Schema.NullOr(SilenceTimeoutMs), { default: () => null }),
   insertionMode: Schema.optionalWith(InsertionMode, { default: () => "paste" }),
   postProcessingMode: Schema.optionalWith(PostProcessingMode, { default: () => "lightweight" }),

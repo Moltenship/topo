@@ -1,5 +1,6 @@
 export * from "./dictation";
 export * from "./errors";
+export { formatHotkey, normalizeHotkeyFromKeys } from "@molten-voice/contracts";
 export * from "./installed-model";
 export * from "./ipc";
 export * from "./model-installation";
@@ -11,6 +12,8 @@ import type {
   AppSettings,
   InstalledModelRecord,
   ModelInstallProgress,
+  NativeHotkeyEvent,
+  NativeHotkeyPhase,
   OverlayPosition,
   TranscriptRecord,
 } from "@molten-voice/contracts";
@@ -20,6 +23,8 @@ export type {
   AppStateSnapshot,
   InstalledModelRecord,
   ModelInstallProgress,
+  NativeHotkeyEvent,
+  NativeHotkeyPhase,
   OverlayPosition,
   TranscriptRecord,
 };
@@ -50,6 +55,7 @@ export interface MoltenVoiceApi {
   readonly toggleMaximizeWindow: () => Promise<void>;
   readonly closeWindow: () => Promise<void>;
   readonly onAppStateChanged: (listener: (snapshot: AppStateSnapshot) => void) => () => void;
+  readonly onGlobalHotkeyEvent: (listener: (event: NativeHotkeyEvent) => void) => () => void;
 }
 
 export const APP_NAME = "Molten Voice";

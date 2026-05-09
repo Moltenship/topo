@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   DEFAULT_APP_SETTINGS,
+  formatHotkey,
+  normalizeHotkeyFromKeys,
   type AppSettings,
   type InstalledModelRecord,
   type ModelInstallProgress,
@@ -122,6 +124,8 @@ export const SettingsPage = ({
 }: SettingsPageProps) => {
   const modelCatalog = getBundledModelCatalog({ includeDev: import.meta.env.DEV });
   const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
+  const [recordingHotkey, setRecordingHotkey] = useState(false);
+  const [pressedHotkeyKeys, setPressedHotkeyKeys] = useState<readonly string[]>([]);
   const [microphoneDevices, setMicrophoneDevices] = useState<readonly MediaDeviceInfo[]>([]);
   const activeModelReadiness = modelReadiness.find(
     (readiness) => readiness.modelId === settings?.activeModelId,
@@ -173,6 +177,47 @@ export const SettingsPage = ({
       navigator.mediaDevices.removeEventListener?.("devicechange", refreshMicrophones);
     };
   }, []);
+
+  useEffect(() => {
+    if (!recordingHotkey) {
+      setPressedHotkeyKeys([]);
+      return;
+    }
+
+    const pressedKeys = new Set<string>();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      pressedKeys.add(event.code || event.key);
+      setPressedHotkeyKeys([...pressedKeys]);
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const hotkey = normalizeHotkeyFromKeys([...pressedKeys]);
+
+      if (hotkey && settings) {
+        updateSettings("hotkey", hotkey);
+      }
+
+      setRecordingHotkey(false);
+    };
+    const onBlur = () => {
+      setRecordingHotkey(false);
+    };
+
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    window.addEventListener("keyup", onKeyUp, { capture: true });
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, { capture: true });
+      window.removeEventListener("keyup", onKeyUp, { capture: true });
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [recordingHotkey, settings]);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
@@ -426,11 +471,11 @@ export const SettingsPage = ({
         </SettingsRow>
         <SettingsRow
           title="Recording mode"
-          description="Push-to-talk keeps the recorder scoped to the current hold action."
+          description="One hotkey press starts recording; the next press stops and transcribes."
           resetAction={getResetAction("recordingMode", "recording mode")}
         >
           <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold">
-            {settings?.recordingMode ?? "push-to-talk"}
+            Press to start/stop
           </span>
         </SettingsRow>
         <SettingsRow
@@ -509,9 +554,24 @@ export const SettingsPage = ({
           description="Global hold key used to open the overlay and start a dictation session."
           resetAction={getResetAction("hotkey", "hotkey")}
         >
-          <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold">
-            {settings?.hotkey ?? "CapsLock"}
-          </span>
+          <div className="flex items-center justify-end gap-2 max-sm:flex-wrap max-sm:justify-start">
+            <span className="min-w-[150px] rounded-md border bg-background px-3 py-1.5 text-center text-xs font-semibold">
+              {recordingHotkey
+                ? pressedHotkeyKeys.length > 0
+                  ? formatHotkey(normalizeHotkeyFromKeys(pressedHotkeyKeys))
+                  : "Press shortcut..."
+                : formatHotkey(settings?.hotkey ?? "CapsLock")}
+            </span>
+            <Button
+              disabled={!settings}
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={() => setRecordingHotkey(true)}
+            >
+              Record
+            </Button>
+          </div>
         </SettingsRow>
       </SettingsSection>
     </div>
