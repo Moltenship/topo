@@ -3,7 +3,12 @@ import { getBundledModelCatalog } from "@molten-voice/model-catalog";
 import { Check, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SegmentedControl, SettingsRow, SettingsSection } from "@/components/settings-layout";
+import {
+  SettingsRow,
+  SettingsSection,
+  SettingsSelect,
+  SettingsSwitch,
+} from "@/components/settings-layout";
 
 interface SettingsPageProps {
   readonly errorMessage: string | null;
@@ -78,7 +83,7 @@ export const SettingsPage = ({
           title="Language"
           description="Auto keeps language detection enabled; explicit languages can reduce ambiguity."
         >
-          <SegmentedControl
+          <SettingsSelect
             disabled={!settings}
             value={settings?.language ?? "auto"}
             options={[
@@ -93,7 +98,7 @@ export const SettingsPage = ({
           title="Text cleanup"
           description="Lightweight processing fixes obvious dictation artifacts before insertion."
         >
-          <SegmentedControl
+          <SettingsSelect
             disabled={!settings}
             value={settings?.postProcessingMode ?? "lightweight"}
             options={[
@@ -114,15 +119,14 @@ export const SettingsPage = ({
             progress !== null && progress.status !== "installed" && progress.status !== "failed";
           const percent = Math.round((progress?.percent ?? 0) * 100);
           const isActive = settings?.activeModelId === model.id;
+          const canInstall = !model.devOnly;
 
           return (
             <SettingsRow
               key={model.id}
-              title={model.displayName}
-              description={`${model.runtime} · ${formatBytes(model.estimatedMemoryBytes)} memory target`}
-            >
-              <div className="flex w-[320px] max-w-full flex-col items-end gap-2 max-sm:items-start">
-                <div className="flex flex-wrap justify-end gap-1.5 max-sm:justify-start">
+              title={
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  <span>{model.displayName}</span>
                   {model.devOnly ? <Badge variant="secondary">Dev</Badge> : null}
                   {installedModel ? (
                     <Badge
@@ -133,8 +137,11 @@ export const SettingsPage = ({
                       {installedModel.verificationStatus === "verified" ? "Installed" : "Repair"}
                     </Badge>
                   ) : null}
-                  {isActive ? <Badge>Active</Badge> : null}
-                </div>
+                </span>
+              }
+              description={`${model.runtime} · ${formatBytes(model.estimatedMemoryBytes)} memory target`}
+            >
+              <div className="flex w-[300px] max-w-full flex-col items-end gap-2 max-sm:items-start">
                 {progress ? (
                   <div className="w-full">
                     <div className="mb-1 flex items-center justify-between gap-3 text-[11px]">
@@ -162,23 +169,25 @@ export const SettingsPage = ({
                     {isActive ? <Check className="size-3.5" /> : null}
                     {isActive ? "Selected" : "Select"}
                   </Button>
-                  <Button
-                    disabled={isInstalling}
-                    size="sm"
-                    variant="outline"
-                    type="button"
-                    onClick={() => onInstallModel(model.id)}
-                  >
-                    {isInstalling
-                      ? `${percent}%`
-                      : installedModel
-                        ? installedModel.verificationStatus === "verified"
-                          ? "Reinstall"
-                          : "Repair"
-                        : progress?.status === "installed"
-                          ? "Reinstall"
-                          : "Install"}
-                  </Button>
+                  {canInstall ? (
+                    <Button
+                      disabled={isInstalling}
+                      size="sm"
+                      variant="outline"
+                      type="button"
+                      onClick={() => onInstallModel(model.id)}
+                    >
+                      {isInstalling
+                        ? `${percent}%`
+                        : installedModel
+                          ? installedModel.verificationStatus === "verified"
+                            ? "Reinstall"
+                            : "Repair"
+                          : progress?.status === "installed"
+                            ? "Reinstall"
+                            : "Install"}
+                    </Button>
+                  ) : null}
                   {isInstalling ? (
                     <Button
                       size="sm"
@@ -200,7 +209,7 @@ export const SettingsPage = ({
           title="Insertion mode"
           description="Paste is fastest; typing mode is useful for fields that block clipboard insertion."
         >
-          <SegmentedControl
+          <SettingsSelect
             disabled={!settings}
             value={settings?.insertionMode ?? "paste"}
             options={[
@@ -247,13 +256,9 @@ export const SettingsPage = ({
           title="Transcript history"
           description="History stores final text transcripts locally for review and deletion."
         >
-          <SegmentedControl
+          <SettingsSwitch
             disabled={!settings}
-            value={settings?.historyEnabled ?? true}
-            options={[
-              { label: "On", value: true },
-              { label: "Off", value: false },
-            ]}
+            checked={settings?.historyEnabled ?? true}
             onChange={(value) => updateSettings("historyEnabled", value)}
           />
         </SettingsRow>
@@ -261,14 +266,14 @@ export const SettingsPage = ({
           title="Auto-delete"
           description="Remove local transcripts after the selected retention period."
         >
-          <SegmentedControl
+          <SettingsSelect
             disabled={!settings}
             value={settings?.autoDeleteHistoryDays ?? null}
             options={[
               { label: "Never", value: null },
-              { label: "7d", value: 7 },
-              { label: "30d", value: 30 },
-              { label: "90d", value: 90 },
+              { label: "7 days", value: 7 },
+              { label: "30 days", value: 30 },
+              { label: "90 days", value: 90 },
             ]}
             onChange={(value) => updateSettings("autoDeleteHistoryDays", value)}
           />
