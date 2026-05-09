@@ -10,6 +10,7 @@ import { createMockNativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppStateSnapshot } from "@molten-voice/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
 import { createFileModelInstallJob } from "./model-install-job";
+import { createWhisperCppRuntimeResolver } from "./whisper-cpp-runtime";
 import { createMainWindow, createOverlayWindow } from "./window-manager";
 
 const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) => {
@@ -46,6 +47,9 @@ app.whenReady().then(() => {
       fetch,
     }),
     nativeBridge: createMockNativeBridgeService(),
+    whisperCppRuntimeResolver: createWhisperCppRuntimeResolver({
+      resourcesRoot: join(app.getAppPath(), "resources"),
+    }),
     onAppStateChanged: (snapshot) => syncOverlayWindow(overlayWindow, snapshot),
   });
 });

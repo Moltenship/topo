@@ -18,6 +18,8 @@ import {
   UpdateSettingsRequest,
 } from "@molten-voice/shared";
 import type { ModelInstallJob } from "./model-install-job";
+import { computeModelReadiness } from "./model-readiness";
+import type { WhisperCppRuntimeResolver } from "./whisper-cpp-runtime";
 
 interface MainProcessState {
   setupComplete: boolean;
@@ -38,6 +40,7 @@ interface IpcHandlerDependencies {
   readonly dictation: DictationOrchestrator;
   readonly modelInstallJob: ModelInstallJob;
   readonly nativeBridge: NativeBridgeService;
+  readonly whisperCppRuntimeResolver?: WhisperCppRuntimeResolver;
   readonly onAppStateChanged?: (snapshot: AppStateSnapshot) => void;
 }
 
@@ -95,6 +98,26 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
     yield* pruneExpiredTranscripts(dependencies, settings);
     const transcripts = yield* dependencies.database.transcripts.list();
     const installedModels = yield* dependencies.database.installedModels.list();
+    const installedModelsByModelId = new Map(
+      installedModels.map((model) => [model.modelId, model] as const),
+    );
+    const shouldProbeWhisperCppRuntime = bundledModelCatalog.some((model) => {
+      const installedModel = installedModelsByModelId.get(model.id);
+
+      return model.runtime === "whisper-cpp" && installedModel?.verificationStatus === "verified";
+    });
+    const whisperCppRuntimeResult =
+      shouldProbeWhisperCppRuntime && dependencies.whisperCppRuntimeResolver
+        ? yield* dependencies.whisperCppRuntimeResolver.resolve()
+        : null;
+    const modelReadiness = bundledModelCatalog.map((model) =>
+      computeModelReadiness({
+        modelId: model.id,
+        runtime: model.runtime,
+        installedModel: installedModelsByModelId.get(model.id) ?? null,
+        runtimeResult: model.runtime === "whisper-cpp" ? whisperCppRuntimeResult : null,
+      }),
+    );
 
     return {
       setupComplete: Boolean(settings.activeModelId),
@@ -102,6 +125,7 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
       settings,
       transcripts,
       installedModels,
+      modelReadiness,
       modelInstallProgress: dependencies.modelInstallJob.getCurrentProgress(),
       errorMessage: currentErrorMessage,
     };
