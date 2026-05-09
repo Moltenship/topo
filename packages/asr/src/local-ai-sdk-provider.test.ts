@@ -32,6 +32,35 @@ describe("createLocalAiSdkTranscriptionProvider", () => {
     expect(result.text).toBe("hello from whisper");
   });
 
+  it("removes whisper.cpp segment timestamps from stdout", async () => {
+    const provider = createLocalAiSdkTranscriptionProvider({
+      runner: async () => ({
+        exitCode: 0,
+        stdout:
+          "[00:00:00.000 --> 00:00:06.680] I check how my voice works in this application.\n[00:00:06.680 --> 00:00:09.760] 123, my name is Timofey Maximov.\n",
+        stderr: "",
+      }),
+    });
+
+    const result = await transcribe({
+      model: provider.transcription("whisper-cpp-small"),
+      audio: new Uint8Array([1, 2, 3]),
+      maxRetries: 0,
+      providerOptions: {
+        molten: {
+          language: "auto",
+          installedModelPath: "C:\\models\\ggml-small.bin",
+          runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
+          audioPath: "C:\\audio\\session.wav",
+        },
+      },
+    });
+
+    expect(result.text).toBe(
+      "I check how my voice works in this application. 123, my name is Timofey Maximov.",
+    );
+  });
+
   it("passes model, audio, and language flags to whisper-cli", async () => {
     const calls: Array<{ binaryPath: string; args: readonly string[] }> = [];
     const provider = createLocalAiSdkTranscriptionProvider({

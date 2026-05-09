@@ -114,7 +114,7 @@ export const createLocalAiSdkTranscriptionProvider = ({
         audioPath: options.audioPath,
         installedModelPath: options.installedModelPath,
       });
-      const text = result.stdout.trim();
+      const text = parseWhisperCppText(result.stdout);
 
       if (text.length === 0) {
         throw new LocalAiSdkTranscriptionError("transcription_failed", {
@@ -175,6 +175,16 @@ export const buildWhisperCppArgs = (
 
   return args;
 };
+
+export const parseWhisperCppText = (stdout: string): string =>
+  stdout
+    .split(/\r?\n/)
+    .map((line) =>
+      line.replace(/^\s*\[\d{2}:\d{2}:\d{2}\.\d{3}\s+-->\s+\d{2}:\d{2}:\d{2}\.\d{3}\]\s*/, ""),
+    )
+    .join(" ")
+    .trim()
+    .replace(/\s+/g, " ");
 
 const runWhisperCpp = async (
   runner: WhisperCppRunner,
