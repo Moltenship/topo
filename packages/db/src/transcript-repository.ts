@@ -1,4 +1,4 @@
-import { desc, eq, like } from "drizzle-orm";
+import { desc, eq, like, lt } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { Effect } from "effect";
 import type { TranscriptRecord } from "@molten-voice/shared";
@@ -9,6 +9,7 @@ export interface TranscriptRepository {
   readonly getById: (id: string) => Effect.Effect<TranscriptRecord | null>;
   readonly list: (query?: string) => Effect.Effect<readonly TranscriptRecord[]>;
   readonly deleteById: (id: string) => Effect.Effect<void>;
+  readonly deleteCreatedBefore: (cutoffIso: string) => Effect.Effect<void>;
   readonly clear: () => Effect.Effect<void>;
 }
 
@@ -41,6 +42,10 @@ export const createTranscriptRepository = (
   deleteById: (id) =>
     Effect.sync(() => {
       db.delete(transcripts).where(eq(transcripts.id, id)).run();
+    }),
+  deleteCreatedBefore: (cutoffIso) =>
+    Effect.sync(() => {
+      db.delete(transcripts).where(lt(transcripts.createdAt, cutoffIso)).run();
     }),
   clear: () =>
     Effect.sync(() => {

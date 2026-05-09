@@ -81,6 +81,7 @@ describe("TranscriptRepositoryService", () => {
           },
         ]),
       deleteById: () => Effect.void,
+      deleteCreatedBefore: () => Effect.void,
       clear: () => Effect.void,
     });
 

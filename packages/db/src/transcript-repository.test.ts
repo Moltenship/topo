@@ -96,4 +96,49 @@ describe("createTranscriptRepository", () => {
 
     expect(result?.text).toBe("lookup transcript");
   });
+
+  it("deletes transcript records created before a cutoff", async () => {
+    const repository = createMemoryRepository();
+
+    const results = await Effect.runPromise(
+      Effect.gen(function* () {
+        yield* repository.insert({
+          id: "tr_old",
+          text: "old transcript",
+          createdAt: "2026-05-01T00:00:00.000Z",
+          durationMs: 1200,
+          modelId: "whisper-cpp-small",
+          runtime: "whisper-cpp",
+          language: "en",
+          recordingMode: "push-to-talk",
+          stopReason: "hotkey-release",
+          insertionMode: "paste",
+          insertionStatus: "inserted",
+          targetAppName: null,
+        });
+
+        yield* repository.insert({
+          id: "tr_recent",
+          text: "recent transcript",
+          createdAt: "2026-05-08T00:00:00.000Z",
+          durationMs: 900,
+          modelId: "whisper-cpp-small",
+          runtime: "whisper-cpp",
+          language: "en",
+          recordingMode: "push-to-talk",
+          stopReason: "hotkey-release",
+          insertionMode: "paste",
+          insertionStatus: "inserted",
+          targetAppName: null,
+        });
+
+        yield* repository.deleteCreatedBefore("2026-05-07T00:00:00.000Z");
+
+        return yield* repository.list();
+      }),
+    );
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.id).toBe("tr_recent");
+  });
 });

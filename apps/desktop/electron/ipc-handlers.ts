@@ -63,9 +63,36 @@ const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSet
     return (yield* dependencies.database.settings.get()) ?? DEFAULT_APP_SETTINGS;
   });
 
+const pruneExpiredTranscripts = (
+  dependencies: IpcHandlerDependencies,
+  settings: AppSettings,
+): Effect.Effect<void> => {
+  if (settings.autoDeleteHistoryDays === null) {
+    return Effect.void;
+  }
+
+  const retentionMs = settings.autoDeleteHistoryDays * 24 * 60 * 60 * 1000;
+  const cutoffIso = new Date(Date.now() - retentionMs).toISOString();
+
+  return dependencies.database.transcripts.deleteCreatedBefore(cutoffIso);
+};
+
+const listTranscripts = (
+  dependencies: IpcHandlerDependencies,
+  query?: string,
+): Effect.Effect<readonly TranscriptRecord[]> =>
+  Effect.gen(function* () {
+    const settings = yield* getSettings(dependencies);
+
+    yield* pruneExpiredTranscripts(dependencies, settings);
+
+    return yield* dependencies.database.transcripts.list(query);
+  });
+
 const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppStateSnapshot> =>
   Effect.gen(function* () {
     const settings = yield* getSettings(dependencies);
+    yield* pruneExpiredTranscripts(dependencies, settings);
     const transcripts = yield* dependencies.database.transcripts.list();
     const installedModels = yield* dependencies.database.installedModels.list();
 
@@ -90,11 +117,6 @@ const publishAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<vo
 
     dependencies.onAppStateChanged?.(snapshot);
   });
-
-const listTranscripts = (
-  dependencies: IpcHandlerDependencies,
-  query?: string,
-): Effect.Effect<readonly TranscriptRecord[]> => dependencies.database.transcripts.list(query);
 
 const deleteTranscript = (dependencies: IpcHandlerDependencies, id: string): Effect.Effect<void> =>
   dependencies.database.transcripts.deleteById(id);

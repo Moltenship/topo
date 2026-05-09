@@ -258,7 +258,23 @@ export const SettingsPage = ({
           />
         </SettingsRow>
         <SettingsRow
-          title="Stored transcripts"
+          title="Auto-delete"
+          description="Remove local transcripts after the selected retention period."
+        >
+          <SegmentedControl
+            disabled={!settings}
+            value={settings?.autoDeleteHistoryDays ?? null}
+            options={[
+              { label: "Never", value: null },
+              { label: "7d", value: 7 },
+              { label: "30d", value: 30 },
+              { label: "90d", value: 90 },
+            ]}
+            onChange={(value) => updateSettings("autoDeleteHistoryDays", value)}
+          />
+        </SettingsRow>
+        <SettingsRow
+          title="Clear history"
           description={`${transcriptCount} local transcript${transcriptCount === 1 ? "" : "s"} currently visible in history.`}
         >
           <Button size="sm" variant="outline" type="button" onClick={onClearTranscripts}>
