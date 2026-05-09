@@ -187,6 +187,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
           installedModels={snapshot?.installedModels ?? []}
           isRecording={snapshot?.overlayState === "recording"}
           modelInstallProgress={snapshot?.modelInstallProgress ?? null}
+          modelReadiness={snapshot?.modelReadiness ?? []}
           settings={snapshot?.settings ?? null}
           transcriptCount={snapshot?.transcripts.length ?? 0}
           onCancelModelInstall={cancelModelInstall}

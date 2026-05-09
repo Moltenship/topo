@@ -4,6 +4,8 @@ import {
   type AppSettings,
   type InstalledModelRecord,
   type ModelInstallProgress,
+  type ModelReadinessRecord,
+  type ModelReadinessStatus,
 } from "@molten-voice/shared";
 import { getBundledModelCatalog } from "@molten-voice/model-catalog";
 import { ChevronDown } from "lucide-react";
@@ -22,6 +24,7 @@ interface SettingsPageProps {
   readonly installedModels: readonly InstalledModelRecord[];
   readonly isRecording: boolean;
   readonly modelInstallProgress: ModelInstallProgress | null;
+  readonly modelReadiness: readonly ModelReadinessRecord[];
   readonly settings: AppSettings | null;
   readonly transcriptCount: number;
   readonly onCancelModelInstall: (modelId: string) => void;
@@ -35,11 +38,62 @@ interface SettingsPageProps {
 
 const formatBytes = (bytes: number): string => `${Math.round(bytes / 1024 / 1024)} MB`;
 
+const readinessLabels = {
+  "not-installed": "Not installed",
+  "runtime-missing": "Runtime missing",
+  "runtime-failed": "Runtime failed",
+  ready: "Ready",
+} satisfies Record<ModelReadinessStatus, string>;
+
+const getReadinessDotClassName = (
+  status: ModelReadinessStatus | "installing" | "unverified" | "installed-unprobed",
+): string => {
+  switch (status) {
+    case "ready":
+      return "size-2 shrink-0 rounded-full bg-emerald-500";
+    case "runtime-missing":
+      return "size-2 shrink-0 rounded-full bg-amber-500";
+    case "runtime-failed":
+      return "size-2 shrink-0 rounded-full bg-destructive";
+    case "installing":
+      return "size-2 shrink-0 rounded-full bg-primary";
+    case "unverified":
+    case "installed-unprobed":
+      return "size-2 shrink-0 rounded-full bg-amber-500";
+    case "not-installed":
+      return "size-2 shrink-0 rounded-full bg-muted-foreground/35";
+  }
+};
+
+const getTestDictationDescription = (
+  activeReadiness: ModelReadinessRecord | undefined,
+  activeModelId: string | null | undefined,
+): string => {
+  if (!activeModelId) {
+    return "Choose a ready local model before starting a settings test recording.";
+  }
+
+  if (activeReadiness?.status === "ready") {
+    return "Start a local recording session from settings to verify microphone and insertion flow.";
+  }
+
+  if (activeReadiness?.status === "runtime-missing") {
+    return "The active model is installed, but the whisper.cpp runtime binary is missing.";
+  }
+
+  if (activeReadiness?.status === "runtime-failed") {
+    return "The active model is installed, but the whisper.cpp runtime probe failed.";
+  }
+
+  return "The active model must be installed, verified, and runtime-ready before test dictation.";
+};
+
 export const SettingsPage = ({
   errorMessage,
   installedModels,
   isRecording,
   modelInstallProgress,
+  modelReadiness,
   settings,
   transcriptCount,
   onCancelModelInstall,
@@ -52,6 +106,10 @@ export const SettingsPage = ({
 }: SettingsPageProps) => {
   const modelCatalog = getBundledModelCatalog({ includeDev: import.meta.env.DEV });
   const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
+  const activeModelReadiness = modelReadiness.find(
+    (readiness) => readiness.modelId === settings?.activeModelId,
+  );
+  const canStartTestDictation = activeModelReadiness?.status === "ready";
 
   const updateSettings = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     if (settings) {
@@ -133,17 +191,31 @@ export const SettingsPage = ({
           const isInstalled = installedModel?.verificationStatus === "verified";
           const needsRepair =
             installedModel !== undefined && installedModel.verificationStatus !== "verified";
+          const readiness = modelReadiness.find((record) => record.modelId === model.id);
           const canInstall = !model.devOnly;
           const isExpanded = expandedModelId === model.id;
+          const readinessStatus = readiness?.status;
+          const canActivate = isInstalled && readinessStatus === "ready";
           const statusLabel = isInstalling
             ? `${progress.status} ${percent}%`
-            : isInstalled
-              ? "Installed"
-              : needsRepair
-                ? "Needs repair"
-                : model.devOnly
-                  ? "Dev smoke model"
-                  : "Not installed";
+            : needsRepair
+              ? "Needs repair"
+              : readinessStatus
+                ? readinessLabels[readinessStatus]
+                : isInstalled
+                  ? "Installed"
+                  : model.devOnly
+                    ? "Dev smoke model"
+                    : "Not installed";
+          const dotStatus = isInstalling
+            ? "installing"
+            : needsRepair
+              ? "unverified"
+              : readinessStatus
+                ? readinessStatus
+                : isInstalled
+                  ? "installed-unprobed"
+                  : "not-installed";
 
           return (
             <div className="border-t border-border/60 first:border-t-0" key={model.id}>
@@ -155,18 +227,7 @@ export const SettingsPage = ({
                     onClick={() => setExpandedModelId(isExpanded ? null : model.id)}
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        className={
-                          isInstalled
-                            ? "size-2 shrink-0 rounded-full bg-emerald-500"
-                            : needsRepair
-                              ? "size-2 shrink-0 rounded-full bg-amber-500"
-                              : isInstalling
-                                ? "size-2 shrink-0 rounded-full bg-primary"
-                                : "size-2 shrink-0 rounded-full bg-muted-foreground/35"
-                        }
-                        aria-hidden="true"
-                      />
+                      <span className={getReadinessDotClassName(dotStatus)} aria-hidden="true" />
                       <span className="truncate text-[13px] font-semibold text-foreground">
                         {model.displayName}
                       </span>
@@ -195,7 +256,7 @@ export const SettingsPage = ({
                     </button>
                     <SettingsSwitch
                       checked={isActive}
-                      disabled={!settings || !isInstalled}
+                      disabled={!settings || !canActivate}
                       onChange={(checked) =>
                         updateSettings("activeModelId", checked ? model.id : null)
                       }
@@ -289,14 +350,14 @@ export const SettingsPage = ({
         </SettingsRow>
         <SettingsRow
           title="Test dictation"
-          description="Start a local recording session from settings to verify microphone and insertion flow."
+          description={getTestDictationDescription(activeModelReadiness, settings?.activeModelId)}
         >
           <div className="flex flex-wrap justify-end gap-1.5 max-sm:justify-start">
             <Badge variant={isRecording ? "default" : "secondary"}>
               {isRecording ? "Recording" : "Idle"}
             </Badge>
             <Button
-              disabled={isRecording}
+              disabled={isRecording || !canStartTestDictation}
               size="sm"
               variant="outline"
               type="button"
