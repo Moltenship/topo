@@ -16,6 +16,7 @@ export type InsertionStatus = typeof InsertionStatus.Type;
 
 export const OverlayState = Schema.Literal(
   "hidden",
+  "preview",
   "recording",
   "processing",
   "inserted",

@@ -15,6 +15,9 @@ const api: MoltenVoiceApi = {
   deleteTranscript: (id) => ipcRenderer.invoke(IpcChannels.deleteTranscript, { id }),
   clearTranscripts: () => ipcRenderer.invoke(IpcChannels.clearTranscripts),
   updateSettings: (settings) => ipcRenderer.invoke(IpcChannels.updateSettings, settings),
+  showOverlayPreview: () => ipcRenderer.invoke(IpcChannels.showOverlayPreview),
+  commitOverlayPreviewPosition: (input) =>
+    ipcRenderer.invoke(IpcChannels.commitOverlayPreviewPosition, input),
   installModel: (modelId) => ipcRenderer.invoke(IpcChannels.installModel, { modelId }),
   cancelModelInstall: (modelId) => ipcRenderer.invoke(IpcChannels.cancelModelInstall, { modelId }),
   startTestDictation: () => ipcRenderer.invoke(IpcChannels.startTestDictation),

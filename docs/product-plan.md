@@ -15,7 +15,8 @@ The product should feel like a system layer rather than a document editor: alway
 - First-run setup flow downloads a selected model.
 - Model memory/disk target: approximately 3 GB or less.
 - True hold-to-talk behavior through native/global key listening.
-- Bottom-center transparent overlay inspired by Wispr Flow and ElevenLabs-style waveform UI.
+- Transparent overlay inspired by Wispr Flow and ElevenLabs-style waveform UI, with a
+  configurable screen position.
 - Text insertion into the active focused input.
 - Local transcript history with search, copy, reinsert, delete, and clear-all.
 - SQLite-backed local state and history.
@@ -112,7 +113,8 @@ Configurable silence timeout options:
 
 ## Overlay UX
 
-The overlay is a separate transparent Electron window positioned bottom-center, similar to Wispr Flow.
+The overlay is a separate transparent Electron window. It defaults to bottom-center, similar to
+Wispr Flow, and can be repositioned from settings.
 
 States:
 
@@ -144,6 +146,16 @@ Error state:
 
 - Short user-readable error.
 - Does not expose low-level helper logs in the overlay.
+
+Position settings:
+
+- The user can choose where the overlay appears.
+- Settings expose an overlay position picker.
+- Pressing the position action shows a live preview pill.
+- The user can move or choose the preferred screen area while the preview is visible.
+- The selected position is saved locally and reused for future recordings.
+- MVP presets should include bottom-center, top-center, bottom-left, bottom-right, center-left,
+  and center-right.
 
 ## Model Selection
 
@@ -296,7 +308,11 @@ Raw:
 Lightweight normalization:
   trim
   collapse whitespace
+  strip whisper.cpp segment timestamps
   normalize punctuation spacing
+  collapse repeated punctuation
+  drop common no-speech hallucinations
+  capitalize standalone English "i"
   optional first-letter capitalization
 ```
 

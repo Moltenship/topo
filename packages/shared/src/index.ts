@@ -11,6 +11,7 @@ import type {
   AppSettings,
   InstalledModelRecord,
   ModelInstallProgress,
+  OverlayPosition,
   TranscriptRecord,
 } from "@molten-voice/contracts";
 export { DEFAULT_APP_SETTINGS } from "@molten-voice/contracts";
@@ -19,6 +20,7 @@ export type {
   AppStateSnapshot,
   InstalledModelRecord,
   ModelInstallProgress,
+  OverlayPosition,
   TranscriptRecord,
 };
 
@@ -32,6 +34,11 @@ export interface MoltenVoiceApi {
   readonly deleteTranscript: (id: string) => Promise<void>;
   readonly clearTranscripts: () => Promise<void>;
   readonly updateSettings: (settings: AppSettings) => Promise<AppSettings>;
+  readonly showOverlayPreview: () => Promise<void>;
+  readonly commitOverlayPreviewPosition: (input: {
+    readonly centerX: number;
+    readonly centerY: number;
+  }) => Promise<void>;
   readonly installModel: (modelId: string) => Promise<ModelInstallProgress>;
   readonly cancelModelInstall: (modelId: string) => Promise<void>;
   readonly startTestDictation: () => Promise<void>;

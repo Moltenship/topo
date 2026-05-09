@@ -168,6 +168,13 @@ export const App = ({ view = "workbench" }: AppProps) => {
     [refreshSnapshot, runAction],
   );
 
+  const showOverlayPreview = useCallback(async () => {
+    await runAction(async () => {
+      await getRendererApi().showOverlayPreview();
+      await refreshSnapshot();
+    });
+  }, [refreshSnapshot, runAction]);
+
   const restoreDefaultSettings = useCallback(async () => {
     await updateSettings(DEFAULT_APP_SETTINGS);
   }, [updateSettings]);
@@ -217,6 +224,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
           onDismissError={() => setErrorMessage(null)}
           onInstallModel={installModel}
           onSettingsChange={updateSettings}
+          onShowOverlayPreview={showOverlayPreview}
           onStartTestDictation={startTestDictation}
           onStopTestDictation={stopTestDictation}
         />

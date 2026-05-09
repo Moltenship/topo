@@ -47,8 +47,8 @@ export const createMainWindow = (): BrowserWindow => {
 
 export const createOverlayWindow = (): BrowserWindow => {
   const window = new BrowserWindow({
-    width: 496,
-    height: 80,
+    width: OVERLAY_WINDOW_SIZE.width,
+    height: OVERLAY_WINDOW_SIZE.height,
     show: false,
     frame: false,
     transparent: true,
@@ -69,3 +69,4 @@ export const createOverlayWindow = (): BrowserWindow => {
 
   return window;
 };
+import { OVERLAY_WINDOW_SIZE } from "./overlay-position";

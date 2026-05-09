@@ -6,13 +6,28 @@ export const normalizeTranscript = (text: string, mode: PostProcessingMode): str
   }
 
   const normalized = text
+    .replace(/\[\d{2}:\d{2}:\d{2}\.\d{3}\s+-->\s+\d{2}:\d{2}:\d{2}\.\d{3}\]/g, " ")
     .trim()
     .replace(/\s+/g, " ")
+    .replace(/([,.!?;:])\1+/g, "$1")
     .replace(/\s+([,.!?;:])/g, "$1");
 
-  if (normalized.length === 0) {
-    return normalized;
+  if (isNoSpeechHallucination(normalized)) {
+    return "";
   }
 
-  return normalized.charAt(0).toLocaleUpperCase() + normalized.slice(1);
+  return capitalizeFirstLetter(capitalizeStandaloneEnglishI(normalized));
 };
+
+const isNoSpeechHallucination = (text: string): boolean =>
+  /^(you|thank you|thanks|okay|ok)[.!?]?$/i.test(text);
+
+const capitalizeFirstLetter = (text: string): string => {
+  if (text.length === 0) {
+    return text;
+  }
+
+  return text.charAt(0).toLocaleUpperCase() + text.slice(1);
+};
+
+const capitalizeStandaloneEnglishI = (text: string): string => text.replace(/\bi\b/g, "I");

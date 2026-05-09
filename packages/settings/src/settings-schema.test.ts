@@ -15,6 +15,7 @@ describe("appSettingsSchema", () => {
       modelDirectory: null,
       activeModelId: null,
       microphoneDeviceId: null,
+      overlayPosition: "bottom-center",
     });
   });
 
@@ -22,7 +23,15 @@ describe("appSettingsSchema", () => {
     expect(parseAppSettings({ microphoneDeviceId: "default" }).microphoneDeviceId).toBe("default");
   });
 
+  it("accepts a selected overlay position", () => {
+    expect(parseAppSettings({ overlayPosition: "top-center" }).overlayPosition).toBe("top-center");
+  });
+
   it("rejects unsupported silence timeout values", () => {
     expect(() => parseAppSettings({ silenceTimeoutMs: 900 })).toThrow();
+  });
+
+  it("rejects unsupported overlay positions", () => {
+    expect(() => parseAppSettings({ overlayPosition: "somewhere" })).toThrow();
   });
 });

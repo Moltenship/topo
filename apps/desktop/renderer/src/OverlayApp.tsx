@@ -10,6 +10,10 @@ export const OverlayApp = () => {
     setSnapshot(await getRendererApi().getAppState());
   }, []);
 
+  const commitPreviewPosition = useCallback(async (point: { centerX: number; centerY: number }) => {
+    await getRendererApi().commitOverlayPreviewPosition(point);
+  }, []);
+
   useEffect(() => {
     void refreshSnapshot();
 
@@ -18,7 +22,12 @@ export const OverlayApp = () => {
 
   return (
     <main className="h-screen w-screen overflow-hidden bg-transparent">
-      <OverlayView state={snapshot?.overlayState ?? "hidden"} variant="window" />
+      <OverlayView
+        position={snapshot?.settings.overlayPosition ?? "bottom-center"}
+        state={snapshot?.overlayState ?? "hidden"}
+        variant="window"
+        onCommitPreviewPosition={commitPreviewPosition}
+      />
     </main>
   );
 };

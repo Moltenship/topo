@@ -1,4 +1,4 @@
-import { app } from "electron";
+import { app, screen } from "electron";
 import type { BrowserWindow } from "electron";
 import { join } from "node:path";
 import { Effect } from "effect";
@@ -13,6 +13,11 @@ import { createMockNativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppStateSnapshot } from "@molten-voice/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
 import { createFileModelInstallJob } from "./model-install-job";
+import {
+  getNearestOverlayPosition,
+  getOverlayWindowBounds,
+  OVERLAY_WINDOW_SIZE,
+} from "./overlay-position";
 import { createWhisperCppRuntimeResolver } from "./whisper-cpp-runtime";
 import { createMainWindow, createOverlayWindow } from "./window-manager";
 
@@ -21,6 +26,26 @@ const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) =>
     window.hide();
     return;
   }
+
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+
+  if (snapshot.overlayState === "preview") {
+    window.setBounds(display.workArea);
+
+    if (!window.isVisible()) {
+      window.showInactive();
+    }
+
+    return;
+  }
+
+  window.setBounds(
+    getOverlayWindowBounds({
+      position: snapshot.settings.overlayPosition,
+      workArea: display.workArea,
+      windowSize: OVERLAY_WINDOW_SIZE,
+    }),
+  );
 
   if (!window.isVisible()) {
     window.showInactive();
@@ -57,6 +82,16 @@ app.whenReady().then(() => {
     whisperCppRuntimeResolver: createWhisperCppRuntimeResolver({
       resourcesRoot: join(app.getAppPath(), "resources"),
     }),
+    resolveOverlayPositionFromPreviewPoint: (point) => {
+      const windowBounds = overlayWindow.getBounds();
+      const center = {
+        x: windowBounds.x + point.centerX,
+        y: windowBounds.y + point.centerY,
+      };
+      const display = screen.getDisplayNearestPoint(center);
+
+      return getNearestOverlayPosition({ center, workArea: display.workArea });
+    },
     onAppStateChanged: (snapshot) => syncOverlayWindow(overlayWindow, snapshot),
   });
 });

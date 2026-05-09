@@ -10,6 +10,7 @@ import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
 import type { SubmittedAudioCaptureService } from "@molten-voice/audio";
 import {
   CancelModelInstallRequest,
+  CommitOverlayPreviewPositionRequest,
   CopyTranscriptRequest,
   DeleteTranscriptRequest,
   InstallModelRequest,
@@ -18,6 +19,7 @@ import {
   ReinsertTranscriptRequest,
   UpdateSettingsRequest,
 } from "@molten-voice/shared";
+import type { OverlayPosition } from "@molten-voice/shared";
 import type { ModelInstallJob } from "./model-install-job";
 import {
   computeModelReadinessForCatalog,
@@ -50,6 +52,10 @@ interface IpcHandlerDependencies {
   readonly catalog?: readonly ModelCatalogEntry[];
   readonly whisperCppRuntimeReadinessCache?: WhisperCppRuntimeReadinessCache;
   readonly whisperCppRuntimeResolver?: WhisperCppRuntimeResolver;
+  readonly resolveOverlayPositionFromPreviewPoint?: (point: {
+    readonly centerX: number;
+    readonly centerY: number;
+  }) => OverlayPosition;
   readonly onAppStateChanged?: (snapshot: AppStateSnapshot) => void;
 }
 
@@ -239,6 +245,36 @@ const updateSettings = (
     return yield* dependencies.database.settings.set(settings);
   });
 
+const showOverlayPreview = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
+  Effect.sync(() => {
+    currentErrorMessage = null;
+    clearOverlayHideTimer();
+    state.overlayState = "preview";
+    overlayHideTimer = setTimeout(() => {
+      state.overlayState = "hidden";
+      overlayHideTimer = null;
+      void Effect.runPromise(publishAppState(dependencies));
+    }, 8000);
+  });
+
+const commitOverlayPreviewPosition = (
+  dependencies: IpcHandlerDependencies,
+  point: { readonly centerX: number; readonly centerY: number },
+): Effect.Effect<AppSettings, Error> =>
+  Effect.gen(function* () {
+    if (!dependencies.resolveOverlayPositionFromPreviewPoint) {
+      return yield* Effect.fail(new Error("Overlay preview positioning is unavailable."));
+    }
+
+    const settings = yield* getSettings(dependencies);
+    const overlayPosition = dependencies.resolveOverlayPositionFromPreviewPoint(point);
+
+    clearOverlayHideTimer();
+    state.overlayState = "hidden";
+
+    return yield* updateSettings(dependencies, { ...settings, overlayPosition });
+  });
+
 const startTestDictation = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
   Effect.gen(function* () {
     currentErrorMessage = null;
@@ -409,6 +445,23 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
         yield* publishAppState(dependencies);
 
         return nextSettings;
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.showOverlayPreview, () =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        yield* showOverlayPreview(dependencies);
+        yield* publishAppState(dependencies);
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.commitOverlayPreviewPosition, (_event, input: unknown) =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const point = yield* decodeIpcPayload(CommitOverlayPreviewPositionRequest, input);
+        yield* commitOverlayPreviewPosition(dependencies, point);
+        yield* publishAppState(dependencies);
       }),
     ),
   );

@@ -32,11 +32,21 @@ interface SettingsPageProps {
   readonly onDismissError: () => void;
   readonly onInstallModel: (modelId: string) => void;
   readonly onSettingsChange: (settings: AppSettings) => void;
+  readonly onShowOverlayPreview: () => void;
   readonly onStartTestDictation: () => void;
   readonly onStopTestDictation: () => void;
 }
 
 const formatBytes = (bytes: number): string => `${Math.round(bytes / 1024 / 1024)} MB`;
+
+const overlayPositionOptions = [
+  { label: "Bottom center", value: "bottom-center" },
+  { label: "Top center", value: "top-center" },
+  { label: "Bottom left", value: "bottom-left" },
+  { label: "Bottom right", value: "bottom-right" },
+  { label: "Center left", value: "center-left" },
+  { label: "Center right", value: "center-right" },
+] as const;
 
 interface MicrophoneDeviceOption {
   readonly label: string;
@@ -106,6 +116,7 @@ export const SettingsPage = ({
   onDismissError,
   onInstallModel,
   onSettingsChange,
+  onShowOverlayPreview,
   onStartTestDictation,
   onStopTestDictation,
 }: SettingsPageProps) => {
@@ -362,6 +373,29 @@ export const SettingsPage = ({
         })}
       </SettingsSection>
       <SettingsSection id="dictation" title="Dictation">
+        <SettingsRow
+          title="Overlay position"
+          description="Choose where the recording pill appears on screen."
+          resetAction={getResetAction("overlayPosition", "overlay position")}
+        >
+          <div className="flex items-center justify-end gap-2 max-sm:flex-wrap max-sm:justify-start">
+            <SettingsSelect
+              disabled={!settings}
+              value={settings?.overlayPosition ?? "bottom-center"}
+              options={overlayPositionOptions}
+              onChange={(value) => updateSettings("overlayPosition", value)}
+            />
+            <Button
+              disabled={!settings || isRecording}
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={onShowOverlayPreview}
+            >
+              Preview
+            </Button>
+          </div>
+        </SettingsRow>
         <SettingsRow
           title="Microphone"
           description="Choose the input device that will be used for local dictation recording."

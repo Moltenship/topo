@@ -12,6 +12,8 @@ export const IpcChannels = {
   deleteTranscript: "history:delete-transcript",
   clearTranscripts: "history:clear-transcripts",
   updateSettings: "settings:update",
+  showOverlayPreview: "overlay:show-preview",
+  commitOverlayPreviewPosition: "overlay:commit-preview-position",
   startTestDictation: "dictation:start-test",
   stopTestDictation: "dictation:stop-test",
   installModel: "models:install",
@@ -64,3 +66,9 @@ export const CancelModelInstallRequest = Schema.Struct({
   modelId: Schema.String,
 });
 export type CancelModelInstallRequest = typeof CancelModelInstallRequest.Type;
+
+export const CommitOverlayPreviewPositionRequest = Schema.Struct({
+  centerX: Schema.Number,
+  centerY: Schema.Number,
+});
+export type CommitOverlayPreviewPositionRequest = typeof CommitOverlayPreviewPositionRequest.Type;
