@@ -15,51 +15,59 @@ export const AppTitleBar = () => {
   const isMac = api.platform === "macos";
 
   return (
-    <header className="app-region-drag relative grid h-[52px] grid-cols-[1fr_auto_1fr] items-center bg-card/80 px-4 text-foreground">
-      <div className="pointer-events-none absolute bottom-0 left-[208px] right-0 border-b" />
-      <div className={cn("flex items-center gap-2", isMac && "pl-[60px]")}>
+    <header className="app-region-drag grid h-[52px] grid-cols-[208px_minmax(0,1fr)] bg-background text-foreground">
+      <div
+        className={cn(
+          "flex h-full items-center border-r bg-card/70 pl-[22px]",
+          isMac && "pl-[76px]",
+        )}
+      >
         <BrandMark className="text-[12px]" />
       </div>
-      <div className="text-[11px] font-semibold text-muted-foreground">Local dictation</div>
-      <div className="flex items-center justify-end gap-1">
-        <Button className={restoreButtonClass} size="sm" type="button" variant="outline">
-          <RotateCcw className="size-3.5" />
-          Restore defaults
-        </Button>
-        {isMac ? null : (
-          <>
-            <Button
-              aria-label="Minimize window"
-              className={titleBarButtonClass}
-              size="icon"
-              type="button"
-              variant="ghost"
-              onClick={() => void api.minimizeWindow()}
-            >
-              <Minus className="size-3.5" />
-            </Button>
-            <Button
-              aria-label="Maximize window"
-              className={titleBarButtonClass}
-              size="icon"
-              type="button"
-              variant="ghost"
-              onClick={() => void api.toggleMaximizeWindow()}
-            >
-              <Square className="size-3" />
-            </Button>
-            <Button
-              aria-label="Close window"
-              className="app-region-no-drag size-8 rounded-md border border-transparent text-muted-foreground shadow-none hover:bg-destructive hover:text-white"
-              size="icon"
-              type="button"
-              variant="ghost"
-              onClick={() => void api.closeWindow()}
-            >
-              <X className="size-3.5" />
-            </Button>
-          </>
-        )}
+      <div className="flex h-full min-w-0 items-center border-b px-5">
+        <div className="text-[12px] font-medium tracking-wide text-muted-foreground/70">
+          Local dictation
+        </div>
+        <div className="ms-auto flex items-center justify-end gap-1">
+          <Button className={restoreButtonClass} size="sm" type="button" variant="outline">
+            <RotateCcw className="size-3.5" />
+            Restore defaults
+          </Button>
+          {isMac ? null : (
+            <>
+              <Button
+                aria-label="Minimize window"
+                className={titleBarButtonClass}
+                size="icon"
+                type="button"
+                variant="ghost"
+                onClick={() => void api.minimizeWindow()}
+              >
+                <Minus className="size-3.5" />
+              </Button>
+              <Button
+                aria-label="Maximize window"
+                className={titleBarButtonClass}
+                size="icon"
+                type="button"
+                variant="ghost"
+                onClick={() => void api.toggleMaximizeWindow()}
+              >
+                <Square className="size-3" />
+              </Button>
+              <Button
+                aria-label="Close window"
+                className="app-region-no-drag size-8 rounded-md border border-transparent text-muted-foreground shadow-none hover:bg-destructive hover:text-white"
+                size="icon"
+                type="button"
+                variant="ghost"
+                onClick={() => void api.closeWindow()}
+              >
+                <X className="size-3.5" />
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
