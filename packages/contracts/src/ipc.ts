@@ -13,6 +13,7 @@ export const IpcChannels = {
   startTestDictation: "dictation:start-test",
   stopTestDictation: "dictation:stop-test",
   installModel: "models:install",
+  cancelModelInstall: "models:cancel-install",
   appStateChanged: "app:state-changed",
 } as const;
 
@@ -46,3 +47,8 @@ export const InstallModelRequest = Schema.Struct({
   modelId: Schema.String,
 });
 export type InstallModelRequest = typeof InstallModelRequest.Type;
+
+export const CancelModelInstallRequest = Schema.Struct({
+  modelId: Schema.String,
+});
+export type CancelModelInstallRequest = typeof CancelModelInstallRequest.Type;

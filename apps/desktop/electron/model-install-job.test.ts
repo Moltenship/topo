@@ -99,4 +99,45 @@ describe("createFileModelInstallJob", () => {
     });
     await expect(readFile(`${installRoot}/test-model/test-model.bin.download`)).rejects.toThrow();
   });
+
+  it("cancels an active download without surfacing an install error", async () => {
+    const installRoot = await mkdtemp(join(tmpdir(), "molten-model-install-"));
+    const model = createTestModel("expected");
+    let sawDownloading = false;
+    const job = createFileModelInstallJob({
+      installRoot,
+      catalog: [model],
+      fetch: async () =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            start: (controller) => {
+              controller.enqueue(new TextEncoder().encode("exp"));
+            },
+            cancel: () => undefined,
+          }),
+          {
+            headers: {
+              "content-length": String(Buffer.byteLength("expected")),
+            },
+          },
+        ),
+    });
+    const installPromise = Effect.runPromise(
+      job.start(model.id, () => {
+        const progress = job.getCurrentProgress();
+
+        if (progress?.status === "downloading" && progress.receivedBytes > 0) {
+          sawDownloading = true;
+          void Effect.runPromise(job.cancel(model.id));
+        }
+      }),
+    );
+
+    await expect(installPromise).resolves.toMatchObject({
+      modelId: model.id,
+      status: "canceled",
+    });
+    expect(sawDownloading).toBe(true);
+    await expect(readFile(`${installRoot}/test-model/test-model.bin.download`)).rejects.toThrow();
+  });
 });

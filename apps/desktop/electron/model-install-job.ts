@@ -15,6 +15,7 @@ import type { ModelInstallProgress } from "@molten-voice/shared";
 export interface ModelInstallJob {
   readonly getCurrentProgress: () => ModelInstallProgress | null;
   readonly getInstalledModelPath: (modelId: string) => string | null;
+  readonly cancel: (modelId: string) => Effect.Effect<void, Error>;
   readonly start: (
     modelId: string,
     onProgressChanged: () => void,
@@ -71,6 +72,8 @@ export const createFileModelInstallJob = ({
   catalog = bundledModelCatalog,
 }: FileModelInstallJobOptions): ModelInstallJob => {
   let currentProgress: ModelInstallProgress | null = null;
+  let activeAbortController: AbortController | null = null;
+  let activeModelId: string | null = null;
 
   const setProgress = (progress: ModelInstallProgress, onProgressChanged: () => void) => {
     currentProgress = progress;
@@ -84,6 +87,19 @@ export const createFileModelInstallJob = ({
 
       return model ? createModelInstallPlan(model, installRoot).modelFilePath : null;
     },
+    cancel: (modelId) =>
+      Effect.sync(() => {
+        if (activeModelId === modelId) {
+          activeAbortController?.abort();
+          currentProgress = currentProgress
+            ? {
+                ...currentProgress,
+                status: "canceled",
+                errorMessage: null,
+              }
+            : createProgress(modelId, "canceled", 0, 0);
+        }
+      }),
     start: (modelId, onProgressChanged) =>
       Effect.gen(function* () {
         const model = catalog.find((model) => model.id === modelId);
@@ -100,6 +116,10 @@ export const createFileModelInstallJob = ({
 
         const plan = createModelInstallPlan(model, installRoot);
         const tempFilePath = `${plan.modelFilePath}.download`;
+        const abortController = new AbortController();
+
+        activeAbortController = abortController;
+        activeModelId = modelId;
 
         setProgress(
           createProgress(modelId, "queued", 0, plan.expectedSizeBytes),
@@ -116,7 +136,7 @@ export const createFileModelInstallJob = ({
         );
 
         const response = yield* Effect.tryPromise({
-          try: () => fetch(plan.downloadUrl),
+          try: () => fetch(plan.downloadUrl, { signal: abortController.signal }),
           catch: (error) => (error instanceof Error ? error : new Error(String(error))),
         });
 
@@ -140,6 +160,10 @@ export const createFileModelInstallJob = ({
           try: async () => {
             try {
               while (true) {
+                if (abortController.signal.aborted) {
+                  throw new Error("Model install canceled");
+                }
+
                 const { done, value } = await reader.read();
 
                 if (done) {
@@ -213,22 +237,43 @@ export const createFileModelInstallJob = ({
           plan.expectedSizeBytes,
         );
         setProgress(installedProgress, onProgressChanged);
+        activeAbortController = null;
+        activeModelId = null;
 
         return installedProgress;
       }).pipe(
         Effect.tapError((error) =>
-          Effect.sync(() => {
+          Effect.promise(async () => {
+            const wasCanceled = activeModelId === modelId && activeAbortController?.signal.aborted;
+            const model = catalog.find((model) => model.id === modelId);
+            const tempFilePath = model
+              ? `${createModelInstallPlan(model, installRoot).modelFilePath}.download`
+              : null;
+
+            if (tempFilePath) {
+              await rm(tempFilePath, { force: true });
+            }
+
             currentProgress = {
               modelId,
-              status: "failed",
+              status: wasCanceled ? "canceled" : "failed",
               receivedBytes: currentProgress?.receivedBytes ?? 0,
               totalBytes: currentProgress?.totalBytes ?? 0,
               percent: currentProgress?.percent ?? 0,
-              errorMessage: error.message,
+              errorMessage: wasCanceled ? null : error.message,
             };
+            activeAbortController = null;
+            activeModelId = null;
             onProgressChanged();
           }),
         ),
+        Effect.catchAll((error) => {
+          if (currentProgress?.status === "canceled") {
+            return Effect.succeed(currentProgress);
+          }
+
+          return Effect.fail(error);
+        }),
       ),
   };
 };
@@ -247,6 +292,17 @@ export const createMockModelInstallJob = (): ModelInstallJob => {
   return {
     getCurrentProgress: () => currentProgress,
     getInstalledModelPath: (modelId) => `mock://${modelId}`,
+    cancel: (modelId) =>
+      Effect.sync(() => {
+        if (currentProgress?.modelId === modelId) {
+          clearTimer();
+          currentProgress = {
+            ...currentProgress,
+            status: "canceled",
+            errorMessage: null,
+          };
+        }
+      }),
     start: (modelId, onProgressChanged) =>
       Effect.gen(function* () {
         const model = bundledModelCatalog.find((model) => model.id === modelId);

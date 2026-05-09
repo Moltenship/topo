@@ -95,6 +95,16 @@ export const App = ({ view = "workbench" }: AppProps) => {
     [refreshSnapshot, runAction],
   );
 
+  const cancelModelInstall = useCallback(
+    async (modelId: string) => {
+      await runAction(async () => {
+        await getRendererApi().cancelModelInstall(modelId);
+        await refreshSnapshot();
+      });
+    },
+    [refreshSnapshot, runAction],
+  );
+
   useEffect(() => {
     void refreshSnapshot();
 
@@ -123,6 +133,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
           modelInstallProgress={snapshot?.modelInstallProgress ?? null}
           settings={snapshot?.settings ?? null}
           onDismissError={() => setErrorMessage(null)}
+          onCancelModelInstall={cancelModelInstall}
           onStartTestDictation={startTestDictation}
           onStopTestDictation={stopTestDictation}
           onInstallModel={installModel}
@@ -149,6 +160,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
         modelInstallProgress={snapshot?.modelInstallProgress ?? null}
         settings={snapshot?.settings ?? null}
         onDismissError={() => setErrorMessage(null)}
+        onCancelModelInstall={cancelModelInstall}
         onStartTestDictation={startTestDictation}
         onStopTestDictation={stopTestDictation}
         onInstallModel={installModel}

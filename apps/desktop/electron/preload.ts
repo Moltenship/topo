@@ -10,6 +10,7 @@ const api: MoltenVoiceApi = {
   clearTranscripts: () => ipcRenderer.invoke(IpcChannels.clearTranscripts),
   updateSettings: (settings) => ipcRenderer.invoke(IpcChannels.updateSettings, settings),
   installModel: (modelId) => ipcRenderer.invoke(IpcChannels.installModel, { modelId }),
+  cancelModelInstall: (modelId) => ipcRenderer.invoke(IpcChannels.cancelModelInstall, { modelId }),
   startTestDictation: () => ipcRenderer.invoke(IpcChannels.startTestDictation),
   stopTestDictation: () => ipcRenderer.invoke(IpcChannels.stopTestDictation),
   onAppStateChanged: (listener) => {

@@ -18,6 +18,7 @@ interface SetupFlowProps {
   readonly settings: AppSettings | null;
   readonly modelInstallProgress?: ModelInstallProgress | null;
   readonly onDismissError: () => void;
+  readonly onCancelModelInstall: (modelId: string) => void;
   readonly onInstallModel: (modelId: string) => void;
   readonly onStartTestDictation: () => void;
   readonly onStopTestDictation: () => void;
@@ -32,6 +33,7 @@ export const SetupFlow = ({
   settings,
   modelInstallProgress = null,
   onDismissError,
+  onCancelModelInstall,
   onInstallModel,
   onStartTestDictation,
   onStopTestDictation,
@@ -139,6 +141,7 @@ export const SetupFlow = ({
           activeModelId={settings?.activeModelId ?? null}
           installedModels={installedModels}
           installProgress={modelInstallProgress}
+          onCancelModelInstall={onCancelModelInstall}
           onInstallModel={onInstallModel}
           onSelectModel={(modelId) => {
             if (settings) {

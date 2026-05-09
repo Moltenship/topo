@@ -30,6 +30,7 @@ export interface MoltenVoiceApi {
   readonly clearTranscripts: () => Promise<void>;
   readonly updateSettings: (settings: AppSettings) => Promise<AppSettings>;
   readonly installModel: (modelId: string) => Promise<ModelInstallProgress>;
+  readonly cancelModelInstall: (modelId: string) => Promise<void>;
   readonly startTestDictation: () => Promise<void>;
   readonly stopTestDictation: () => Promise<TranscriptRecord>;
   readonly onAppStateChanged: (listener: (snapshot: AppStateSnapshot) => void) => () => void;

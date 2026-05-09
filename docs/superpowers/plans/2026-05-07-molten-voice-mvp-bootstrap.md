@@ -2724,7 +2724,8 @@ Updated on 2026-05-09 after deciding to keep the catalog bundled and avoid tray/
   - atomically moves verified files into the app model directory;
   - writes the installed model record only after verification succeeds.
 - [ ] Add snapshot/subfolder downloader support for WhisperKit Core ML directories.
-- [ ] Add retry/cancel/repair commands after the real downloader exists.
+- [x] Add cancel command for active model downloads.
+- [ ] Add retry/repair commands after the real downloader exists.
 - [ ] Add system notifications for install success/failure later. Notification copy and actions are intentionally deferred.
 
 ### Candidate Upstream Model Sources

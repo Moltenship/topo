@@ -9,6 +9,7 @@ interface ModelPickerProps {
   readonly activeModelId: string | null;
   readonly installedModels: readonly InstalledModelRecord[];
   readonly installProgress: ModelInstallProgress | null;
+  readonly onCancelModelInstall: (modelId: string) => void;
   readonly onInstallModel: (modelId: string) => void;
   readonly onSelectModel: (modelId: string) => void;
 }
@@ -19,6 +20,7 @@ export const ModelPicker = ({
   activeModelId,
   installedModels,
   installProgress,
+  onCancelModelInstall,
   onInstallModel,
   onSelectModel,
 }: ModelPickerProps) => {
@@ -103,26 +105,42 @@ export const ModelPicker = ({
                   </div>
                 </div>
               ) : null}
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={isInstalling}
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onInstallModel(model.id);
-                }}
-              >
-                {isInstalling
-                  ? `${percent}%`
-                  : installedModel
-                    ? installedModel.verificationStatus === "verified"
-                      ? "Reinstall"
-                      : "Repair"
-                    : progress?.status === "installed"
-                      ? "Reinstall"
-                      : "Install"}
-              </Button>
+              <div className="grid grid-cols-2 gap-1.5">
+                <Button
+                  className={!isInstalling ? "col-span-2" : undefined}
+                  size="sm"
+                  variant="outline"
+                  disabled={isInstalling}
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onInstallModel(model.id);
+                  }}
+                >
+                  {isInstalling
+                    ? `${percent}%`
+                    : installedModel
+                      ? installedModel.verificationStatus === "verified"
+                        ? "Reinstall"
+                        : "Repair"
+                      : progress?.status === "installed"
+                        ? "Reinstall"
+                        : "Install"}
+                </Button>
+                {isInstalling ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onCancelModelInstall(model.id);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
         );

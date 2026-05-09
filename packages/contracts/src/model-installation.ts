@@ -8,6 +8,7 @@ export const ModelInstallStatus = Schema.Literal(
   "verifying",
   "installing",
   "installed",
+  "canceled",
   "failed",
 );
 export type ModelInstallStatus = typeof ModelInstallStatus.Type;

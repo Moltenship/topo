@@ -8,6 +8,7 @@ import type { NativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppSettings, AppStateSnapshot, TranscriptRecord } from "@molten-voice/shared";
 import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
 import {
+  CancelModelInstallRequest,
   DeleteTranscriptRequest,
   InstallModelRequest,
   IpcChannels,
@@ -243,6 +244,16 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
         yield* publishAppState(dependencies);
 
         return progress;
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.cancelModelInstall, (_event, input: unknown) =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const payload = yield* decodeIpcPayload(CancelModelInstallRequest, input);
+
+        yield* dependencies.modelInstallJob.cancel(payload.modelId);
+        yield* publishAppState(dependencies);
       }),
     ),
   );
