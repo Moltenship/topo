@@ -12,8 +12,8 @@ export const AppTitleBar = () => {
   const isMac = api.platform === "macos";
 
   return (
-    <header className="app-region-drag grid h-9 grid-cols-[1fr_auto_1fr] items-center border-b bg-card/80 px-2 text-foreground">
-      <div className={cn("flex items-center gap-2", isMac && "pl-[76px]")}>
+    <header className="app-region-drag grid h-9 grid-cols-[1fr_auto_1fr] items-center border-b bg-card/80 pr-2 text-foreground">
+      <div className={cn("flex items-center gap-2 pl-[22px]", isMac && "pl-[76px]")}>
         <BrandMark className="text-[12px]" />
       </div>
       <div className="text-[11px] font-semibold text-muted-foreground">Local dictation</div>
