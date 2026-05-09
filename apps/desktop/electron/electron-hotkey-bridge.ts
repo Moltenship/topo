@@ -1,4 +1,5 @@
-import { globalShortcut } from "electron";
+import { clipboard, globalShortcut } from "electron";
+import { spawn } from "node:child_process";
 import { Effect } from "effect";
 import type {
   ActiveApplicationSnapshot,
@@ -8,6 +9,7 @@ import type {
   Unsubscribe,
 } from "@molten-voice/native-bridge";
 import type { NativeHotkeyEvent } from "@molten-voice/shared";
+import { insertTextWithWindowsAutomation } from "./windows-text-insertion";
 
 const toElectronAccelerator = (hotkey: string): string =>
   hotkey
@@ -16,6 +18,32 @@ const toElectronAccelerator = (hotkey: string): string =>
     .join("+");
 
 const repeatIdleMs = 800;
+
+const runPowerShellCommand = (command: string): Promise<void> =>
+  new Promise((resolve, reject) => {
+    const child = spawn(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-STA", "-ExecutionPolicy", "Bypass", "-Command", command],
+      {
+        windowsHide: true,
+      },
+    );
+    let stderr = "";
+
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      stderr += chunk;
+    });
+    child.on("error", reject);
+    child.on("close", (exitCode) => {
+      if (exitCode === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(stderr.trim() || `PowerShell exited with ${exitCode ?? 1}`));
+    });
+  });
 
 export const createElectronHotkeyBridge = (): NativeBridgeService => {
   const activeApplication: ActiveApplicationSnapshot = {
@@ -58,10 +86,34 @@ export const createElectronHotkeyBridge = (): NativeBridgeService => {
         catch: (error) => (error instanceof Error ? error : new Error(String(error))),
       }),
     getActiveApplication: () => Effect.succeed(activeApplication),
-    insertText: (_request: TextInsertionRequest): Effect.Effect<TextInsertionResult, Error> =>
-      Effect.succeed({
-        inserted: true,
-        targetAppName: activeApplication.appName,
-      }),
+    insertText: (request: TextInsertionRequest): Effect.Effect<TextInsertionResult, Error> => {
+      if (process.platform !== "win32") {
+        return Effect.succeed({
+          inserted: false,
+          targetAppName: activeApplication.appName,
+        });
+      }
+
+      return Effect.promise(async () => {
+        await insertTextWithWindowsAutomation({
+          clipboard,
+          mode: request.mode,
+          runCommand: runPowerShellCommand,
+          text: request.text,
+        });
+
+        return {
+          inserted: true,
+          targetAppName: activeApplication.appName,
+        };
+      }).pipe(
+        Effect.catchAll(() =>
+          Effect.succeed({
+            inserted: false,
+            targetAppName: activeApplication.appName,
+          } satisfies TextInsertionResult),
+        ),
+      );
+    },
   };
 };
