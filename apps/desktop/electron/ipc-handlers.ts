@@ -200,7 +200,10 @@ const stopTestDictation = (
 
     state.overlayState = "inserted";
     currentErrorMessage = null;
-    yield* dependencies.database.transcripts.insert(transcriptWithInsertion);
+
+    if (settings.historyEnabled) {
+      yield* dependencies.database.transcripts.insert(transcriptWithInsertion);
+    }
 
     return transcriptWithInsertion;
   });
