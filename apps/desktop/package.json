@@ -15,6 +15,7 @@
     "build": "electron-vite build"
   },
   "dependencies": {
+    "@base-ui/react": "^1.4.1",
     "@molten-voice/asr": "workspace:*",
     "@molten-voice/audio": "workspace:*",
     "@molten-voice/db": "workspace:*",

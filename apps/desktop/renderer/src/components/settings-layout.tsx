@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Undo2 } from "lucide-react";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export interface SegmentedOption<T extends string | number | boolean | null> {
@@ -59,15 +60,24 @@ export const SettingResetButton = ({
   readonly label: string;
   readonly onClick: () => void;
 }) => (
-  <button
-    aria-label={`Reset ${label} to default`}
-    className="flex size-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-    title="Reset to default"
-    type="button"
-    onClick={onClick}
-  >
-    <Undo2 className="size-3" />
-  </button>
+  <Tooltip>
+    <TooltipTrigger
+      render={
+        <button
+          aria-label={`Reset ${label} to default`}
+          className="flex size-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onClick();
+          }}
+        >
+          <Undo2 className="size-3" />
+        </button>
+      }
+    />
+    <TooltipPopup side="top">Reset to default</TooltipPopup>
+  </Tooltip>
 );
 
 export const SegmentedControl = <T extends string | number | boolean | null>({
