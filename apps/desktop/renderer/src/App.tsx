@@ -3,12 +3,11 @@ import type { AppSettings, AppStateSnapshot } from "@molten-voice/shared";
 import { AppShell } from "./components/AppShell";
 import { AppTitleBar } from "./components/AppTitleBar";
 import { getRendererApi } from "./api/renderer-api";
-import { DictationPage } from "./features/dictation/DictationPage";
 import { HistoryView } from "./features/history/HistoryView";
 import { SettingsPage } from "./features/settings/SettingsPage";
 
 interface AppProps {
-  readonly view?: "workbench" | "setup" | "history" | "settings";
+  readonly view?: "workbench" | "setup" | "history";
 }
 
 const AppChrome = ({ children }: { readonly children: React.ReactNode }) => (
@@ -160,45 +159,23 @@ export const App = ({ view = "workbench" }: AppProps) => {
     );
   }
 
-  if (view === "settings") {
-    return (
-      <AppChrome>
-        <AppShell>
-          <SettingsPage
-            errorMessage={effectiveErrorMessage}
-            installedModels={snapshot?.installedModels ?? []}
-            isRecording={snapshot?.overlayState === "recording"}
-            modelInstallProgress={snapshot?.modelInstallProgress ?? null}
-            settings={snapshot?.settings ?? null}
-            transcriptCount={snapshot?.transcripts.length ?? 0}
-            onCancelModelInstall={cancelModelInstall}
-            onClearTranscripts={clearTranscripts}
-            onDismissError={() => setErrorMessage(null)}
-            onInstallModel={installModel}
-            onSettingsChange={updateSettings}
-            onStartTestDictation={startTestDictation}
-            onStopTestDictation={stopTestDictation}
-          />
-        </AppShell>
-      </AppChrome>
-    );
-  }
-
   return (
     <AppChrome>
       <AppShell>
-        <DictationPage
+        <SettingsPage
           errorMessage={effectiveErrorMessage}
           installedModels={snapshot?.installedModels ?? []}
           isRecording={snapshot?.overlayState === "recording"}
           modelInstallProgress={snapshot?.modelInstallProgress ?? null}
           settings={snapshot?.settings ?? null}
-          onDismissError={() => setErrorMessage(null)}
+          transcriptCount={snapshot?.transcripts.length ?? 0}
           onCancelModelInstall={cancelModelInstall}
-          onStartTestDictation={startTestDictation}
-          onStopTestDictation={stopTestDictation}
+          onClearTranscripts={clearTranscripts}
+          onDismissError={() => setErrorMessage(null)}
           onInstallModel={installModel}
           onSettingsChange={updateSettings}
+          onStartTestDictation={startTestDictation}
+          onStopTestDictation={stopTestDictation}
         />
       </AppShell>
     </AppChrome>

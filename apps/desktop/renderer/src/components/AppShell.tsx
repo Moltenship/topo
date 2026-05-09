@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Archive, Mic2, Settings2 } from "lucide-react";
+import { Archive, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AppShellProps {
@@ -8,9 +8,8 @@ interface AppShellProps {
 }
 
 const navItems = [
-  { to: "/", label: "Dictation", icon: Mic2 },
+  { to: "/", label: "General", icon: Settings2 },
   { to: "/history", label: "History", icon: Archive },
-  { to: "/settings", label: "Settings", icon: Settings2 },
 ] as const;
 
 export const AppShell = ({ children }: AppShellProps) => {

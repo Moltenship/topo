@@ -57,7 +57,7 @@ export const SetupFlow = ({
           {[
             { to: "/", label: "Flow" },
             { to: "/history", label: "History" },
-            { to: "/settings", label: "Settings" },
+            { to: "/", label: "General" },
           ].map((item) => (
             <Link
               activeProps={{ className: "border-primary bg-primary/10 text-primary" }}

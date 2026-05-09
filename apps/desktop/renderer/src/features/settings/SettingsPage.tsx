@@ -54,7 +54,7 @@ export const SettingsPage = ({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <div className="flex min-h-9 items-center justify-between gap-4">
-        <h1 className="text-sm font-semibold">Settings</h1>
+        <h1 className="text-sm font-semibold">General</h1>
         <Button size="sm" variant="outline" type="button">
           <RotateCcw className="size-3.5" />
           Restore defaults

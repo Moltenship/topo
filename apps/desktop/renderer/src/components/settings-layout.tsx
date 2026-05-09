@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,9 +21,7 @@ export const SettingsSection = ({
       <span className="h-px w-3 bg-border" aria-hidden="true" />
       {title}
     </h2>
-    <div className="overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm">
-      {children}
-    </div>
+    <div className="rounded-2xl border bg-card text-card-foreground shadow-sm">{children}</div>
   </section>
 );
 
@@ -86,39 +84,68 @@ export const SettingsSelect = <T extends string | number | null>({
   readonly options: readonly SegmentedOption<T>[];
   readonly value: T;
   readonly onChange: (value: T) => void;
-}) => (
-  <label className="relative inline-flex min-w-[176px]">
-    <select
-      className="h-9 w-full appearance-none rounded-lg border bg-background/80 py-0 pl-3 pr-9 text-[13px] font-semibold text-foreground outline-none transition-colors hover:bg-secondary/40 focus:border-primary/70 disabled:pointer-events-none disabled:opacity-50"
-      disabled={disabled}
-      value={value === null ? "__null" : String(value)}
-      onChange={(event) => {
-        const option = options.find((item) => {
-          const itemValue = item.value === null ? "__null" : String(item.value);
+}) => {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
 
-          return itemValue === event.target.value;
-        });
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
 
-        if (option) {
-          onChange(option.value);
-        }
-      }}
-    >
-      {options.map((option) => (
-        <option
-          key={`${option.value}`}
-          value={option.value === null ? "__null" : String(option.value)}
-        >
-          {option.label}
-        </option>
-      ))}
-    </select>
-    <ChevronDown
-      className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
-      aria-hidden="true"
-    />
-  </label>
-);
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
+  return (
+    <div className="relative inline-flex min-w-[176px]" ref={rootRef}>
+      <button
+        aria-expanded={open}
+        className="inline-flex h-9 w-full items-center justify-between gap-2 rounded-lg border bg-background/80 px-3 text-left text-[13px] font-semibold text-foreground shadow-xs outline-none transition-colors hover:bg-secondary/40 focus-visible:border-primary/70 disabled:pointer-events-none disabled:opacity-50"
+        disabled={disabled}
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="truncate">{selectedOption?.label ?? ""}</span>
+        <ChevronDown
+          className={cn(
+            "size-3.5 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+          aria-hidden="true"
+        />
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-[calc(100%+4px)] z-50 min-w-full overflow-hidden rounded-lg border bg-popover p-1 text-foreground shadow-lg">
+          {options.map((option) => (
+            <button
+              className={cn(
+                "flex min-h-8 w-full items-center rounded-md px-3 text-left text-[13px] font-semibold outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
+                option.value === value && "bg-accent text-accent-foreground",
+              )}
+              key={`${option.value}`}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
 export const SettingsSwitch = ({
   checked,

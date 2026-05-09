@@ -32,7 +32,7 @@ const historyRoute = createRoute({
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
-  component: () => <App view="settings" />,
+  component: App,
 });
 
 const routeTree = rootRoute.addChildren([workbenchRoute, setupRoute, historyRoute, settingsRoute]);
