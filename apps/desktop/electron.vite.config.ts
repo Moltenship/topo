@@ -38,7 +38,7 @@ export default defineConfig({
           preload: resolve(__dirname, "electron/preload.ts"),
         },
         output: {
-          format: "es",
+          format: "cjs",
         },
       },
     },

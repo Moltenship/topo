@@ -30,7 +30,7 @@ export const createMainWindow = (): BrowserWindow => {
     height: 760,
     title: "Molten Voice",
     webPreferences: {
-      preload: join(currentDirectory, "../preload/preload.js"),
+      preload: join(currentDirectory, "../preload/preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -53,7 +53,7 @@ export const createOverlayWindow = (): BrowserWindow => {
     skipTaskbar: true,
     resizable: false,
     webPreferences: {
-      preload: join(currentDirectory, "../preload/preload.js"),
+      preload: join(currentDirectory, "../preload/preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
     },
