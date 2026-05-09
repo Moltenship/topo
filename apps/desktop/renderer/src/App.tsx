@@ -68,6 +68,24 @@ export const App = ({ view = "workbench" }: AppProps) => {
     [historyQuery, runAction, searchHistory],
   );
 
+  const copyTranscript = useCallback(
+    async (id: string) => {
+      await runAction(async () => {
+        await getRendererApi().copyTranscript(id);
+      });
+    },
+    [runAction],
+  );
+
+  const reinsertTranscript = useCallback(
+    async (id: string) => {
+      await runAction(async () => {
+        await getRendererApi().reinsertTranscript(id);
+      });
+    },
+    [runAction],
+  );
+
   const clearTranscripts = useCallback(async () => {
     await runAction(async () => {
       await getRendererApi().clearTranscripts();
@@ -127,8 +145,10 @@ export const App = ({ view = "workbench" }: AppProps) => {
       transcripts={snapshot?.transcripts ?? []}
       variant={view === "history" ? "page" : "panel"}
       onClear={clearTranscripts}
+      onCopy={copyTranscript}
       onDelete={deleteTranscript}
       onQueryChange={searchHistory}
+      onReinsert={reinsertTranscript}
     />
   );
 

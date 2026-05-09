@@ -1,14 +1,18 @@
 export {
   CancelModelInstallRequest,
+  CopyTranscriptRequest,
   DeleteTranscriptRequest,
   InstallModelRequest,
   IpcChannels,
   ListTranscriptsRequest,
+  ReinsertTranscriptRequest,
   UpdateSettingsRequest,
   type CancelModelInstallRequest as CancelModelInstallRequestPayload,
+  type CopyTranscriptRequest as CopyTranscriptRequestPayload,
   type DeleteTranscriptRequest as DeleteTranscriptRequestPayload,
   type InstallModelRequest as InstallModelRequestPayload,
   type IpcChannel,
   type ListTranscriptsRequest as ListTranscriptsRequestPayload,
+  type ReinsertTranscriptRequest as ReinsertTranscriptRequestPayload,
   type UpdateSettingsRequest as UpdateSettingsRequestPayload,
 } from "@molten-voice/contracts";

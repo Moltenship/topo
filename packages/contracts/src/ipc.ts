@@ -7,6 +7,8 @@ import { AppSettings } from "./settings";
 export const IpcChannels = {
   getAppState: "app:get-state",
   listTranscripts: "history:list-transcripts",
+  copyTranscript: "history:copy-transcript",
+  reinsertTranscript: "history:reinsert-transcript",
   deleteTranscript: "history:delete-transcript",
   clearTranscripts: "history:clear-transcripts",
   updateSettings: "settings:update",
@@ -42,6 +44,12 @@ export const DeleteTranscriptRequest = Schema.Struct({
   id: Schema.String,
 });
 export type DeleteTranscriptRequest = typeof DeleteTranscriptRequest.Type;
+
+export const CopyTranscriptRequest = DeleteTranscriptRequest;
+export type CopyTranscriptRequest = typeof CopyTranscriptRequest.Type;
+
+export const ReinsertTranscriptRequest = DeleteTranscriptRequest;
+export type ReinsertTranscriptRequest = typeof ReinsertTranscriptRequest.Type;
 
 export const UpdateSettingsRequest = AppSettings;
 export type UpdateSettingsRequest = typeof UpdateSettingsRequest.Type;

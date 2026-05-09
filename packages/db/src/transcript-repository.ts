@@ -6,6 +6,7 @@ import { transcripts } from "./schema";
 
 export interface TranscriptRepository {
   readonly insert: (record: TranscriptRecord) => Effect.Effect<void>;
+  readonly getById: (id: string) => Effect.Effect<TranscriptRecord | null>;
   readonly list: (query?: string) => Effect.Effect<readonly TranscriptRecord[]>;
   readonly deleteById: (id: string) => Effect.Effect<void>;
   readonly clear: () => Effect.Effect<void>;
@@ -17,6 +18,12 @@ export const createTranscriptRepository = (
   insert: (record) =>
     Effect.sync(() => {
       db.insert(transcripts).values(record).run();
+    }),
+  getById: (id) =>
+    Effect.sync(() => {
+      const row = db.select().from(transcripts).where(eq(transcripts.id, id)).get();
+
+      return (row as TranscriptRecord | undefined) ?? null;
     }),
   list: (query) =>
     Effect.sync(() => {

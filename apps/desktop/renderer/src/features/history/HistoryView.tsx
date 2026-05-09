@@ -10,8 +10,10 @@ interface HistoryViewProps {
   readonly transcripts: readonly TranscriptRecord[];
   readonly variant?: "panel" | "page";
   readonly onClear: () => void;
+  readonly onCopy: (id: string) => void;
   readonly onDelete: (id: string) => void;
   readonly onQueryChange: (query: string) => void;
+  readonly onReinsert: (id: string) => void;
 }
 
 export const HistoryView = ({
@@ -19,8 +21,10 @@ export const HistoryView = ({
   transcripts,
   variant = "panel",
   onClear,
+  onCopy,
   onDelete,
   onQueryChange,
+  onReinsert,
 }: HistoryViewProps) => {
   return (
     <section
@@ -67,9 +71,17 @@ export const HistoryView = ({
                   {item.createdAt}
                 </time>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => onDelete(item.id)} type="button">
-                Delete
-              </Button>
+              <div className="flex flex-wrap justify-end gap-1">
+                <Button size="sm" variant="ghost" onClick={() => onCopy(item.id)} type="button">
+                  Copy
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => onReinsert(item.id)} type="button">
+                  Reinsert
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => onDelete(item.id)} type="button">
+                  Delete
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}

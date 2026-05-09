@@ -27,6 +27,8 @@ export interface MoltenVoiceApi {
   readonly platform: Platform;
   readonly getAppState: () => Promise<AppStateSnapshot>;
   readonly listTranscripts: (query?: string) => Promise<readonly TranscriptRecord[]>;
+  readonly copyTranscript: (id: string) => Promise<void>;
+  readonly reinsertTranscript: (id: string) => Promise<void>;
   readonly deleteTranscript: (id: string) => Promise<void>;
   readonly clearTranscripts: () => Promise<void>;
   readonly updateSettings: (settings: AppSettings) => Promise<AppSettings>;

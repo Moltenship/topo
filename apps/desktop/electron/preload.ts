@@ -10,6 +10,8 @@ const api: MoltenVoiceApi = {
   platform,
   getAppState: () => ipcRenderer.invoke(IpcChannels.getAppState),
   listTranscripts: (query) => ipcRenderer.invoke(IpcChannels.listTranscripts, { query }),
+  copyTranscript: (id) => ipcRenderer.invoke(IpcChannels.copyTranscript, { id }),
+  reinsertTranscript: (id) => ipcRenderer.invoke(IpcChannels.reinsertTranscript, { id }),
   deleteTranscript: (id) => ipcRenderer.invoke(IpcChannels.deleteTranscript, { id }),
   clearTranscripts: () => ipcRenderer.invoke(IpcChannels.clearTranscripts),
   updateSettings: (settings) => ipcRenderer.invoke(IpcChannels.updateSettings, settings),

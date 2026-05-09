@@ -69,4 +69,31 @@ describe("createTranscriptRepository", () => {
     expect(results).toHaveLength(1);
     expect(results[0]?.text).toBe("hello molten voice");
   });
+
+  it("returns transcript records by id", async () => {
+    const repository = createMemoryRepository();
+
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        yield* repository.insert({
+          id: "tr_lookup",
+          text: "lookup transcript",
+          createdAt: "2026-05-07T00:00:00.000Z",
+          durationMs: 1200,
+          modelId: "whisper-cpp-small",
+          runtime: "whisper-cpp",
+          language: "en",
+          recordingMode: "push-to-talk",
+          stopReason: "hotkey-release",
+          insertionMode: "paste",
+          insertionStatus: "inserted",
+          targetAppName: "Test App",
+        });
+
+        return yield* repository.getById("tr_lookup");
+      }),
+    );
+
+    expect(result?.text).toBe("lookup transcript");
+  });
 });

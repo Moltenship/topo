@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from "electron";
+import { BrowserWindow, clipboard, ipcMain } from "electron";
 import { Effect } from "effect";
 import * as Schema from "effect/Schema";
 import type { DictationOrchestrator } from "@molten-voice/asr";
@@ -9,10 +9,12 @@ import type { AppSettings, AppStateSnapshot, TranscriptRecord } from "@molten-vo
 import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
 import {
   CancelModelInstallRequest,
+  CopyTranscriptRequest,
   DeleteTranscriptRequest,
   InstallModelRequest,
   IpcChannels,
   ListTranscriptsRequest,
+  ReinsertTranscriptRequest,
   UpdateSettingsRequest,
 } from "@molten-voice/shared";
 import type { ModelInstallJob } from "./model-install-job";
@@ -99,6 +101,48 @@ const deleteTranscript = (dependencies: IpcHandlerDependencies, id: string): Eff
 
 const clearTranscripts = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
   dependencies.database.transcripts.clear();
+
+const getTranscriptById = (
+  dependencies: IpcHandlerDependencies,
+  id: string,
+): Effect.Effect<TranscriptRecord, Error> =>
+  Effect.gen(function* () {
+    const transcript = yield* dependencies.database.transcripts.getById(id);
+
+    if (!transcript) {
+      return yield* Effect.fail(new Error("Transcript not found."));
+    }
+
+    return transcript;
+  });
+
+const copyTranscript = (
+  dependencies: IpcHandlerDependencies,
+  id: string,
+): Effect.Effect<void, Error> =>
+  Effect.gen(function* () {
+    const transcript = yield* getTranscriptById(dependencies, id);
+
+    yield* Effect.sync(() => clipboard.writeText(transcript.text));
+  });
+
+const reinsertTranscript = (
+  dependencies: IpcHandlerDependencies,
+  id: string,
+): Effect.Effect<void, Error> =>
+  Effect.gen(function* () {
+    const transcript = yield* getTranscriptById(dependencies, id);
+    const settings = yield* getSettings(dependencies);
+
+    const insertion = yield* dependencies.nativeBridge.insertText({
+      text: transcript.text,
+      mode: settings.insertionMode,
+    });
+
+    if (!insertion.inserted) {
+      return yield* Effect.fail(new Error("Transcript insertion failed."));
+    }
+  });
 
 const updateSettings = (
   dependencies: IpcHandlerDependencies,
@@ -189,6 +233,24 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
         const payload = yield* decodeIpcPayload(ListTranscriptsRequest, input);
 
         return yield* listTranscripts(dependencies, payload.query);
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.copyTranscript, (_event, input: unknown) =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const payload = yield* decodeIpcPayload(CopyTranscriptRequest, input);
+
+        yield* copyTranscript(dependencies, payload.id);
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.reinsertTranscript, (_event, input: unknown) =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const payload = yield* decodeIpcPayload(ReinsertTranscriptRequest, input);
+
+        yield* reinsertTranscript(dependencies, payload.id);
       }),
     ),
   );

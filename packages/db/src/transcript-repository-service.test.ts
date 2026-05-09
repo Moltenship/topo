@@ -62,6 +62,7 @@ describe("TranscriptRepositoryService", () => {
   it("supports overriding the service in tests", async () => {
     const fakeLayer = Layer.succeed(TranscriptRepositoryService, {
       insert: () => Effect.void,
+      getById: () => Effect.succeed(null),
       list: () =>
         Effect.succeed([
           {
