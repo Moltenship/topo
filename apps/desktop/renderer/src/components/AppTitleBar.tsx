@@ -10,7 +10,12 @@ const titleBarButtonClass =
 const restoreButtonClass =
   "app-region-no-drag h-8 rounded-lg border bg-background/60 px-3 text-xs font-semibold shadow-none hover:bg-accent hover:text-foreground";
 
-export const AppTitleBar = () => {
+interface AppTitleBarProps {
+  readonly canRestoreDefaults: boolean;
+  readonly onRestoreDefaults: () => void;
+}
+
+export const AppTitleBar = ({ canRestoreDefaults, onRestoreDefaults }: AppTitleBarProps) => {
   const api = getRendererApi();
   const isMac = api.platform === "macos";
 
@@ -29,7 +34,14 @@ export const AppTitleBar = () => {
           Local dictation
         </div>
         <div className="ms-auto flex items-center justify-end gap-1">
-          <Button className={restoreButtonClass} size="sm" type="button" variant="outline">
+          <Button
+            className={restoreButtonClass}
+            disabled={!canRestoreDefaults}
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={onRestoreDefaults}
+          >
             <RotateCcw className="size-3.5" />
             Restore defaults
           </Button>

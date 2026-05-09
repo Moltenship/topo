@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AppSettings, AppStateSnapshot } from "@molten-voice/shared";
+import {
+  DEFAULT_APP_SETTINGS,
+  type AppSettings,
+  type AppStateSnapshot,
+} from "@molten-voice/shared";
 import { AppShell } from "./components/AppShell";
 import { AppTitleBar } from "./components/AppTitleBar";
 import { getRendererApi } from "./api/renderer-api";
@@ -10,9 +14,20 @@ interface AppProps {
   readonly view?: "workbench" | "setup" | "history";
 }
 
-const AppChrome = ({ children }: { readonly children: React.ReactNode }) => (
+const settingsEqual = (left: AppSettings | null, right: AppSettings): boolean =>
+  left !== null && JSON.stringify(left) === JSON.stringify(right);
+
+const AppChrome = ({
+  canRestoreDefaults,
+  children,
+  onRestoreDefaults,
+}: {
+  readonly canRestoreDefaults: boolean;
+  readonly children: React.ReactNode;
+  readonly onRestoreDefaults: () => void;
+}) => (
   <div className="grid h-screen grid-rows-[52px_minmax(0,1fr)] overflow-hidden bg-background text-foreground">
-    <AppTitleBar />
+    <AppTitleBar canRestoreDefaults={canRestoreDefaults} onRestoreDefaults={onRestoreDefaults} />
     {children}
   </div>
 );
@@ -131,6 +146,10 @@ export const App = ({ view = "workbench" }: AppProps) => {
     [refreshSnapshot, runAction],
   );
 
+  const restoreDefaultSettings = useCallback(async () => {
+    await updateSettings(DEFAULT_APP_SETTINGS);
+  }, [updateSettings]);
+
   useEffect(() => {
     void refreshSnapshot();
 
@@ -138,6 +157,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
   }, [refreshSnapshot]);
 
   const effectiveErrorMessage = errorMessage ?? snapshot?.errorMessage ?? null;
+  const canRestoreDefaults = !settingsEqual(snapshot?.settings ?? null, DEFAULT_APP_SETTINGS);
   const historyView = (
     <HistoryView
       query={historyQuery}
@@ -153,14 +173,14 @@ export const App = ({ view = "workbench" }: AppProps) => {
 
   if (view === "history") {
     return (
-      <AppChrome>
+      <AppChrome canRestoreDefaults={canRestoreDefaults} onRestoreDefaults={restoreDefaultSettings}>
         <AppShell>{historyView}</AppShell>
       </AppChrome>
     );
   }
 
   return (
-    <AppChrome>
+    <AppChrome canRestoreDefaults={canRestoreDefaults} onRestoreDefaults={restoreDefaultSettings}>
       <AppShell>
         <SettingsPage
           errorMessage={effectiveErrorMessage}
