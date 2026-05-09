@@ -44,13 +44,45 @@ export type LocalAiSdkTranscriptionErrorCode =
   | "unsupported_language"
   | "transcription_failed";
 
+interface LocalAiSdkTranscriptionErrorDetails {
+  readonly reason?: string;
+  readonly exitCode?: number;
+  readonly stderr?: string;
+  readonly stdout?: string;
+  readonly command?: string;
+  readonly args?: readonly string[];
+  readonly modelId?: string;
+  readonly audioPath?: string;
+  readonly installedModelPath?: string;
+  readonly cause?: unknown;
+}
+
 export class LocalAiSdkTranscriptionError extends Error {
   readonly code: LocalAiSdkTranscriptionErrorCode;
+  readonly exitCode: number | undefined;
+  readonly stderrExcerpt: string | undefined;
+  readonly stdoutExcerpt: string | undefined;
+  readonly command: string | undefined;
+  readonly args: readonly string[] | undefined;
+  readonly modelId: string | undefined;
+  readonly audioPath: string | undefined;
+  readonly installedModelPath: string | undefined;
 
-  constructor(code: LocalAiSdkTranscriptionErrorCode, cause?: unknown) {
-    super(code, { cause });
+  constructor(
+    code: LocalAiSdkTranscriptionErrorCode,
+    details: LocalAiSdkTranscriptionErrorDetails = {},
+  ) {
+    super(formatErrorMessage(code, details), { cause: details.cause });
     this.name = "LocalAiSdkTranscriptionError";
     this.code = code;
+    this.exitCode = details.exitCode;
+    this.stderrExcerpt = excerpt(details.stderr);
+    this.stdoutExcerpt = excerpt(details.stdout);
+    this.command = details.command;
+    this.args = details.args;
+    this.modelId = details.modelId;
+    this.audioPath = details.audioPath;
+    this.installedModelPath = details.installedModelPath;
   }
 }
 
@@ -77,11 +109,25 @@ export const createLocalAiSdkTranscriptionProvider = ({
               args,
               abortSignal,
             };
-      const result = await runWhisperCpp(runner, command);
+      const result = await runWhisperCpp(runner, command, {
+        modelId,
+        audioPath: options.audioPath,
+        installedModelPath: options.installedModelPath,
+      });
       const text = result.stdout.trim();
 
       if (text.length === 0) {
-        throw new LocalAiSdkTranscriptionError("transcription_failed");
+        throw new LocalAiSdkTranscriptionError("transcription_failed", {
+          reason: "whisper.cpp produced no text",
+          exitCode: result.exitCode,
+          stderr: result.stderr,
+          stdout: result.stdout,
+          command: command.binaryPath,
+          args: command.args,
+          modelId,
+          audioPath: options.audioPath,
+          installedModelPath: options.installedModelPath,
+        });
       }
 
       return {
@@ -133,12 +179,24 @@ export const buildWhisperCppArgs = (
 const runWhisperCpp = async (
   runner: WhisperCppRunner,
   command: WhisperCppRunnerCommand,
+  context: Pick<
+    LocalAiSdkTranscriptionErrorDetails,
+    "audioPath" | "installedModelPath" | "modelId"
+  >,
 ): Promise<WhisperCppRunnerResult> => {
   try {
     const result = await runner(command);
 
     if (result.exitCode !== 0) {
-      throw new LocalAiSdkTranscriptionError("transcription_failed");
+      throw new LocalAiSdkTranscriptionError("transcription_failed", {
+        reason: "whisper.cpp exited with a non-zero status",
+        exitCode: result.exitCode,
+        stderr: result.stderr,
+        stdout: result.stdout,
+        command: command.binaryPath,
+        args: command.args,
+        ...context,
+      });
     }
 
     return result;
@@ -147,7 +205,13 @@ const runWhisperCpp = async (
       throw error;
     }
 
-    throw new LocalAiSdkTranscriptionError("transcription_failed", error);
+    throw new LocalAiSdkTranscriptionError("transcription_failed", {
+      reason: "failed to execute whisper.cpp",
+      command: command.binaryPath,
+      args: command.args,
+      cause: error,
+      ...context,
+    });
   }
 };
 
@@ -200,3 +264,42 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isSupportedLanguage = (value: unknown): value is LocalAiSdkTranscriptionLanguage =>
   value === "en" || value === "ru" || value === "auto";
+
+const excerpt = (value: string | undefined): string | undefined => {
+  const trimmed = value?.trim();
+
+  if (trimmed === undefined || trimmed.length === 0) {
+    return undefined;
+  }
+
+  return trimmed.length > 500 ? `${trimmed.slice(0, 500)}...` : trimmed;
+};
+
+const formatErrorMessage = (
+  code: LocalAiSdkTranscriptionErrorCode,
+  details: LocalAiSdkTranscriptionErrorDetails,
+): string => {
+  if (code !== "transcription_failed") {
+    return code;
+  }
+
+  const parts = [
+    code,
+    details.reason,
+    details.exitCode === undefined ? undefined : `exitCode=${details.exitCode}`,
+    details.command === undefined ? undefined : `command=${details.command}`,
+    details.modelId === undefined ? undefined : `modelId=${details.modelId}`,
+    details.audioPath === undefined ? undefined : `audioPath=${details.audioPath}`,
+    details.installedModelPath === undefined
+      ? undefined
+      : `installedModelPath=${details.installedModelPath}`,
+    details.args === undefined ? undefined : `args=${details.args.join(" ")}`,
+    withLabel("stderr", excerpt(details.stderr)),
+    withLabel("stdout", excerpt(details.stdout)),
+  ].filter((part): part is string => part !== undefined);
+
+  return parts.join("; ");
+};
+
+const withLabel = (label: string, value: string | undefined): string | undefined =>
+  value === undefined ? undefined : `${label}=${value}`;
