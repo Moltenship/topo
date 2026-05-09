@@ -29,24 +29,25 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.105 0.002 264);
-  --foreground: oklch(0.92 0.004 286);
-  --card: oklch(0.15 0.003 286);
-  --card-foreground: var(--foreground);
-  --popover: var(--card);
-  --popover-foreground: var(--foreground);
-  --primary: oklch(0.62 0.19 264);
-  --primary-foreground: oklch(0.98 0.002 286);
-  --secondary: oklch(0.205 0.003 286);
-  --secondary-foreground: var(--foreground);
-  --muted: oklch(0.21 0.003 286);
-  --muted-foreground: oklch(0.56 0.006 286);
-  --accent: oklch(0.235 0.006 286);
-  --accent-foreground: var(--foreground);
-  --destructive: oklch(0.62 0.21 25);
-  --border: oklch(0.245 0.004 286);
-  --input: oklch(0.245 0.004 286);
-  --ring: oklch(0.58 0.18 264);
+  --background: color-mix(in srgb, var(--color-neutral-950) 95%, var(--color-white));
+  --app-chrome-background: var(--background);
+  --foreground: var(--color-neutral-100);
+  --card: color-mix(in srgb, var(--background) 98%, var(--color-white));
+  --card-foreground: var(--color-neutral-100);
+  --popover: color-mix(in srgb, var(--background) 98%, var(--color-white));
+  --popover-foreground: var(--color-neutral-100);
+  --primary: oklch(0.588 0.217 264);
+  --primary-foreground: var(--color-white);
+  --secondary: --alpha(var(--color-white) / 4%);
+  --secondary-foreground: var(--color-neutral-100);
+  --muted: --alpha(var(--color-white) / 4%);
+  --muted-foreground: color-mix(in srgb, var(--color-neutral-500) 90%, var(--color-white));
+  --accent: --alpha(var(--color-white) / 4%);
+  --accent-foreground: var(--color-neutral-100);
+  --destructive: color-mix(in srgb, var(--color-red-500) 90%, var(--color-white));
+  --border: --alpha(var(--color-white) / 6%);
+  --input: --alpha(var(--color-white) / 8%);
+  --ring: oklch(0.588 0.217 264);
 }
 
 @layer base {
@@ -56,6 +57,7 @@
 
   body {
     @apply m-0 bg-background text-foreground antialiased;
+    background-color: var(--app-chrome-background);
     font-family:
       ui-sans-serif,
       system-ui,

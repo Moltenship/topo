@@ -15,7 +15,8 @@ export const AppTitleBar = () => {
   const isMac = api.platform === "macos";
 
   return (
-    <header className="app-region-drag grid h-[52px] grid-cols-[1fr_auto_1fr] items-center border-b bg-card/80 px-4 text-foreground">
+    <header className="app-region-drag relative grid h-[52px] grid-cols-[1fr_auto_1fr] items-center bg-card/80 px-4 text-foreground">
+      <div className="pointer-events-none absolute bottom-0 left-[208px] right-0 border-b" />
       <div className={cn("flex items-center gap-2", isMac && "pl-[60px]")}>
         <BrandMark className="text-[12px]" />
       </div>
