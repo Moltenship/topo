@@ -6,7 +6,7 @@ import {
   createDictationOrchestrator,
   createWhisperCppTranscriptionProvider,
 } from "@molten-voice/asr";
-import { createMockAudioCaptureService } from "@molten-voice/audio";
+import { createSubmittedAudioCaptureService } from "@molten-voice/audio";
 import { openAppDatabase } from "@molten-voice/db";
 import { getBundledModelCatalog } from "@molten-voice/model-catalog";
 import { createMockNativeBridgeService } from "@molten-voice/native-bridge";
@@ -31,8 +31,9 @@ app.whenReady().then(() => {
   const userDataDirectory = app.getPath("userData");
   const catalog = getBundledModelCatalog({ includeDev: !app.isPackaged });
   const database = Effect.runSync(openAppDatabase(userDataDirectory));
+  const audio = createSubmittedAudioCaptureService();
   const dictation = createDictationOrchestrator({
-    audio: createMockAudioCaptureService(),
+    audio,
     transcription: createWhisperCppTranscriptionProvider(),
     now: () => new Date(),
     createId: () => crypto.randomUUID(),
@@ -44,6 +45,7 @@ app.whenReady().then(() => {
   registerIpcHandlers({
     database,
     dictation,
+    audio,
     catalog,
     modelInstallJob: createFileModelInstallJob({
       installRoot: join(userDataDirectory, "models"),

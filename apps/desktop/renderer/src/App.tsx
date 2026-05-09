@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   DEFAULT_APP_SETTINGS,
   type AppSettings,
@@ -9,6 +9,10 @@ import { AppTitleBar } from "./components/AppTitleBar";
 import { getRendererApi } from "./api/renderer-api";
 import { HistoryView } from "./features/history/HistoryView";
 import { SettingsPage } from "./features/settings/SettingsPage";
+import {
+  startBrowserAudioRecorder,
+  type BrowserAudioRecorder,
+} from "./features/dictation/browser-audio-recorder";
 
 interface AppProps {
   readonly view?: "workbench" | "setup" | "history";
@@ -36,6 +40,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
   const [snapshot, setSnapshot] = useState<AppStateSnapshot | null>(null);
   const [historyQuery, setHistoryQuery] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const testAudioRecorderRef = useRef<BrowserAudioRecorder | null>(null);
 
   const runAction = useCallback(async (action: () => Promise<void>) => {
     setErrorMessage(null);
@@ -60,14 +65,31 @@ export const App = ({ view = "workbench" }: AppProps) => {
 
   const startTestDictation = useCallback(async () => {
     await runAction(async () => {
-      await getRendererApi().startTestDictation();
+      const recorder = await startBrowserAudioRecorder(
+        snapshot?.settings.microphoneDeviceId ?? null,
+      );
+      try {
+        await getRendererApi().startTestDictation();
+      } catch (error) {
+        await recorder.stop();
+        throw error;
+      }
+      testAudioRecorderRef.current = recorder;
       await refreshSnapshot();
     });
-  }, [refreshSnapshot, runAction]);
+  }, [refreshSnapshot, runAction, snapshot?.settings.microphoneDeviceId]);
 
   const stopTestDictation = useCallback(async () => {
     await runAction(async () => {
-      await getRendererApi().stopTestDictation();
+      const recorder = testAudioRecorderRef.current;
+
+      if (!recorder) {
+        throw new Error("No active browser recording session.");
+      }
+
+      testAudioRecorderRef.current = null;
+      const audio = await recorder.stop();
+      await getRendererApi().stopTestDictation(audio);
       await refreshSnapshot();
     });
   }, [refreshSnapshot, runAction]);

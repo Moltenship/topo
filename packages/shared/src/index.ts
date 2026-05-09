@@ -35,7 +35,10 @@ export interface MoltenVoiceApi {
   readonly installModel: (modelId: string) => Promise<ModelInstallProgress>;
   readonly cancelModelInstall: (modelId: string) => Promise<void>;
   readonly startTestDictation: () => Promise<void>;
-  readonly stopTestDictation: () => Promise<TranscriptRecord>;
+  readonly stopTestDictation: (input: {
+    readonly wavBytes: Uint8Array;
+    readonly durationMs: number;
+  }) => Promise<TranscriptRecord>;
   readonly minimizeWindow: () => Promise<void>;
   readonly toggleMaximizeWindow: () => Promise<void>;
   readonly closeWindow: () => Promise<void>;

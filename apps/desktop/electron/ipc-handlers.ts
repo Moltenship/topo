@@ -7,6 +7,7 @@ import { bundledModelCatalog, type ModelCatalogEntry } from "@molten-voice/model
 import type { NativeBridgeService } from "@molten-voice/native-bridge";
 import type { AppSettings, AppStateSnapshot, TranscriptRecord } from "@molten-voice/shared";
 import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
+import type { SubmittedAudioCaptureService } from "@molten-voice/audio";
 import {
   CancelModelInstallRequest,
   CopyTranscriptRequest,
@@ -43,6 +44,7 @@ let currentErrorMessage: string | null = null;
 interface IpcHandlerDependencies {
   readonly database: AppDatabase;
   readonly dictation: DictationOrchestrator;
+  readonly audio?: SubmittedAudioCaptureService;
   readonly modelInstallJob: ModelInstallJob;
   readonly nativeBridge: NativeBridgeService;
   readonly catalog?: readonly ModelCatalogEntry[];
@@ -67,6 +69,33 @@ const decodeIpcPayload = <A, I, R>(
   Schema.decodeUnknown(schema)(payload).pipe(
     Effect.mapError((error) => new Error(`Invalid IPC payload: ${String(error)}`)),
   );
+
+const decodeStopTestDictationInput = (
+  input: unknown,
+): { readonly wavBytes: Uint8Array; readonly durationMs: number } => {
+  if (
+    typeof input !== "object" ||
+    input === null ||
+    !("wavBytes" in input) ||
+    !("durationMs" in input)
+  ) {
+    throw new Error("Invalid IPC payload: missing test recording audio");
+  }
+
+  const candidate = input as { readonly wavBytes: unknown; readonly durationMs: unknown };
+  const wavBytes =
+    candidate.wavBytes instanceof Uint8Array
+      ? candidate.wavBytes
+      : Array.isArray(candidate.wavBytes)
+        ? Uint8Array.from(candidate.wavBytes)
+        : null;
+
+  if (wavBytes === null || typeof candidate.durationMs !== "number") {
+    throw new Error("Invalid IPC payload: invalid test recording audio");
+  }
+
+  return { wavBytes, durationMs: candidate.durationMs };
+};
 
 const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSettings> =>
   Effect.gen(function* () {
@@ -220,6 +249,7 @@ const startTestDictation = (dependencies: IpcHandlerDependencies): Effect.Effect
 
 const stopTestDictation = (
   dependencies: IpcHandlerDependencies,
+  submittedAudio: { readonly wavBytes: Uint8Array; readonly durationMs: number },
 ): Effect.Effect<TranscriptRecord, Error> =>
   Effect.gen(function* () {
     const catalog = getCatalog(dependencies);
@@ -271,6 +301,10 @@ const stopTestDictation = (
     state.overlayState = "processing";
     yield* publishAppState(dependencies);
 
+    if (dependencies.audio) {
+      yield* dependencies.audio.submitCapturedAudio(submittedAudio);
+    }
+
     const transcript = yield* dependencies.dictation.stop({
       language: settings.language,
       modelId: selectedModel.id,
@@ -290,7 +324,7 @@ const stopTestDictation = (
       targetAppName: insertion.targetAppName,
     };
 
-    state.overlayState = "inserted";
+    state.overlayState = "hidden";
     currentErrorMessage = null;
 
     if (settings.historyEnabled) {
@@ -442,10 +476,14 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
       }),
     ),
   );
-  ipcMain.handle(IpcChannels.stopTestDictation, () =>
+  ipcMain.handle(IpcChannels.stopTestDictation, (_event, input: unknown) =>
     Effect.runPromise(
       Effect.gen(function* () {
-        const transcript = yield* stopTestDictation(dependencies).pipe(
+        const submittedAudio = yield* Effect.try({
+          try: () => decodeStopTestDictationInput(input),
+          catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+        });
+        const transcript = yield* stopTestDictation(dependencies, submittedAudio).pipe(
           Effect.tapError((error) =>
             Effect.gen(function* () {
               currentErrorMessage = error.message;
@@ -455,11 +493,6 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
           ),
         );
         yield* publishAppState(dependencies);
-        clearOverlayHideTimer();
-        overlayHideTimer = setTimeout(() => {
-          state.overlayState = "hidden";
-          void Effect.runPromise(publishAppState(dependencies));
-        }, 1600);
 
         return transcript;
       }),

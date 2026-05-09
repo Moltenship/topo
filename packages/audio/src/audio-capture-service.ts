@@ -19,6 +19,69 @@ export interface AudioCaptureService {
   readonly onLevelFrame: (listener: (frame: LevelFrame) => void) => Unsubscribe;
 }
 
+export interface SubmittedAudioCaptureService extends AudioCaptureService {
+  readonly submitCapturedAudio: (input: {
+    readonly wavBytes: Uint8Array;
+    readonly durationMs: number;
+  }) => Effect.Effect<void, Error>;
+}
+
+export const createSubmittedAudioCaptureService = (): SubmittedAudioCaptureService => {
+  let activeSessionId: string | null = null;
+  let submittedAudio: { readonly wavBytes: Uint8Array; readonly durationMs: number } | null = null;
+  const listeners = new Set<(frame: LevelFrame) => void>();
+
+  return {
+    startRecording: (sessionId) =>
+      Effect.sync(() => {
+        activeSessionId = sessionId;
+        submittedAudio = null;
+        for (const listener of listeners) {
+          listener({ sessionId, timestampMs: Date.now(), rms: 0.4, peak: 0.7 });
+        }
+      }),
+    submitCapturedAudio: (input) =>
+      Effect.sync(() => {
+        submittedAudio = input;
+      }),
+    stopRecording: () =>
+      Effect.tryPromise({
+        try: async () => {
+          if (activeSessionId === null) {
+            throw new Error("No active recording session");
+          }
+
+          if (submittedAudio === null) {
+            throw new Error("No submitted audio for active recording session");
+          }
+
+          const sessionId = activeSessionId;
+          const { durationMs, wavBytes } = submittedAudio;
+          activeSessionId = null;
+          submittedAudio = null;
+
+          return {
+            sessionId,
+            audioPath: await writeWavBytes(sessionId, wavBytes, "submitted-captures"),
+            durationMs,
+          };
+        },
+        catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+      }),
+    cleanupCapturedAudio: (audio) =>
+      Effect.tryPromise({
+        try: () => rm(audio.audioPath, { force: true }),
+        catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+      }),
+    onLevelFrame: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+};
+
 export const createMockAudioCaptureService = (): AudioCaptureService => {
   let activeSessionId: string | null = null;
   const listeners = new Set<(frame: LevelFrame) => void>();
@@ -66,11 +129,19 @@ export const createMockAudioCaptureService = (): AudioCaptureService => {
 };
 
 const writeSilentWav = async (sessionId: string, durationMs: number): Promise<string> => {
-  const directory = join(tmpdir(), "molten-voice", "mock-captures");
+  return writeWavBytes(sessionId, createSilentWav(durationMs), "mock-captures");
+};
+
+const writeWavBytes = async (
+  sessionId: string,
+  wavBytes: Uint8Array,
+  directoryName: string,
+): Promise<string> => {
+  const directory = join(tmpdir(), "molten-voice", directoryName);
   await mkdir(directory, { recursive: true });
 
   const audioPath = join(directory, `${sessionId}.wav`);
-  await writeFile(audioPath, createSilentWav(durationMs));
+  await writeFile(audioPath, wavBytes);
 
   return audioPath;
 };
