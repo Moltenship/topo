@@ -1,4 +1,6 @@
 import type { TranscriptRecord } from "@molten-voice/shared";
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,22 @@ export const HistoryView = ({
         variant === "page" && "h-screen overflow-y-auto",
       )}
     >
+      {variant === "page" ? (
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Button asChild size="sm" variant="ghost">
+            <Link to="/">
+              <ArrowLeft className="size-4" />
+              Flow
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/settings">
+              <Settings2 className="size-4" />
+              Settings
+            </Link>
+          </Button>
+        </div>
+      ) : null}
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
