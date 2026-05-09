@@ -154,4 +154,48 @@ describe("createWhisperCppRuntimeResolver", () => {
     });
     expect(probedPaths).toEqual([bundledBinary]);
   });
+
+  it("continues after a failed PATH probe and returns the next usable PATH candidate", async () => {
+    const resourcesRoot = await mkdtemp(join(tmpdir(), "molten-whisper-runtime-"));
+    const badPathRoot = await mkdtemp(join(tmpdir(), "molten-whisper-bad-path-"));
+    const goodPathRoot = await mkdtemp(join(tmpdir(), "molten-whisper-good-path-"));
+    const badBinary = await createBinary(badPathRoot, "whisper-cli.exe");
+    const goodBinary = await createBinary(goodPathRoot, "whisper-cli.exe");
+    const probedPaths: string[] = [];
+    const resolver = createWhisperCppRuntimeResolver({
+      resourcesRoot,
+      env: {
+        PATH: `${badPathRoot}${process.platform === "win32" ? ";" : ":"}${goodPathRoot}`,
+      },
+      probe: (binaryPath) => {
+        probedPaths.push(binaryPath);
+
+        return Effect.succeed(
+          binaryPath === badBinary
+            ? {
+                ok: false,
+                stdout: "",
+                stderr: "bad PATH binary",
+                exitCode: 1,
+              }
+            : {
+                ok: true,
+                stdout: "usage: whisper-cli",
+                stderr: "",
+                exitCode: 0,
+              },
+        );
+      },
+    });
+
+    const result = await Effect.runPromise(resolver.resolve());
+
+    expect(result).toMatchObject({
+      status: "available",
+      binaryPath: goodBinary,
+      source: "path",
+      probeOutput: "usage: whisper-cli",
+    });
+    expect(probedPaths).toEqual([badBinary, goodBinary]);
+  });
 });

@@ -60,6 +60,11 @@ interface Candidate {
   readonly source: WhisperCppRuntimeSource;
 }
 
+interface FailedProbe {
+  readonly candidate: Candidate;
+  readonly result: RuntimeProbeResult;
+}
+
 const envBinaryName = "MOLTEN_WHISPER_CPP_BINARY";
 const binaryNames = [
   "whisper-cli.exe",
@@ -199,6 +204,15 @@ export const defaultRuntimeProbe: RuntimeProbe = (binaryPath) =>
         }),
       );
     });
+
+    return Effect.sync(() => {
+      clearTimeout(timeout);
+
+      if (!completed) {
+        completed = true;
+        childProcess.kill();
+      }
+    });
   });
 
 export const createWhisperCppRuntimeResolver = ({
@@ -218,6 +232,7 @@ export const createWhisperCppRuntimeResolver = ({
         const checkedAt = now().toISOString();
         const candidates = createCandidates(resourcesRoot, env);
         const checkedCandidates: string[] = [];
+        const failedProbes: FailedProbe[] = [];
 
         for (const candidate of candidates) {
           checkedCandidates.push(candidate.path);
@@ -238,14 +253,22 @@ export const createWhisperCppRuntimeResolver = ({
           );
 
           if (!probeResult.ok) {
-            return {
-              status: "failed",
-              binaryPath: candidate.path,
-              source: candidate.source,
-              checkedCandidates,
-              message: createFailedMessage(probeResult),
-              checkedAt,
-            };
+            if (candidate.source === "env") {
+              return {
+                status: "failed",
+                binaryPath: candidate.path,
+                source: candidate.source,
+                checkedCandidates,
+                message: createFailedMessage(probeResult),
+                checkedAt,
+              };
+            }
+
+            failedProbes.push({
+              candidate,
+              result: probeResult,
+            });
+            continue;
           }
 
           cachedAvailable = {
@@ -257,6 +280,19 @@ export const createWhisperCppRuntimeResolver = ({
           };
 
           return cachedAvailable;
+        }
+
+        const firstFailedProbe = failedProbes[0];
+
+        if (firstFailedProbe) {
+          return {
+            status: "failed",
+            binaryPath: firstFailedProbe.candidate.path,
+            source: firstFailedProbe.candidate.source,
+            checkedCandidates,
+            message: createFailedMessage(firstFailedProbe.result),
+            checkedAt,
+          };
         }
 
         return {
