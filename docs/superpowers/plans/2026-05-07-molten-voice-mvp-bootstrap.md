@@ -2739,15 +2739,16 @@ These are candidate source links to prepare the bundled catalog. Checksums are n
 - Runtime browser link: `https://github.com/ggml-org/whisper.cpp/releases`
 - Model repository: `ggerganov/whisper.cpp`
 - Model source type: `huggingface-file`
-- Candidate revision: `main` for development only; replace with a pinned Hugging Face commit before release.
+- Pinned revision: `5359861c739e955e79d9a303bcbc70fb988958b1`
 - Candidate file: `ggml-small.bin`
-- Direct file candidate: `https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin`
+- Direct file: `https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin`
+- Size: `487601967` bytes
+- SHA-256: `1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b`
 - Notes:
   - This should be the first real Windows download/runtime integration target.
-  - Search results report `ggml-small.bin` around 466 MiB and about 852 MB memory use.
+  - Downloaded and hashed locally on 2026-05-09; `ggml-small.bin` is about 465 MiB and about 852 MB memory use.
   - The model repo reports MIT license metadata.
   - Runtime package asset names must be resolved from the pinned GitHub release API before final catalog entry.
-  - `checksumSha256` is still placeholder until the exact pinned artifact is downloaded and hashed locally.
 
 #### WhisperKit Small, macOS Apple Silicon
 
