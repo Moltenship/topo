@@ -11,7 +11,7 @@ interface AppProps {
 }
 
 const AppChrome = ({ children }: { readonly children: React.ReactNode }) => (
-  <div className="grid h-screen grid-rows-[36px_minmax(0,1fr)] overflow-hidden bg-background text-foreground">
+  <div className="grid h-screen grid-rows-[52px_minmax(0,1fr)] overflow-hidden bg-background text-foreground">
     <AppTitleBar />
     {children}
   </div>
