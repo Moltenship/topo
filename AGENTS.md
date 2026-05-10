@@ -26,5 +26,5 @@ If a tradeoff is required, choose correctness and robustness over short-term con
 
 ## Reference repos
 - https://github.com/pingdotgg/t3code - an example of Electron application with Effect TS, a great source of inspiration for architecture and code style.
-- 
+- https://github.com/cjpais/Handy - main reference for local-first transcriptions.
 Use these as implementation references when designing protocol handling, UX flows, and operational safeguards.
