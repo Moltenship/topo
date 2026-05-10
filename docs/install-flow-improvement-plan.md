@@ -6,7 +6,7 @@
 
 **Architecture:** Treat runtime packs and model artifacts as separate installable requirements for the same catalog entry. Electron main remains the owner of filesystem, download, native hotkey, runtime probing, and secret handling; renderer receives typed snapshots and events through shared contracts. Keep model metadata, runtime metadata, install state, readiness state, and post-processing provider settings as explicit domain concepts instead of UI-only flags.
 
-**Tech Stack:** Electron, React, Effect TS, Schema contracts, SQLite repositories, streamed downloads, checksum verification, native helper bridges for macOS/Windows, AI SDK for OpenAI/OpenRouter-compatible post-processing, optional macOS Apple Intelligence bridge.
+**Tech Stack:** Electron, React, Effect TS, Schema contracts, SQLite repositories, streamed downloads, checksum verification, native helper bridges for macOS/Windows, AI SDK for OpenAI/OpenRouter-compatible post-processing, and an AI SDK-compatible Apple Intelligence wrapper over a macOS native bridge.
 
 ---
 
@@ -27,6 +27,7 @@ Reference findings from Handy:
 - Handy tracks transient states separately in UI: downloading, verifying, extracting, switching, active, available, downloadable. The frontend model store also computes smoothed download speed from progress events in `.local/handy/src/stores/modelStore.ts`.
 - Handy implements true push-to-talk by feeding real press/release events into a serialized coordinator in `.local/handy/src-tauri/src/transcription_coordinator.rs`.
 - Handy's post-processing is a separate settings area with provider selection, model selection, API key storage, prompt management, and Apple Intelligence availability handling.
+- Apple Intelligence should be exposed to app code as a local AI SDK-compatible language model wrapper, not as an HTTP provider. The wrapper can keep post-processing orchestration uniform while Electron main and a Swift helper own the actual `FoundationModels.SystemLanguageModel` call.
 
 Reference findings from t3code:
 
@@ -52,7 +53,7 @@ Settings:
 
 1. `Models` tab manages local ASR models and runtime packs.
 2. `Dictation` tab manages hotkey, push-to-talk, microphone, overlay, insertion, and history behavior.
-3. `Post-processing` tab manages raw/lightweight/local Apple Intelligence/API provider processing.
+3. `Post-processing` tab manages raw/lightweight/API provider processing, including local Apple Intelligence through the same AI SDK-facing wrapper shape used by remote providers.
 
 ## Data Model Changes
 
@@ -373,6 +374,8 @@ git commit -m "feat(dictation): add true push to talk coordination"
 - Modify `packages/asr/src/post-processing.ts`
 - Create `packages/asr/src/post-processing-provider.ts`
 - Create `packages/asr/src/post-processing-provider.test.ts`
+- Create `packages/asr/src/apple-intelligence-ai-sdk-provider.ts`
+- Create `packages/asr/src/apple-intelligence-ai-sdk-provider.test.ts`
 - Modify `packages/asr/src/dictation-orchestrator.ts`
 - Modify `apps/desktop/electron/ipc-handlers.ts`
 
@@ -380,6 +383,8 @@ git commit -m "feat(dictation): add true push to talk coordination"
 - [ ] Add provider settings for `openai`, `openrouter`, and `custom-openai-compatible`.
 - [ ] Store API keys through Electron main using safe storage, not renderer state or plain SQLite.
 - [ ] Use AI SDK for API providers so OpenAI and OpenRouter share one abstraction.
+- [ ] Add an AI SDK-compatible `appleIntelligence("default")` language model wrapper that calls a local bridge instead of HTTP.
+- [ ] Keep the wrapper boundary in TypeScript and the Foundation Models access in Electron main/native bridge so renderer code never calls Apple APIs directly.
 - [ ] Add a post-processing request object containing raw transcript, language, prompt id, provider id, model id, and target schema.
 - [ ] Keep lightweight normalization as the offline default.
 - [ ] Make post-processing failure non-destructive: preserve raw transcript and show a recoverable warning unless the user explicitly requires post-processing.
@@ -392,6 +397,27 @@ export interface PostProcessingProvider {
     input: PostProcessingInput,
   ) => Effect.Effect<PostProcessingResult, PostProcessingError>;
 }
+```
+
+Apple Intelligence wrapper target:
+
+```ts
+import { generateText } from "ai";
+import { appleIntelligence } from "./apple-intelligence-ai-sdk-provider";
+
+const result = await generateText({
+  model: appleIntelligence("default"),
+  prompt: "Clean this transcript: ...",
+});
+```
+
+The wrapper should adapt AI SDK model calls to:
+
+```txt
+AI SDK language model wrapper
+  -> Electron main post-processing service
+  -> macOS Swift helper
+  -> FoundationModels.SystemLanguageModel
 ```
 
 Run:
@@ -421,7 +447,7 @@ git commit -m "feat(asr): add post processing providers"
 - Modify `apps/desktop/renderer/src/api/renderer-api.ts`
 
 - [ ] Move post-processing controls out of General settings.
-- [ ] Add provider selection: Lightweight, Apple Intelligence on supported macOS, OpenAI, OpenRouter, Custom.
+- [ ] Add provider selection: Lightweight, Apple Intelligence wrapper on supported macOS, OpenAI, OpenRouter, Custom.
 - [ ] Add API key field with redacted display and "test connection".
 - [ ] Add model field and optional fetch models action for OpenAI-compatible providers.
 - [ ] Add prompt editor with the default cleanup prompt.
@@ -451,11 +477,14 @@ git commit -m "feat(settings): add post processing tab"
 - Create `packages/native-bridge/src/apple-intelligence-service.ts`
 - Create `apps/desktop/electron/macos-apple-intelligence.ts`
 - Create `apps/desktop/electron/macos-permissions.ts`
+- Create `apps/desktop/electron/apple-intelligence-bridge.ts`
 - Modify `apps/desktop/electron/main.ts`
 - Modify `apps/desktop/electron/ipc-handlers.ts`
 
 - [ ] Add macOS platform detection to expose Apple Intelligence availability only on macOS devices that can support it.
 - [ ] Keep Apple Intelligence calls on-device and behind explicit user selection.
+- [ ] Implement the bridge method consumed by the AI SDK wrapper: `generateAppleIntelligenceText({ systemPrompt, prompt, maxTokens })`.
+- [ ] Return structured availability reasons: `available`, `device-not-eligible`, `apple-intelligence-disabled`, `model-not-ready`, and `unknown`.
 - [ ] Add permission/readiness state for accessibility and input monitoring.
 - [ ] Treat WhisperKit as a system/local runtime in the catalog until a packaged helper exists.
 - [ ] If a Swift helper is required, model it as a runtime pack or bundled helper with the same probe/readiness mechanism used by `whisper.cpp`.
@@ -514,6 +543,7 @@ git commit -m "fix(desktop): stabilize install flow readiness"
 - True push-to-talk cannot be implemented reliably with Electron `globalShortcut` alone.
 - Apple Intelligence APIs and availability can change by macOS version and hardware; gate with runtime checks.
 - AI post-processing can change user text meaning; default prompts must preserve meaning and post-processing should be opt-in.
+- The Apple Intelligence wrapper must degrade cleanly when the system model is unavailable; remote API providers should not become an automatic fallback without explicit user selection.
 - Large downloads need resumability eventually. The first pass can safely restart failed downloads, but should avoid leaving corrupt partial files.
 
 ## Completion Definition
@@ -525,5 +555,5 @@ The install flow is complete when:
 - Models show speed, accuracy, language, size, and memory information.
 - Readiness accurately reflects model artifact plus runtime artifact plus runtime probe.
 - Push-to-talk uses real key down/up events where native support is available.
-- Post-processing is configured in a separate tab with local lightweight, Apple Intelligence, OpenAI, and OpenRouter paths.
+- Post-processing is configured in a separate tab with local lightweight, AI SDK-wrapped Apple Intelligence, OpenAI, and OpenRouter paths.
 - `pnpm run check` passes.
