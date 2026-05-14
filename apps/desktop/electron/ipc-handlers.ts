@@ -46,6 +46,7 @@ import {
   type WhisperCppRuntimeReadinessCache,
 } from "./model-readiness";
 import type { WhisperCppRuntimeResolver } from "./whisper-cpp-runtime";
+import type { WhisperKitBridge } from "./whisperkit-bridge";
 import { createHotkeyCoordinator } from "./hotkey-coordinator";
 
 interface MainProcessState {
@@ -77,6 +78,7 @@ interface IpcHandlerDependencies {
   readonly installArchitecture?: string;
   readonly whisperCppRuntimeReadinessCache?: WhisperCppRuntimeReadinessCache;
   readonly whisperCppRuntimeResolver?: WhisperCppRuntimeResolver;
+  readonly whisperKitBridge?: WhisperKitBridge;
   readonly createWhisperCppRuntimeResolver?: (
     installedBinaryPath: string | null,
   ) => WhisperCppRuntimeResolver;
@@ -214,11 +216,22 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
       shouldProbeWhisperCppRuntime && whisperCppRuntimeResolver
         ? yield* whisperCppRuntimeReadinessCache.resolve(whisperCppRuntimeResolver)
         : null;
+    const shouldProbeWhisperKit = catalog.some((model) => {
+      const installedModel = installedModels.find((record) => record.modelId === model.id);
+
+      return model.runtime === "whisperkit" && installedModel?.verificationStatus === "verified";
+    });
+    const whisperKitAvailability =
+      shouldProbeWhisperKit && dependencies.whisperKitBridge
+        ? yield* dependencies.whisperKitBridge.getAvailability()
+        : null;
     const modelReadiness = computeModelReadinessForCatalog({
       catalog,
       installedModels,
       installedRuntimes,
       whisperCppRuntimeResult,
+      whisperKitAvailable: whisperKitAvailability?.status === "available",
+      whisperKitAvailabilityMessage: whisperKitAvailability?.reason ?? null,
     });
 
     return {
@@ -547,17 +560,57 @@ const stopTestDictation = (
       return yield* Effect.fail(new Error("model_not_installed"));
     }
 
-    if (selectedModel.runtime === "whisperkit") {
-      currentErrorMessage = "WhisperKit transcription bridge is not implemented yet.";
-      state.overlayState = "error";
-
-      return yield* Effect.fail(new Error("whisperkit_bridge_missing"));
-    }
-
     if (
       selectedModel.runtime !== "whisper-cpp" ||
       (!dependencies.whisperCppRuntimeResolver && !dependencies.createWhisperCppRuntimeResolver)
     ) {
+      if (selectedModel.runtime === "whisperkit" && dependencies.whisperKitBridge) {
+        state.overlayState = "processing";
+        yield* publishAppState(dependencies);
+
+        if (dependencies.audio) {
+          yield* dependencies.audio.submitCapturedAudio(submittedAudio);
+        }
+
+        const transcript = yield* dependencies.dictation.stop({
+          language: settings.language,
+          modelId: selectedModel.id,
+          runtime: selectedModel.runtime,
+          installedModelPath: installedModel.installedPath,
+          runtimeBinaryPath: null,
+          postProcessingMode: settings.postProcessingMode,
+          recordingMode: settings.recordingMode,
+        });
+
+        if (transcript.text.trim().length === 0) {
+          currentErrorMessage =
+            "No speech detected. Hold the hotkey and speak before releasing it.";
+          state.overlayState = "error";
+
+          return yield* Effect.fail(new Error(currentErrorMessage));
+        }
+
+        const insertion = yield* dependencies.nativeBridge.insertText({
+          text: transcript.text,
+          mode: settings.insertionMode,
+        });
+        const transcriptWithInsertion: TranscriptRecord = {
+          ...transcript,
+          insertionMode: settings.insertionMode,
+          insertionStatus: insertion.inserted ? "inserted" : "failed",
+          targetAppName: insertion.targetAppName,
+        };
+
+        state.overlayState = "hidden";
+        currentErrorMessage = null;
+
+        if (settings.historyEnabled) {
+          yield* dependencies.database.transcripts.insert(transcriptWithInsertion);
+        }
+
+        return transcriptWithInsertion;
+      }
+
       currentErrorMessage = "runtime_missing";
       state.overlayState = "error";
 

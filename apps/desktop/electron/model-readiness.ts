@@ -13,6 +13,8 @@ export interface ComputeModelReadinessInput {
   readonly installedModel: InstalledModelRecord | null;
   readonly installedRuntime: InstalledRuntimeRecord | null;
   readonly runtimeResult: WhisperCppRuntimeResult | null;
+  readonly whisperKitAvailable?: boolean;
+  readonly whisperKitAvailabilityMessage?: string | null;
 }
 
 export interface ComputeModelReadinessForCatalogInput {
@@ -20,6 +22,8 @@ export interface ComputeModelReadinessForCatalogInput {
   readonly installedModels: readonly InstalledModelRecord[];
   readonly installedRuntimes: readonly InstalledRuntimeRecord[];
   readonly whisperCppRuntimeResult: WhisperCppRuntimeResult | null;
+  readonly whisperKitAvailable?: boolean;
+  readonly whisperKitAvailabilityMessage?: string | null;
 }
 
 export interface WhisperCppRuntimeReadinessCache {
@@ -52,6 +56,8 @@ export const computeModelReadiness = ({
   installedModel,
   installedRuntime,
   runtimeResult,
+  whisperKitAvailable = false,
+  whisperKitAvailabilityMessage = null,
 }: ComputeModelReadinessInput): ModelReadinessRecord => {
   if (!installedModel || installedModel.verificationStatus !== "verified") {
     return {
@@ -65,11 +71,22 @@ export const computeModelReadiness = ({
   }
 
   if (runtime === "whisperkit") {
+    if (whisperKitAvailable) {
+      return {
+        modelId,
+        status: "ready",
+        lamp: "green",
+        message: "Model and WhisperKit runtime are ready.",
+        runtimeBinaryPath: null,
+        checkedAt: checkedAtFor(runtimeResult),
+      };
+    }
+
     return {
       modelId,
       status: "runtime-missing",
       lamp: "yellow",
-      message: "WhisperKit transcription bridge is not implemented yet.",
+      message: whisperKitAvailabilityMessage ?? "WhisperKit transcription bridge is not available.",
       runtimeBinaryPath: null,
       checkedAt: checkedAtFor(runtimeResult),
     };
@@ -147,6 +164,8 @@ export const computeModelReadinessForCatalog = ({
   installedModels,
   installedRuntimes,
   whisperCppRuntimeResult,
+  whisperKitAvailable = false,
+  whisperKitAvailabilityMessage = null,
 }: ComputeModelReadinessForCatalogInput): readonly ModelReadinessRecord[] => {
   const installedModelsByModelId = new Map(
     installedModels.map((model) => [model.modelId, model] as const),
@@ -165,6 +184,8 @@ export const computeModelReadinessForCatalog = ({
           .map((runtimeId) => installedRuntimesByRuntimeId.get(runtimeId))
           .find((runtime) => runtime !== undefined) ?? null,
       runtimeResult: model.runtime === "whisper-cpp" ? whisperCppRuntimeResult : null,
+      whisperKitAvailable,
+      whisperKitAvailabilityMessage,
     }),
   );
 };

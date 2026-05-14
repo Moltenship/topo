@@ -3,5 +3,7 @@ export * from "./dictation-orchestrator";
 export * from "./local-ai-sdk-provider";
 export * from "./post-processing";
 export * from "./post-processing-provider";
+export * from "./runtime-transcription-provider";
 export * from "./transcription-provider";
 export * from "./whisper-cpp-provider";
+export * from "./whisperkit-provider";

@@ -154,14 +154,39 @@ describe("computeModelReadiness", () => {
         },
         installedRuntime: null,
         runtimeResult: null,
+        whisperKitAvailable: false,
+        whisperKitAvailabilityMessage: "WhisperKit helper failed to build.",
       }),
     ).toEqual({
       modelId: "whisperkit-small",
       status: "runtime-missing",
       lamp: "yellow",
-      message: "WhisperKit transcription bridge is not implemented yet.",
+      message: "WhisperKit helper failed to build.",
       runtimeBinaryPath: null,
       checkedAt: expect.any(String),
+    });
+  });
+
+  it("returns ready for a verified installed WhisperKit model when the bridge is available", () => {
+    expect(
+      computeModelReadiness({
+        modelId: "whisperkit-small",
+        runtime: "whisperkit",
+        installedModel: {
+          ...installedModel(),
+          modelId: "whisperkit-small",
+          runtime: "whisperkit",
+          installedPath: "/models/whisperkit-small",
+        },
+        installedRuntime: null,
+        runtimeResult: null,
+        whisperKitAvailable: true,
+      }),
+    ).toMatchObject({
+      status: "ready",
+      lamp: "green",
+      message: "Model and WhisperKit runtime are ready.",
+      runtimeBinaryPath: null,
     });
   });
 

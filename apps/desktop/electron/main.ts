@@ -6,7 +6,9 @@ import {
   appleIntelligence,
   createAiSdkPostProcessingProvider,
   createDictationOrchestrator,
+  createRuntimeTranscriptionProvider,
   createWhisperCppTranscriptionProvider,
+  createWhisperKitTranscriptionProvider,
 } from "@topo/asr";
 import { createSubmittedAudioCaptureService } from "@topo/audio";
 import { openAppDatabase } from "@topo/db";
@@ -25,6 +27,7 @@ import {
   OVERLAY_WINDOW_SIZE,
 } from "./overlay-position";
 import { createWhisperCppRuntimeResolver } from "./whisper-cpp-runtime";
+import { createWhisperKitBridge } from "./whisperkit-bridge";
 import { createMainWindow, createOverlayWindow } from "./window-manager";
 
 const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) => {
@@ -72,6 +75,7 @@ app.whenReady().then(async () => {
   const database = Effect.runSync(openAppDatabase(userDataDirectory));
   const audio = createSubmittedAudioCaptureService();
   const appleIntelligenceBridge = createAppleIntelligenceBridge();
+  const whisperKitBridge = createWhisperKitBridge();
   const appleIntelligenceService = createMacosAppleIntelligenceService({
     bridge: {
       getAvailability: appleIntelligenceBridge.getAvailability,
@@ -80,7 +84,10 @@ app.whenReady().then(async () => {
   });
   const dictation = createDictationOrchestrator({
     audio,
-    transcription: createWhisperCppTranscriptionProvider(),
+    transcription: createRuntimeTranscriptionProvider({
+      whisperCpp: createWhisperCppTranscriptionProvider(),
+      whisperKit: createWhisperKitTranscriptionProvider({ bridge: whisperKitBridge }),
+    }),
     postProcessing: createAiSdkPostProcessingProvider({
       model: (modelId) =>
         appleIntelligence(modelId, {
@@ -119,6 +126,7 @@ app.whenReady().then(async () => {
       fetch,
     }),
     appleIntelligence: appleIntelligenceService,
+    whisperKitBridge,
     nativeBridge,
     createWhisperCppRuntimeResolver: (installedBinaryPath) =>
       createWhisperCppRuntimeResolver({
