@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
-import { OverlayApp } from "./OverlayApp";
+import { OverlayApp } from "./overlay-app";
 import { router } from "./routes";
 import "./styles.css";
 

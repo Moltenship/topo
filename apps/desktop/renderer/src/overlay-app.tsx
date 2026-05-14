@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppStateSnapshot } from "@topo/shared";
 import { getRendererApi } from "./api/renderer-api";
-import { OverlayView } from "./features/overlay/OverlayView";
+import { OverlayView } from "./features/overlay/overlay-view";
 
 export const OverlayApp = () => {
   const [snapshot, setSnapshot] = useState<AppStateSnapshot | null>(null);

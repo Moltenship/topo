@@ -5,7 +5,7 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
-import { App } from "./App";
+import { App } from "./app";
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,

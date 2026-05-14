@@ -6,8 +6,8 @@ import {
   type AppStateSnapshot,
 } from "@topo/shared";
 import { canStartDictation } from "@topo/shared";
-import { AppShell } from "./components/AppShell";
-import { AppTitleBar } from "./components/AppTitleBar";
+import { AppShell } from "./components/app-shell";
+import { AppTitleBar } from "./components/app-title-bar";
 import { getRendererApi, getRendererPlatform } from "./api/renderer-api";
 import { HistoryView } from "./features/history/HistoryView";
 import { PostProcessingPage } from "./features/settings/PostProcessingPage";

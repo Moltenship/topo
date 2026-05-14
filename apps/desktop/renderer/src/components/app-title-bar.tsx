@@ -1,7 +1,7 @@
 import { Minus, RotateCcw, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getRendererApi } from "@/api/renderer-api";
-import { BrandMark } from "./BrandMark";
+import { BrandMark } from "./brand-mark";
 import { cn } from "@/lib/utils";
 
 const titleBarButtonClass =
