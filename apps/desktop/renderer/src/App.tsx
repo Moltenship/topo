@@ -242,6 +242,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
       <AppShell>
         <SettingsPage
           errorMessage={effectiveErrorMessage}
+          bundleInstallProgress={snapshot?.bundleInstallProgress ?? null}
           installedModels={snapshot?.installedModels ?? []}
           isRecording={snapshot?.overlayState === "recording"}
           modelInstallProgress={snapshot?.modelInstallProgress ?? null}

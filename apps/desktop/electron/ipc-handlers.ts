@@ -8,6 +8,7 @@ import {
   bundledRuntimeCatalog,
   type ModelCatalogEntry,
   type RuntimeCatalogEntry,
+  type RuntimeId,
   type RuntimePlatform,
 } from "@topo/model-catalog";
 import type { NativeBridgeService } from "@topo/native-bridge";
@@ -760,6 +761,14 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
         const payload = yield* decodeIpcPayload(CancelModelInstallRequest, input);
 
         yield* dependencies.modelInstallJob.cancel(payload.modelId);
+        if (
+          currentBundleInstallProgress?.modelId === payload.modelId &&
+          currentBundleInstallProgress.runtimeId
+        ) {
+          yield* dependencies.runtimeInstallJob.cancel(
+            currentBundleInstallProgress.runtimeId as RuntimeId,
+          );
+        }
         yield* publishAppState(dependencies);
       }),
     ),

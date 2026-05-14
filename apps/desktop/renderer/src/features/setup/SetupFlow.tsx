@@ -1,5 +1,11 @@
 import type { ReactNode } from "react";
-import type { AppSettings, InstalledModelRecord, ModelInstallProgress } from "@topo/shared";
+import type {
+  AppSettings,
+  InstallBundleProgress,
+  InstalledModelRecord,
+  ModelInstallProgress,
+  ModelReadinessRecord,
+} from "@topo/shared";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +22,9 @@ interface SetupFlowProps {
   readonly errorMessage: string | null;
   readonly installedModels: readonly InstalledModelRecord[];
   readonly settings: AppSettings | null;
+  readonly bundleInstallProgress?: InstallBundleProgress | null;
   readonly modelInstallProgress?: ModelInstallProgress | null;
+  readonly modelReadiness?: readonly ModelReadinessRecord[];
   readonly onDismissError: () => void;
   readonly onCancelModelInstall: (modelId: string) => void;
   readonly onInstallModel: (modelId: string) => void;
@@ -31,7 +39,9 @@ export const SetupFlow = ({
   errorMessage,
   installedModels,
   settings,
+  bundleInstallProgress = null,
   modelInstallProgress = null,
+  modelReadiness = [],
   onDismissError,
   onCancelModelInstall,
   onInstallModel,
@@ -139,8 +149,10 @@ export const SetupFlow = ({
         </Card>
         <ModelPicker
           activeModelId={settings?.activeModelId ?? null}
+          bundleProgress={bundleInstallProgress}
           installedModels={installedModels}
           installProgress={modelInstallProgress}
+          modelReadiness={modelReadiness}
           onCancelModelInstall={onCancelModelInstall}
           onInstallModel={onInstallModel}
           onSelectModel={(modelId) => {

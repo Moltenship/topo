@@ -293,12 +293,12 @@ git commit -m "feat(desktop): compute readiness from installed runtimes"
 - Modify `apps/desktop/renderer/src/features/settings/SettingsPage.tsx`
 - Optionally create `apps/desktop/renderer/src/features/models/ModelCard.tsx`
 
-- [ ] Extract a reusable `ModelCard` for setup and settings.
-- [ ] Show speed and accuracy as direct comparison values: labels plus numeric score bars.
-- [ ] Show supported languages, runtime requirement, download size, disk size, and memory estimate.
-- [ ] Show runtime install progress separately from model install progress when bundle install is running.
-- [ ] Sort recommended model first, installed/active models next, then compatible models by download size.
-- [ ] Keep incompatible platform models visible only in an advanced/diagnostic section or hide them from first-run setup.
+- [x] Extract a reusable `ModelCard` for setup and settings.
+- [x] Show speed and accuracy as direct comparison values: labels plus numeric score bars.
+- [x] Show supported languages, runtime requirement, download size, disk size, and memory estimate.
+- [x] Show runtime install progress separately from model install progress when bundle install is running.
+- [x] Sort recommended model first, installed/active models next, then compatible models by download size.
+- [x] Keep incompatible platform models visible only in an advanced/diagnostic section or hide them from first-run setup.
 
 Run:
 

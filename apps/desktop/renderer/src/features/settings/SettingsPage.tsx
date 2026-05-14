@@ -4,15 +4,15 @@ import {
   formatHotkey,
   normalizeHotkeyFromKeys,
   type AppSettings,
+  type InstallBundleProgress,
   type InstalledModelRecord,
   type ModelInstallProgress,
   type ModelReadinessRecord,
-  type ModelReadinessStatus,
 } from "@topo/shared";
 import { getBundledModelCatalog } from "@topo/model-catalog";
-import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ModelCard } from "@/features/models/ModelCard";
 import {
   SettingResetButton,
   SettingsRow,
@@ -25,6 +25,7 @@ interface SettingsPageProps {
   readonly errorMessage: string | null;
   readonly installedModels: readonly InstalledModelRecord[];
   readonly isRecording: boolean;
+  readonly bundleInstallProgress: InstallBundleProgress | null;
   readonly modelInstallProgress: ModelInstallProgress | null;
   readonly modelReadiness: readonly ModelReadinessRecord[];
   readonly settings: AppSettings | null;
@@ -40,8 +41,6 @@ interface SettingsPageProps {
   readonly onStopTestDictation: () => void;
 }
 
-const formatBytes = (bytes: number): string => `${Math.round(bytes / 1024 / 1024)} MB`;
-
 const overlayPositionOptions = [
   { label: "Bottom center", value: "bottom-center" },
   { label: "Top center", value: "top-center" },
@@ -55,33 +54,6 @@ interface MicrophoneDeviceOption {
   readonly label: string;
   readonly value: string | null;
 }
-
-const readinessLabels = {
-  "not-installed": "Not installed",
-  "runtime-missing": "Runtime missing",
-  "runtime-failed": "Runtime failed",
-  ready: "Ready",
-} satisfies Record<ModelReadinessStatus, string>;
-
-const getReadinessDotClassName = (
-  status: ModelReadinessStatus | "installing" | "unverified" | "installed-unprobed",
-): string => {
-  switch (status) {
-    case "ready":
-      return "size-2 shrink-0 rounded-full bg-emerald-500";
-    case "runtime-missing":
-      return "size-2 shrink-0 rounded-full bg-amber-500";
-    case "runtime-failed":
-      return "size-2 shrink-0 rounded-full bg-destructive";
-    case "installing":
-      return "size-2 shrink-0 rounded-full bg-primary";
-    case "unverified":
-    case "installed-unprobed":
-      return "size-2 shrink-0 rounded-full bg-amber-500";
-    case "not-installed":
-      return "size-2 shrink-0 rounded-full bg-muted-foreground/35";
-  }
-};
 
 const getTestDictationDescription = (
   activeReadiness: ModelReadinessRecord | undefined,
@@ -110,6 +82,7 @@ export const SettingsPage = ({
   errorMessage,
   installedModels,
   isRecording,
+  bundleInstallProgress,
   modelInstallProgress,
   modelReadiness,
   settings,
@@ -124,7 +97,23 @@ export const SettingsPage = ({
   onStartTestDictation,
   onStopTestDictation,
 }: SettingsPageProps) => {
-  const modelCatalog = getBundledModelCatalog({ includeDev: import.meta.env.DEV });
+  const modelCatalog = [...getBundledModelCatalog({ includeDev: import.meta.env.DEV })].sort(
+    (left, right) => {
+      const leftActive = left.id === settings?.activeModelId ? 1 : 0;
+      const rightActive = right.id === settings?.activeModelId ? 1 : 0;
+      const leftInstalled = installedModels.some((model) => model.modelId === left.id) ? 1 : 0;
+      const rightInstalled = installedModels.some((model) => model.modelId === right.id) ? 1 : 0;
+      const leftRecommended = left.badges.includes("recommended") ? 1 : 0;
+      const rightRecommended = right.badges.includes("recommended") ? 1 : 0;
+
+      return (
+        rightRecommended - leftRecommended ||
+        rightActive - leftActive ||
+        rightInstalled - leftInstalled ||
+        left.downloadSizeBytes - right.downloadSizeBytes
+      );
+    },
+  );
   const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
   const [recordingHotkey, setRecordingHotkey] = useState(false);
   const [pressedHotkeyKeys, setPressedHotkeyKeys] = useState<readonly string[]>([]);
@@ -282,145 +271,30 @@ export const SettingsPage = ({
           </Button>
         </div>
         {modelCatalog.map((model) => {
-          const installedModel = installedModels.find(
-            (installed) => installed.modelId === model.id,
-          );
-          const progress = modelInstallProgress?.modelId === model.id ? modelInstallProgress : null;
-          const isInstalling =
-            progress !== null && progress.status !== "installed" && progress.status !== "failed";
-          const percent = Math.round((progress?.percent ?? 0) * 100);
-          const isActive = settings?.activeModelId === model.id;
-          const isInstalled = installedModel?.verificationStatus === "verified";
-          const needsRepair =
-            installedModel !== undefined && installedModel.verificationStatus !== "verified";
-          const readiness = modelReadiness.find((record) => record.modelId === model.id);
-          const canInstall = !model.devOnly;
           const isExpanded = expandedModelId === model.id;
-          const readinessStatus = readiness?.status;
-          const canActivate = isInstalled && readinessStatus === "ready";
-          const statusLabel = isInstalling
-            ? `${progress.status} ${percent}%`
-            : needsRepair
-              ? "Needs repair"
-              : readinessStatus
-                ? readinessLabels[readinessStatus]
-                : isInstalled
-                  ? "Installed"
-                  : model.devOnly
-                    ? "Dev smoke model"
-                    : "Not installed";
-          const dotStatus = isInstalling
-            ? "installing"
-            : needsRepair
-              ? "unverified"
-              : readinessStatus
-                ? readinessStatus
-                : isInstalled
-                  ? "installed-unprobed"
-                  : "not-installed";
 
           return (
-            <div className="border-t border-border/60 first:border-t-0" key={model.id}>
-              <div className="px-4 py-3.5 sm:px-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <button
-                    className="min-w-0 flex-1 text-left"
-                    type="button"
-                    onClick={() => setExpandedModelId(isExpanded ? null : model.id)}
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className={getReadinessDotClassName(dotStatus)} aria-hidden="true" />
-                      <span className="truncate text-[13px] font-semibold text-foreground">
-                        {model.displayName}
-                      </span>
-                      {model.devOnly ? (
-                        <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground bg-muted">
-                          Dev
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {statusLabel} - {model.runtime} - {formatBytes(model.estimatedMemoryBytes)}{" "}
-                      memory target
-                    </p>
-                  </button>
-                  <div className="flex shrink-0 items-center justify-end gap-2 max-sm:justify-start">
-                    <button
-                      aria-expanded={isExpanded}
-                      aria-label={`${isExpanded ? "Collapse" : "Expand"} ${model.displayName}`}
-                      className="app-region-no-drag flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                      type="button"
-                      onClick={() => setExpandedModelId(isExpanded ? null : model.id)}
-                    >
-                      <ChevronDown
-                        className={`size-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                      />
-                    </button>
-                    <SettingsSwitch
-                      checked={isActive}
-                      disabled={!settings || !canActivate}
-                      onChange={(checked) =>
-                        updateSettings("activeModelId", checked ? model.id : null)
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-              {isExpanded ? (
-                <div className="border-t border-border/60 px-4 py-3.5 sm:px-5">
-                  {progress ? (
-                    <div className="mb-3">
-                      <div className="mb-1 flex items-center justify-between gap-3 text-[11px]">
-                        <span className="font-semibold capitalize">{progress.status}</span>
-                        <span className="text-muted-foreground">
-                          {formatBytes(progress.receivedBytes)} / {formatBytes(progress.totalBytes)}
-                        </span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
-                        <div
-                          className="h-full rounded-full bg-primary"
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-                  <div className="flex flex-wrap items-center gap-2">
-                    {canInstall ? (
-                      <Button
-                        disabled={isInstalling}
-                        size="sm"
-                        variant="outline"
-                        type="button"
-                        onClick={() => onInstallModel(model.id)}
-                      >
-                        {isInstalling
-                          ? `${percent}%`
-                          : installedModel
-                            ? installedModel.verificationStatus === "verified"
-                              ? "Reinstall"
-                              : "Repair"
-                            : progress?.status === "installed"
-                              ? "Reinstall"
-                              : "Install"}
-                      </Button>
-                    ) : null}
-                    {isInstalling ? (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        type="button"
-                        onClick={() => onCancelModelInstall(model.id)}
-                      >
-                        Cancel
-                      </Button>
-                    ) : null}
-                    <p className="text-xs text-muted-foreground">
-                      Installed models can be activated from the switch in the row header.
-                    </p>
-                  </div>
-                </div>
-              ) : null}
-            </div>
+            <ModelCard
+              active={settings?.activeModelId === model.id}
+              bundleProgress={
+                bundleInstallProgress?.modelId === model.id ? bundleInstallProgress : null
+              }
+              expanded={isExpanded}
+              installedModel={
+                installedModels.find((installed) => installed.modelId === model.id) ?? null
+              }
+              key={model.id}
+              model={model}
+              modelProgress={
+                modelInstallProgress?.modelId === model.id ? modelInstallProgress : null
+              }
+              readiness={modelReadiness.find((record) => record.modelId === model.id) ?? null}
+              variant="row"
+              onCancelInstall={onCancelModelInstall}
+              onInstall={onInstallModel}
+              onSelect={(modelId) => updateSettings("activeModelId", modelId)}
+              onToggleExpanded={() => setExpandedModelId(isExpanded ? null : model.id)}
+            />
           );
         })}
       </SettingsSection>
