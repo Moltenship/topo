@@ -262,19 +262,12 @@ export const SettingsPage = ({
           />
         </SettingsRow>
         <SettingsRow
-          title="Text cleanup"
-          description="Lightweight processing fixes obvious dictation artifacts before insertion."
-          resetAction={getResetAction("postProcessingMode", "text cleanup")}
+          title="Post-processing"
+          description="Transcript cleanup and provider settings now live in the dedicated post-processing section."
         >
-          <SettingsSelect
-            disabled={!settings}
-            value={settings?.postProcessingMode ?? "lightweight"}
-            options={[
-              { label: "Clean", value: "lightweight" },
-              { label: "Raw", value: "raw" },
-            ]}
-            onChange={(value) => updateSettings("postProcessingMode", value)}
-          />
+          <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+            {settings?.postProcessingMode ?? "lightweight"}
+          </span>
         </SettingsRow>
       </SettingsSection>
       <SettingsSection id="models" title="Models">

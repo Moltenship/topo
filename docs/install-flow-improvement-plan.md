@@ -446,13 +446,13 @@ git commit -m "feat(asr): add post processing providers"
 - Modify `apps/desktop/renderer/src/routes.tsx`
 - Modify `apps/desktop/renderer/src/api/renderer-api.ts`
 
-- [ ] Move post-processing controls out of General settings.
-- [ ] Add provider selection: Lightweight, Apple Intelligence wrapper on supported macOS, OpenAI, OpenRouter, Custom.
-- [ ] Add API key field with redacted display and "test connection".
-- [ ] Add model field and optional fetch models action for OpenAI-compatible providers.
-- [ ] Add prompt editor with the default cleanup prompt.
+- [x] Move post-processing controls out of General settings.
+- [x] Add provider selection: Lightweight, Apple Intelligence wrapper on supported macOS, OpenAI, OpenRouter, Custom.
+- [x] Add API key field with redacted display and "test connection".
+- [x] Add model field and optional fetch models action for OpenAI-compatible providers.
+- [x] Add prompt editor with the default cleanup prompt.
 - [ ] Add a separate hotkey option for "dictate with post-processing" only after the hotkey coordinator supports multiple bindings.
-- [ ] Disable Apple Intelligence on Windows and unsupported macOS devices with a concrete unavailable state.
+- [x] Disable Apple Intelligence on Windows and unsupported macOS devices with a concrete unavailable state.
 
 Run:
 

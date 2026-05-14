@@ -29,13 +29,25 @@ const historyRoute = createRoute({
   component: () => <App view="history" />,
 });
 
+const postProcessingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/post-processing",
+  component: () => <App view="post-processing" />,
+});
+
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
   component: App,
 });
 
-const routeTree = rootRoute.addChildren([workbenchRoute, setupRoute, historyRoute, settingsRoute]);
+const routeTree = rootRoute.addChildren([
+  workbenchRoute,
+  setupRoute,
+  historyRoute,
+  postProcessingRoute,
+  settingsRoute,
+]);
 
 export const router = createRouter({
   routeTree,

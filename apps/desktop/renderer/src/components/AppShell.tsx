@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Archive, Settings2 } from "lucide-react";
+import { Archive, Settings2, WandSparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AppShellProps {
@@ -9,6 +9,7 @@ interface AppShellProps {
 
 const navItems = [
   { to: "/", label: "General", icon: Settings2 },
+  { to: "/post-processing", label: "Post-processing", icon: WandSparkles },
   { to: "/history", label: "History", icon: Archive },
 ] as const;
 

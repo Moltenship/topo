@@ -3,8 +3,9 @@ import { DEFAULT_APP_SETTINGS, type AppSettings, type AppStateSnapshot } from "@
 import { canStartDictation } from "@topo/shared";
 import { AppShell } from "./components/AppShell";
 import { AppTitleBar } from "./components/AppTitleBar";
-import { getRendererApi } from "./api/renderer-api";
+import { getRendererApi, getRendererPlatform } from "./api/renderer-api";
 import { HistoryView } from "./features/history/HistoryView";
+import { PostProcessingPage } from "./features/settings/PostProcessingPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
 import {
   startBrowserAudioRecorder,
@@ -12,7 +13,7 @@ import {
 } from "./features/dictation/browser-audio-recorder";
 
 interface AppProps {
-  readonly view?: "workbench" | "setup" | "history";
+  readonly view?: "workbench" | "setup" | "history" | "post-processing";
 }
 
 const settingsEqual = (left: AppSettings | null, right: AppSettings): boolean =>
@@ -233,6 +234,20 @@ export const App = ({ view = "workbench" }: AppProps) => {
     return (
       <AppChrome canRestoreDefaults={canRestoreDefaults} onRestoreDefaults={restoreDefaultSettings}>
         <AppShell>{historyView}</AppShell>
+      </AppChrome>
+    );
+  }
+
+  if (view === "post-processing") {
+    return (
+      <AppChrome canRestoreDefaults={canRestoreDefaults} onRestoreDefaults={restoreDefaultSettings}>
+        <AppShell>
+          <PostProcessingPage
+            platform={getRendererPlatform()}
+            settings={snapshot?.settings ?? null}
+            onSettingsChange={updateSettings}
+          />
+        </AppShell>
       </AppChrome>
     );
   }
