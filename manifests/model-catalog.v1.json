@@ -14,12 +14,18 @@
       "architectures": ["arm64"],
       "languages": ["en", "ru"],
       "source": {
-        "type": "direct-url",
-        "url": "https://example.invalid/models/whisperkit-small.zip"
+        "type": "huggingface-snapshot",
+        "repo": "argmaxinc/whisperkit-coreml",
+        "revision": "97a5bf9bbc74c7d9c12c755d04dea59e672e3808",
+        "subfolder": "openai_whisper-small"
       },
       "installStrategy": {
-        "type": "archive-directory",
-        "requiredFiles": ["config.json"]
+        "type": "huggingface-snapshot-directory",
+        "requiredFiles": [
+          "AudioEncoder.mlmodelc/metadata.json",
+          "MelSpectrogram.mlmodelc/metadata.json",
+          "TextDecoder.mlmodelc/metadata.json"
+        ]
       },
       "checksumSha256": "0000000000000000000000000000000000000000000000000000000000000001",
       "downloadSizeBytes": 536870912,

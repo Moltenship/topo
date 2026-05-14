@@ -49,8 +49,7 @@ export const createModelInstallPlan = (
     expectedSizeBytes: model.downloadSizeBytes,
     installDirectory,
     installStrategy: model.installStrategy,
-    installedPath:
-      model.installStrategy.type === "archive-directory" ? installDirectory : modelFilePath,
+    installedPath: model.installStrategy.type === "single-file" ? modelFilePath : installDirectory,
     archivePath,
     modelFilePath,
   };

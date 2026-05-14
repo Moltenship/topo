@@ -30,7 +30,7 @@ describe("model installation planning", () => {
     });
   });
 
-  it("plans archive-directory models with the install directory as the installed path", () => {
+  it("plans snapshot-directory models with the install directory as the installed path", () => {
     const model = bundledModelCatalog[0];
 
     if (!model) {
@@ -40,12 +40,16 @@ describe("model installation planning", () => {
     const plan = createModelInstallPlan(model, "/models/");
 
     expect(plan.installStrategy).toEqual({
-      type: "archive-directory",
-      requiredFiles: ["config.json"],
+      type: "huggingface-snapshot-directory",
+      requiredFiles: [
+        "AudioEncoder.mlmodelc/metadata.json",
+        "MelSpectrogram.mlmodelc/metadata.json",
+        "TextDecoder.mlmodelc/metadata.json",
+      ],
     });
     expect(plan.installDirectory).toBe("/models/whisperkit-small");
     expect(plan.installedPath).toBe("/models/whisperkit-small");
-    expect(plan.archivePath).toBe("/models/whisperkit-small/whisperkit-small.zip.download");
+    expect(plan.archivePath).toBe(null);
   });
 
   it("verifies size and checksum before marking a model installed", () => {

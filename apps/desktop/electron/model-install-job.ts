@@ -16,6 +16,10 @@ import {
   readContentLength,
   streamResponseBodyToFile,
 } from "./artifact-install-helpers";
+import {
+  downloadHuggingFaceSnapshotFile,
+  listHuggingFaceSnapshotFiles,
+} from "./huggingface-snapshot";
 
 export interface ModelInstallJob {
   readonly getCurrentProgress: () => ModelInstallProgress | null;
@@ -98,12 +102,6 @@ export const createFileModelInstallJob = ({
           return yield* Effect.fail(new Error(`Unknown model: ${modelId}`));
         }
 
-        if (model.source.type === "huggingface-snapshot") {
-          return yield* Effect.fail(
-            new Error(`Snapshot model downloads are not supported yet: ${modelId}`),
-          );
-        }
-
         const plan = createModelInstallPlan(model, installRoot);
         const tempFilePath = plan.archivePath ?? `${plan.modelFilePath}.download`;
         const extractingDirectory = join(plan.installDirectory, ".extracting");
@@ -125,6 +123,101 @@ export const createFileModelInstallJob = ({
           createInstallProgress(modelId, "resolving", 0, plan.expectedSizeBytes),
           onProgressChanged,
         );
+
+        if (
+          model.source.type === "huggingface-snapshot" &&
+          plan.installStrategy.type === "huggingface-snapshot-directory"
+        ) {
+          const installStrategy = plan.installStrategy;
+          const files = yield* listHuggingFaceSnapshotFiles({
+            source: model.source,
+            fetch,
+          });
+          const totalSizeBytes =
+            files.reduce((total, file) => total + file.sizeBytes, 0) || plan.expectedSizeBytes;
+          let receivedBytes = 0;
+
+          yield* Effect.tryPromise({
+            try: async () => {
+              await rm(extractingDirectory, { force: true, recursive: true });
+              await mkdir(extractingDirectory, { recursive: true });
+            },
+            catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+          });
+
+          setProgress(
+            createInstallProgress(modelId, "downloading", 0, totalSizeBytes),
+            onProgressChanged,
+          );
+
+          for (const file of files) {
+            const fileStartBytes = receivedBytes;
+            yield* downloadHuggingFaceSnapshotFile({
+              file,
+              targetDirectory: extractingDirectory,
+              fetch,
+              abortSignal: abortController.signal,
+              onChunk: (fileReceivedBytes) => {
+                receivedBytes = fileStartBytes + fileReceivedBytes;
+                setProgress(
+                  createInstallProgress(modelId, "downloading", receivedBytes, totalSizeBytes),
+                  onProgressChanged,
+                );
+              },
+            });
+          }
+
+          setProgress(
+            createInstallProgress(modelId, "verifying", receivedBytes, totalSizeBytes),
+            onProgressChanged,
+          );
+          yield* Effect.tryPromise({
+            try: () => validateRequiredFiles(extractingDirectory, installStrategy.requiredFiles),
+            catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+          });
+
+          setProgress(
+            createInstallProgress(modelId, "installing", receivedBytes, totalSizeBytes),
+            onProgressChanged,
+          );
+          yield* Effect.tryPromise({
+            try: async () => {
+              await mkdir(plan.installDirectory, { recursive: true });
+              for (const entry of await readdir(plan.installDirectory)) {
+                if (entry === ".extracting") {
+                  continue;
+                }
+
+                await rm(join(plan.installDirectory, entry), { force: true, recursive: true });
+              }
+
+              for (const entry of await readdir(extractingDirectory)) {
+                await rename(join(extractingDirectory, entry), join(plan.installDirectory, entry));
+              }
+
+              await rm(extractingDirectory, { force: true, recursive: true });
+            },
+            catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+          });
+
+          const installedProgress = createInstallProgress(
+            modelId,
+            "installed",
+            totalSizeBytes,
+            totalSizeBytes,
+          );
+          setProgress(installedProgress, onProgressChanged);
+          activeAbortController = null;
+          activeModelId = null;
+
+          return installedProgress;
+        }
+
+        if (model.source.type === "huggingface-snapshot") {
+          return yield* Effect.fail(
+            new Error(`Snapshot model install strategy is not supported: ${modelId}`),
+          );
+        }
 
         if (model.source.type === "local-file") {
           if (!resourcesRoot) {

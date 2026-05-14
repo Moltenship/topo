@@ -63,6 +63,10 @@ export const ManifestModelInstallStrategy = Schema.Union(
     type: Schema.Literal("archive-directory"),
     requiredFiles: Schema.Array(Schema.String),
   }),
+  Schema.Struct({
+    type: Schema.Literal("huggingface-snapshot-directory"),
+    requiredFiles: Schema.Array(Schema.String),
+  }),
 );
 
 export const ManifestModelCatalogEntry = Schema.Struct({

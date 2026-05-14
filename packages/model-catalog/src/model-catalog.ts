@@ -10,6 +10,10 @@ export type ModelInstallStrategy =
   | {
       readonly type: "archive-directory";
       readonly requiredFiles: readonly string[];
+    }
+  | {
+      readonly type: "huggingface-snapshot-directory";
+      readonly requiredFiles: readonly string[];
     };
 
 export interface ModelCatalogEntry {
@@ -57,15 +61,19 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     source: {
       type: "huggingface-snapshot",
       repo: "argmaxinc/whisperkit-coreml",
-      revision: "main",
+      revision: "97a5bf9bbc74c7d9c12c755d04dea59e672e3808",
       subfolder: "openai_whisper-small",
     },
     installStrategy: {
-      type: "archive-directory",
-      requiredFiles: ["config.json"],
+      type: "huggingface-snapshot-directory",
+      requiredFiles: [
+        "AudioEncoder.mlmodelc/metadata.json",
+        "MelSpectrogram.mlmodelc/metadata.json",
+        "TextDecoder.mlmodelc/metadata.json",
+      ],
     },
     downloadUrl:
-      "https://huggingface.co/argmaxinc/whisperkit-coreml/tree/main/openai_whisper-small",
+      "https://huggingface.co/argmaxinc/whisperkit-coreml/tree/97a5bf9bbc74c7d9c12c755d04dea59e672e3808/openai_whisper-small",
     checksumSha256: "0000000000000000000000000000000000000000000000000000000000000001",
     downloadSizeBytes: Math.round(0.5 * gib),
     diskSizeBytes: Math.round(1.2 * gib),

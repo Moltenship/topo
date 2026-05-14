@@ -57,6 +57,34 @@ const createArchiveModel = (content: string): ModelCatalogEntry => ({
   downloadUrl: "https://example.test/archive-model.zip",
 });
 
+const createSnapshotModel = (): ModelCatalogEntry => ({
+  ...createTestModel(""),
+  id: "snapshot-model",
+  displayName: "Snapshot Model",
+  runtime: "whisperkit",
+  runtimeRequirement: {
+    engine: "whisperkit",
+    supportedRuntimeIds: ["whisperkit"],
+  },
+  platforms: ["macos"],
+  architectures: ["arm64"],
+  source: {
+    type: "huggingface-snapshot",
+    repo: "argmaxinc/whisperkit-coreml",
+    revision: "97a5bf9bbc74c7d9c12c755d04dea59e672e3808",
+    subfolder: "openai_whisper-small",
+  },
+  installStrategy: {
+    type: "huggingface-snapshot-directory",
+    requiredFiles: ["AudioEncoder.mlmodelc/metadata.json"],
+  },
+  downloadUrl:
+    "https://huggingface.co/argmaxinc/whisperkit-coreml/tree/97a5bf9bbc74c7d9c12c755d04dea59e672e3808/openai_whisper-small",
+  checksumSha256: "snapshot",
+  downloadSizeBytes: 2,
+  diskSizeBytes: 2,
+});
+
 describe("createFileModelInstallJob", () => {
   it("downloads, verifies, and installs a single-file model", async () => {
     const content = "tiny model payload";
@@ -191,6 +219,50 @@ describe("createFileModelInstallJob", () => {
     );
 
     await expect(readdir(join(installRoot, model.id))).resolves.toEqual([]);
+  });
+
+  it("downloads a Hugging Face snapshot into a verified model directory", async () => {
+    const installRoot = await mkdtemp(join(tmpdir(), "topo-model-install-"));
+    const model = createSnapshotModel();
+    const requestedUrls: string[] = [];
+    const job = createFileModelInstallJob({
+      installRoot,
+      catalog: [model],
+      fetch: async (url) => {
+        requestedUrls.push(String(url));
+
+        if (String(url).includes("/api/models/")) {
+          return Response.json([
+            {
+              type: "file",
+              path: "openai_whisper-small/AudioEncoder.mlmodelc/metadata.json",
+              size: 2,
+            },
+          ]);
+        }
+
+        return new Response("{}", {
+          headers: {
+            "content-length": "2",
+          },
+        });
+      },
+    });
+
+    await expect(Effect.runPromise(job.start(model.id, () => undefined))).resolves.toMatchObject({
+      modelId: model.id,
+      status: "installed",
+    });
+
+    expect(requestedUrls).toEqual([
+      "https://huggingface.co/api/models/argmaxinc/whisperkit-coreml/tree/97a5bf9bbc74c7d9c12c755d04dea59e672e3808/openai_whisper-small?recursive=true",
+      "https://huggingface.co/argmaxinc/whisperkit-coreml/resolve/97a5bf9bbc74c7d9c12c755d04dea59e672e3808/openai_whisper-small/AudioEncoder.mlmodelc/metadata.json",
+    ]);
+    expect(job.getInstalledModelPath(model.id)).toBe(join(installRoot, model.id));
+    await expect(
+      readFile(join(installRoot, model.id, "AudioEncoder.mlmodelc", "metadata.json"), "utf8"),
+    ).resolves.toBe("{}");
+    expect(existsSync(join(installRoot, model.id, ".extracting"))).toBe(false);
   });
 
   it("fails and removes the temp file when verification fails", async () => {
