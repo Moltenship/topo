@@ -3,6 +3,7 @@ import { getBundledModelCatalog } from "@topo/model-catalog";
 import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SelectionButton } from "@/components/ui/selection-button";
 import { SegmentedControl, SettingsRow, SettingsSection } from "@/components/settings-layout";
 
 interface DictationPageProps {
@@ -164,16 +165,14 @@ export const DictationPage = ({
                   </div>
                 ) : null}
                 <div className="flex flex-wrap justify-end gap-1.5 max-sm:justify-start">
-                  <Button
+                  <SelectionButton
+                    selected={isActive}
+                    selectedIcon={<Check className="size-3.5" />}
                     disabled={!settings}
                     size="sm"
-                    variant={isActive ? "secondary" : "outline"}
                     type="button"
                     onClick={() => updateSettings("activeModelId", model.id)}
-                  >
-                    {isActive ? <Check className="size-3.5" /> : null}
-                    {isActive ? "Selected" : "Select"}
-                  </Button>
+                  />
                   <Button
                     disabled={isInstalling}
                     size="sm"

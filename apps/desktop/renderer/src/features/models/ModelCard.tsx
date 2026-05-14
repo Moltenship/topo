@@ -8,6 +8,7 @@ import type { ModelCatalogEntry } from "@topo/model-catalog";
 import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SelectionButton } from "@/components/ui/selection-button";
 import { cn } from "@/lib/utils";
 
 interface ModelCardProps {
@@ -226,15 +227,13 @@ export const ModelCard = ({
               />
             </button>
           ) : null}
-          <Button
+          <SelectionButton
+            selected={active}
             disabled={!canActivate}
             size="sm"
-            variant={active ? "secondary" : "outline"}
             type="button"
             onClick={() => onSelect(model.id)}
-          >
-            {active ? "Selected" : "Select"}
-          </Button>
+          />
         </div>
       </div>
       {showExpandedBody ? (
