@@ -8,7 +8,7 @@
     "check": "pnpm run typecheck && pnpm run fmt && pnpm run lint",
     "typecheck": "pnpm -r run typecheck",
     "fmt": "pnpm -r run fmt",
-    "lint": "pnpm -r run lint",
+    "lint": "pnpm -r run lint && node scripts/check-kebab-case-files.mjs",
     "dev": "pnpm --filter @topo/desktop dev",
     "build": "pnpm -r run build",
     "test": "pnpm -r run test"
