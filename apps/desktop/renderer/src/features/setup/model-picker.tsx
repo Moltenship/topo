@@ -6,7 +6,7 @@ import type {
 } from "@topo/shared";
 import { getBundledModelCatalog } from "@topo/model-catalog";
 import { getRendererApi } from "@/api/renderer-api";
-import { ModelCard } from "@/features/models/ModelCard";
+import { ModelCard } from "@/features/models/model-card";
 
 interface ModelPickerProps {
   readonly activeModelId: string | null;

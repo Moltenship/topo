@@ -11,10 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { ModelPicker } from "./ModelPicker";
-import { SettingsStrip } from "./SettingsStrip";
+import { ModelPicker } from "./model-picker";
+import { SettingsStrip } from "./settings-strip";
 import { setupSteps } from "./setup-steps";
-import { WorkbenchAlert } from "./WorkbenchAlert";
+import { WorkbenchAlert } from "./workbench-alert";
 
 interface SetupFlowProps {
   readonly children?: ReactNode;
