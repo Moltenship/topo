@@ -511,16 +511,29 @@ const stopTestDictation = (
   submittedAudio: { readonly wavBytes: Uint8Array; readonly durationMs: number },
 ): Effect.Effect<TranscriptRecord, Error> =>
   Effect.gen(function* () {
+    const snapshot = yield* getAppState(dependencies);
+    if (
+      !canStartDictation({
+        settings: snapshot.settings,
+        modelReadiness: snapshot.modelReadiness,
+      })
+    ) {
+      currentErrorMessage = "selected_model_not_ready";
+      state.overlayState = "error";
+
+      return yield* Effect.fail(new Error("selected_model_not_ready"));
+    }
+
     const catalog = getCatalog(dependencies);
-    const settings = yield* getSettings(dependencies);
+    const settings = snapshot.settings;
 
     const selectedModel = catalog.find((model) => model.id === settings.activeModelId);
 
     if (!selectedModel) {
-      currentErrorMessage = "No bundled transcription model is available.";
+      currentErrorMessage = "No selected transcription model is available.";
       state.overlayState = "error";
 
-      return yield* Effect.fail(new Error("No bundled transcription model is available"));
+      return yield* Effect.fail(new Error("No selected transcription model is available"));
     }
 
     const installedModel = yield* dependencies.database.installedModels.getByModelId(
