@@ -33,6 +33,7 @@ interface SettingsPageProps {
   readonly onClearTranscripts: () => void;
   readonly onDismissError: () => void;
   readonly onInstallModel: (modelId: string) => void;
+  readonly onRefreshModelReadiness: () => void;
   readonly onSettingsChange: (settings: AppSettings) => void;
   readonly onShowOverlayPreview: () => void;
   readonly onStartTestDictation: () => void;
@@ -117,6 +118,7 @@ export const SettingsPage = ({
   onClearTranscripts,
   onDismissError,
   onInstallModel,
+  onRefreshModelReadiness,
   onSettingsChange,
   onShowOverlayPreview,
   onStartTestDictation,
@@ -274,6 +276,11 @@ export const SettingsPage = ({
         </SettingsRow>
       </SettingsSection>
       <SettingsSection id="models" title="Models">
+        <div className="border-t border-border/60 px-4 py-3.5 first:border-t-0 sm:px-5">
+          <Button size="sm" variant="outline" type="button" onClick={onRefreshModelReadiness}>
+            Refresh
+          </Button>
+        </div>
         {modelCatalog.map((model) => {
           const installedModel = installedModels.find(
             (installed) => installed.modelId === model.id,

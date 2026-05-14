@@ -12,7 +12,7 @@ export interface RuntimeProbeResult {
 
 export type RuntimeProbe = (binaryPath: string) => Effect.Effect<RuntimeProbeResult, Error>;
 
-export type WhisperCppRuntimeSource = "env" | "bundled" | "path";
+export type WhisperCppRuntimeSource = "installed" | "env" | "bundled" | "path";
 
 export interface WhisperCppRuntimeAvailable {
   readonly status: "available";
@@ -51,6 +51,7 @@ export interface WhisperCppRuntimeResolver {
 
 export interface WhisperCppRuntimeResolverOptions {
   readonly resourcesRoot: string;
+  readonly installedBinaryPath?: string | null;
   readonly env?: NodeJS.ProcessEnv;
   readonly probe?: RuntimeProbe;
 }
@@ -93,10 +94,21 @@ const createFailedMessage = (probeResult: RuntimeProbeResult): string => {
   return `whisper.cpp runtime probe failed with ${exitCode}: ${output}`;
 };
 
-const createCandidates = (resourcesRoot: string, env: NodeJS.ProcessEnv): readonly Candidate[] => {
+const createCandidates = (
+  resourcesRoot: string,
+  env: NodeJS.ProcessEnv,
+  installedBinaryPath?: string | null,
+): readonly Candidate[] => {
   const candidates: Candidate[] = [];
   const envOverride = env[envBinaryName];
   const pathValue = env.PATH ?? env.Path ?? "";
+
+  if (installedBinaryPath) {
+    candidates.push({
+      path: installedBinaryPath,
+      source: "installed",
+    });
+  }
 
   if (envOverride) {
     candidates.push({
@@ -217,6 +229,7 @@ export const defaultRuntimeProbe: RuntimeProbe = (binaryPath) =>
 
 export const createWhisperCppRuntimeResolver = ({
   resourcesRoot,
+  installedBinaryPath = null,
   env = process.env,
   probe = defaultRuntimeProbe,
 }: WhisperCppRuntimeResolverOptions): WhisperCppRuntimeResolver => {
@@ -230,7 +243,7 @@ export const createWhisperCppRuntimeResolver = ({
         }
 
         const checkedAt = now().toISOString();
-        const candidates = createCandidates(resourcesRoot, env);
+        const candidates = createCandidates(resourcesRoot, env, installedBinaryPath);
         const checkedCandidates: string[] = [];
         const failedProbes: FailedProbe[] = [];
 

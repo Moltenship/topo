@@ -84,9 +84,11 @@ app.whenReady().then(() => {
       fetch,
     }),
     nativeBridge,
-    whisperCppRuntimeResolver: createWhisperCppRuntimeResolver({
-      resourcesRoot: join(app.getAppPath(), "resources"),
-    }),
+    createWhisperCppRuntimeResolver: (installedBinaryPath) =>
+      createWhisperCppRuntimeResolver({
+        resourcesRoot: join(app.getAppPath(), "resources"),
+        installedBinaryPath,
+      }),
     resolveOverlayPositionFromPreviewPoint: (point) => {
       const windowBounds = overlayWindow.getBounds();
       const center = {

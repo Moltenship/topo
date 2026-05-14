@@ -1,18 +1,24 @@
 import { Effect } from "effect";
 import type { AsrRuntime, ModelCatalogEntry } from "@topo/model-catalog";
-import type { InstalledModelRecord, ModelReadinessRecord } from "@topo/shared";
+import type {
+  InstalledModelRecord,
+  InstalledRuntimeRecord,
+  ModelReadinessRecord,
+} from "@topo/shared";
 import type { WhisperCppRuntimeResolver, WhisperCppRuntimeResult } from "./whisper-cpp-runtime";
 
 export interface ComputeModelReadinessInput {
   readonly modelId: string;
   readonly runtime: AsrRuntime;
   readonly installedModel: InstalledModelRecord | null;
+  readonly installedRuntime: InstalledRuntimeRecord | null;
   readonly runtimeResult: WhisperCppRuntimeResult | null;
 }
 
 export interface ComputeModelReadinessForCatalogInput {
   readonly catalog: readonly ModelCatalogEntry[];
   readonly installedModels: readonly InstalledModelRecord[];
+  readonly installedRuntimes: readonly InstalledRuntimeRecord[];
   readonly whisperCppRuntimeResult: WhisperCppRuntimeResult | null;
 }
 
@@ -44,6 +50,7 @@ export const computeModelReadiness = ({
   modelId,
   runtime,
   installedModel,
+  installedRuntime,
   runtimeResult,
 }: ComputeModelReadinessInput): ModelReadinessRecord => {
   if (!installedModel || installedModel.verificationStatus !== "verified") {
@@ -58,6 +65,17 @@ export const computeModelReadiness = ({
   }
 
   if (runtime !== "whisper-cpp") {
+    if (installedRuntime?.verificationStatus === "verified") {
+      return {
+        modelId,
+        status: "ready",
+        lamp: "green",
+        message: `Model and ${runtime} runtime are ready.`,
+        runtimeBinaryPath: installedRuntime.binaryPath,
+        checkedAt: installedRuntime.lastProbedAt ?? checkedAtFor(runtimeResult),
+      };
+    }
+
     return {
       modelId,
       status: "runtime-missing",
@@ -65,6 +83,17 @@ export const computeModelReadiness = ({
       message: `${runtime} runtime is not implemented yet.`,
       runtimeBinaryPath: null,
       checkedAt: checkedAtFor(runtimeResult),
+    };
+  }
+
+  if (installedRuntime && installedRuntime.verificationStatus !== "verified") {
+    return {
+      modelId,
+      status: "runtime-failed",
+      lamp: "red",
+      message: `Installed runtime ${installedRuntime.runtimeId} is ${installedRuntime.verificationStatus}.`,
+      runtimeBinaryPath: installedRuntime.binaryPath,
+      checkedAt: installedRuntime.lastProbedAt ?? checkedAtFor(runtimeResult),
     };
   }
 
@@ -105,10 +134,14 @@ export const computeModelReadiness = ({
 export const computeModelReadinessForCatalog = ({
   catalog,
   installedModels,
+  installedRuntimes,
   whisperCppRuntimeResult,
 }: ComputeModelReadinessForCatalogInput): readonly ModelReadinessRecord[] => {
   const installedModelsByModelId = new Map(
     installedModels.map((model) => [model.modelId, model] as const),
+  );
+  const installedRuntimesByRuntimeId = new Map(
+    installedRuntimes.map((runtime) => [runtime.runtimeId, runtime] as const),
   );
 
   return catalog.map((model) =>
@@ -116,6 +149,10 @@ export const computeModelReadinessForCatalog = ({
       modelId: model.id,
       runtime: model.runtime,
       installedModel: installedModelsByModelId.get(model.id) ?? null,
+      installedRuntime:
+        model.runtimeRequirement.supportedRuntimeIds
+          .map((runtimeId) => installedRuntimesByRuntimeId.get(runtimeId))
+          .find((runtime) => runtime !== undefined) ?? null,
       runtimeResult: model.runtime === "whisper-cpp" ? whisperCppRuntimeResult : null,
     }),
   );

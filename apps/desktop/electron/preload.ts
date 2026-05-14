@@ -21,6 +21,7 @@ const api: TopoApi = {
   installModel: (modelId) => ipcRenderer.invoke(IpcChannels.installModel, { modelId }),
   installModelBundle: (modelId) => ipcRenderer.invoke(IpcChannels.installModelBundle, { modelId }),
   cancelModelInstall: (modelId) => ipcRenderer.invoke(IpcChannels.cancelModelInstall, { modelId }),
+  refreshModelReadiness: () => ipcRenderer.invoke(IpcChannels.refreshModelReadiness),
   startTestDictation: () => ipcRenderer.invoke(IpcChannels.startTestDictation),
   stopTestDictation: (input) => ipcRenderer.invoke(IpcChannels.stopTestDictation, input),
   minimizeWindow: () => ipcRenderer.invoke(IpcChannels.windowMinimize),

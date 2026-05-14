@@ -1,4 +1,4 @@
-import type { InstalledModelRecord } from "@topo/shared";
+import type { InstalledModelRecord, InstalledRuntimeRecord } from "@topo/shared";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 import {
@@ -30,6 +30,21 @@ const availableRuntime: WhisperCppRuntimeResult = {
   checkedAt: "2026-05-09T11:00:00.000Z",
 };
 
+const installedRuntime = (
+  verificationStatus: InstalledRuntimeRecord["verificationStatus"] = "verified",
+): InstalledRuntimeRecord => ({
+  id: "installed-whisper-cpp-windows-x64",
+  runtimeId: "whisper-cpp-windows-x64",
+  engine: "whisper-cpp",
+  installedPath: "C:/runtimes/whisper-cpp-windows-x64",
+  binaryPath: "C:/runtimes/whisper-cpp-windows-x64/whisper-cli.exe",
+  checksumSha256: "runtime-sha",
+  verificationStatus,
+  installedAt: "2026-05-09T10:30:00.000Z",
+  lastProbedAt: "2026-05-09T11:00:00.000Z",
+  lastProbeMessage: "usage: whisper-cli",
+});
+
 describe("computeModelReadiness", () => {
   it("returns ready with a green lamp for a verified installed model and available runtime", () => {
     expect(
@@ -37,6 +52,7 @@ describe("computeModelReadiness", () => {
         modelId: "whisper-cpp-small",
         runtime: "whisper-cpp",
         installedModel: installedModel(),
+        installedRuntime: installedRuntime(),
         runtimeResult: availableRuntime,
       }),
     ).toEqual({
@@ -61,6 +77,7 @@ describe("computeModelReadiness", () => {
       modelId: "whisper-cpp-small",
       runtime: "whisper-cpp",
       installedModel: installedModel(),
+      installedRuntime: installedRuntime(),
       runtimeResult,
     });
 
@@ -79,6 +96,7 @@ describe("computeModelReadiness", () => {
         modelId: "whisper-cpp-small",
         runtime: "whisper-cpp",
         installedModel: null,
+        installedRuntime: installedRuntime(),
         runtimeResult: availableRuntime,
       }),
     ).toMatchObject({
@@ -95,6 +113,7 @@ describe("computeModelReadiness", () => {
         modelId: "whisper-cpp-small",
         runtime: "whisper-cpp",
         installedModel: installedModel("corrupt"),
+        installedRuntime: installedRuntime(),
         runtimeResult: availableRuntime,
       }),
     ).toMatchObject({
@@ -111,6 +130,7 @@ describe("computeModelReadiness", () => {
         modelId: "parakeet-small",
         runtime: "parakeet",
         installedModel: installedModel(),
+        installedRuntime: null,
         runtimeResult: null,
       }),
     ).toMatchObject({
@@ -188,6 +208,7 @@ describe("computeModelReadinessForCatalog", () => {
           devOnly: true,
         },
       ],
+      installedRuntimes: [installedRuntime()],
       installedModels: [
         {
           ...installedModel(),
@@ -203,6 +224,108 @@ describe("computeModelReadinessForCatalog", () => {
       modelId: "dev-smoke-model",
       status: "ready",
       lamp: "green",
+    });
+  });
+
+  it("marks installed whisper.cpp models yellow when the installed runtime is absent", () => {
+    const records = computeModelReadinessForCatalog({
+      catalog: [
+        {
+          id: "dev-smoke-model",
+          displayName: "Dev Smoke Model",
+          runtime: "whisper-cpp",
+          runtimeRequirement: {
+            engine: "whisper-cpp",
+            supportedRuntimeIds: ["whisper-cpp-windows-x64"],
+          },
+          platforms: ["windows"],
+          architectures: ["x64"],
+          languages: ["en"],
+          source: {
+            type: "local-file",
+            relativePath: "dev-models/dev-smoke-model.bin",
+          },
+          downloadUrl: "local-file://dev-models/dev-smoke-model.bin",
+          checksumSha256: "abc123",
+          downloadSizeBytes: 512000,
+          diskSizeBytes: 512000,
+          estimatedMemoryBytes: 16 * 1024 * 1024,
+          qualityLabel: "fast",
+          speedLabel: "fastest",
+          accuracyScore: 10,
+          speedScore: 100,
+          recommendedReason: "Test fixture.",
+          badges: ["dev"],
+          experimental: true,
+          devOnly: true,
+        },
+      ],
+      installedModels: [
+        {
+          ...installedModel(),
+          id: "installed-dev-smoke-model",
+          modelId: "dev-smoke-model",
+        },
+      ],
+      installedRuntimes: [],
+      whisperCppRuntimeResult: null,
+    });
+
+    expect(records[0]).toMatchObject({
+      status: "runtime-missing",
+      lamp: "yellow",
+      runtimeBinaryPath: null,
+    });
+  });
+
+  it("marks corrupt installed runtimes red", () => {
+    const records = computeModelReadinessForCatalog({
+      catalog: [
+        {
+          id: "dev-smoke-model",
+          displayName: "Dev Smoke Model",
+          runtime: "whisper-cpp",
+          runtimeRequirement: {
+            engine: "whisper-cpp",
+            supportedRuntimeIds: ["whisper-cpp-windows-x64"],
+          },
+          platforms: ["windows"],
+          architectures: ["x64"],
+          languages: ["en"],
+          source: {
+            type: "local-file",
+            relativePath: "dev-models/dev-smoke-model.bin",
+          },
+          downloadUrl: "local-file://dev-models/dev-smoke-model.bin",
+          checksumSha256: "abc123",
+          downloadSizeBytes: 512000,
+          diskSizeBytes: 512000,
+          estimatedMemoryBytes: 16 * 1024 * 1024,
+          qualityLabel: "fast",
+          speedLabel: "fastest",
+          accuracyScore: 10,
+          speedScore: 100,
+          recommendedReason: "Test fixture.",
+          badges: ["dev"],
+          experimental: true,
+          devOnly: true,
+        },
+      ],
+      installedModels: [
+        {
+          ...installedModel(),
+          id: "installed-dev-smoke-model",
+          modelId: "dev-smoke-model",
+        },
+      ],
+      installedRuntimes: [installedRuntime("corrupt")],
+      whisperCppRuntimeResult: availableRuntime,
+    });
+
+    expect(records[0]).toMatchObject({
+      status: "runtime-failed",
+      lamp: "red",
+      runtimeBinaryPath: "C:/runtimes/whisper-cpp-windows-x64/whisper-cli.exe",
     });
   });
 });

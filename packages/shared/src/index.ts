@@ -51,6 +51,7 @@ export interface TopoApi {
   readonly installModel: (modelId: string) => Promise<ModelInstallProgress>;
   readonly installModelBundle: (modelId: string) => Promise<InstallBundleProgress>;
   readonly cancelModelInstall: (modelId: string) => Promise<void>;
+  readonly refreshModelReadiness: () => Promise<void>;
   readonly startTestDictation: () => Promise<void>;
   readonly stopTestDictation: (input: {
     readonly wavBytes: Uint8Array;

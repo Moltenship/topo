@@ -21,6 +21,7 @@ export const IpcChannels = {
   installModel: "models:install",
   installModelBundle: "models:install-bundle",
   cancelModelInstall: "models:cancel-install",
+  refreshModelReadiness: "models:refresh-readiness",
   windowMinimize: "window:minimize",
   windowMaximize: "window:maximize",
   windowClose: "window:close",

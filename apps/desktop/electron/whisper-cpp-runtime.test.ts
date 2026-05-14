@@ -57,6 +57,35 @@ describe("createWhisperCppRuntimeResolver", () => {
     expect(result.status === "available" ? result.binaryPath : null).not.toBe(bundledBinary);
   });
 
+  it("prefers an installed runtime before env, bundled, and PATH candidates", async () => {
+    const root = await mkdtemp(join(tmpdir(), "topo-whisper-runtime-"));
+    const installedBinary = await createBinary(root, "installed/whisper-cli.exe");
+    const envBinary = await createBinary(root, "env-whisper.exe");
+    const probedPaths: string[] = [];
+    const resolver = createWhisperCppRuntimeResolver({
+      resourcesRoot: root,
+      installedBinaryPath: installedBinary,
+      env: {
+        MOLTEN_WHISPER_CPP_BINARY: envBinary,
+        PATH: "",
+      },
+      probe: (binaryPath) => {
+        probedPaths.push(binaryPath);
+
+        return createProbe()(binaryPath);
+      },
+    });
+
+    const result = await Effect.runPromise(resolver.resolve());
+
+    expect(result).toMatchObject({
+      status: "available",
+      binaryPath: installedBinary,
+      source: "installed",
+    });
+    expect(probedPaths).toEqual([installedBinary]);
+  });
+
   it("returns missing with every checked candidate when no binary exists", async () => {
     const resourcesRoot = await mkdtemp(join(tmpdir(), "topo-whisper-runtime-"));
     const pathRoot = await mkdtemp(join(tmpdir(), "topo-whisper-path-"));

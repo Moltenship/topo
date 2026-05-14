@@ -261,12 +261,12 @@ git commit -m "feat(desktop): orchestrate model and runtime install"
 - Modify `apps/desktop/electron/whisper-cpp-runtime.ts`
 - Modify `apps/desktop/electron/ipc-handlers.ts`
 
-- [ ] Change readiness computation to consume `installedModels`, `installedRuntimes`, runtime catalog, model catalog, and probe results.
-- [ ] Runtime resolution order should be: installed runtime record, env override, bundled resource, PATH.
-- [ ] Green readiness means verified model plus verified/probed runtime.
-- [ ] Yellow readiness means model installed but runtime absent or unprobed.
-- [ ] Red readiness means runtime probe failed or artifact verification failed.
-- [ ] Add a Settings refresh action that clears cached runtime probe results and republishes app state.
+- [x] Change readiness computation to consume `installedModels`, `installedRuntimes`, runtime catalog, model catalog, and probe results.
+- [x] Runtime resolution order should be: installed runtime record, env override, bundled resource, PATH.
+- [x] Green readiness means verified model plus verified/probed runtime.
+- [x] Yellow readiness means model installed but runtime absent or unprobed.
+- [x] Red readiness means runtime probe failed or artifact verification failed.
+- [x] Add a Settings refresh action that clears cached runtime probe results and republishes app state.
 
 Run:
 

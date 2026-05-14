@@ -72,6 +72,9 @@ interface IpcHandlerDependencies {
   readonly installArchitecture?: string;
   readonly whisperCppRuntimeReadinessCache?: WhisperCppRuntimeReadinessCache;
   readonly whisperCppRuntimeResolver?: WhisperCppRuntimeResolver;
+  readonly createWhisperCppRuntimeResolver?: (
+    installedBinaryPath: string | null,
+  ) => WhisperCppRuntimeResolver;
   readonly resolveOverlayPositionFromPreviewPoint?: (point: {
     readonly centerX: number;
     readonly centerY: number;
@@ -194,13 +197,25 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
     });
     const whisperCppRuntimeReadinessCache =
       dependencies.whisperCppRuntimeReadinessCache ?? defaultWhisperCppRuntimeReadinessCache;
+    const installedWhisperCppRuntime =
+      installedRuntimes.find(
+        (runtime) =>
+          runtime.engine === "whisper-cpp" &&
+          runtime.verificationStatus === "verified" &&
+          runtime.binaryPath,
+      ) ?? null;
+    const whisperCppRuntimeResolver =
+      dependencies.createWhisperCppRuntimeResolver?.(
+        installedWhisperCppRuntime?.binaryPath ?? null,
+      ) ?? dependencies.whisperCppRuntimeResolver;
     const whisperCppRuntimeResult =
-      shouldProbeWhisperCppRuntime && dependencies.whisperCppRuntimeResolver
-        ? yield* whisperCppRuntimeReadinessCache.resolve(dependencies.whisperCppRuntimeResolver)
+      shouldProbeWhisperCppRuntime && whisperCppRuntimeResolver
+        ? yield* whisperCppRuntimeReadinessCache.resolve(whisperCppRuntimeResolver)
         : null;
     const modelReadiness = computeModelReadinessForCatalog({
       catalog,
       installedModels,
+      installedRuntimes,
       whisperCppRuntimeResult,
     });
 
@@ -508,14 +523,37 @@ const stopTestDictation = (
       return yield* Effect.fail(new Error("model_not_installed"));
     }
 
-    if (selectedModel.runtime !== "whisper-cpp" || !dependencies.whisperCppRuntimeResolver) {
+    if (
+      selectedModel.runtime !== "whisper-cpp" ||
+      (!dependencies.whisperCppRuntimeResolver && !dependencies.createWhisperCppRuntimeResolver)
+    ) {
       currentErrorMessage = "runtime_missing";
       state.overlayState = "error";
 
       return yield* Effect.fail(new Error("runtime_missing"));
     }
 
-    const runtimeResult = yield* dependencies.whisperCppRuntimeResolver.resolve();
+    const installedRuntimes = yield* dependencies.database.installedRuntimes.list();
+    const installedWhisperCppRuntime =
+      installedRuntimes.find(
+        (runtime) =>
+          runtime.engine === "whisper-cpp" &&
+          runtime.verificationStatus === "verified" &&
+          runtime.binaryPath,
+      ) ?? null;
+    const runtimeResolver =
+      dependencies.createWhisperCppRuntimeResolver?.(
+        installedWhisperCppRuntime?.binaryPath ?? null,
+      ) ?? dependencies.whisperCppRuntimeResolver;
+
+    if (!runtimeResolver) {
+      currentErrorMessage = "runtime_missing";
+      state.overlayState = "error";
+
+      return yield* Effect.fail(new Error("runtime_missing"));
+    }
+
+    const runtimeResult = yield* runtimeResolver.resolve();
 
     if (runtimeResult.status === "missing") {
       currentErrorMessage = "runtime_missing";
@@ -722,6 +760,17 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
         const payload = yield* decodeIpcPayload(CancelModelInstallRequest, input);
 
         yield* dependencies.modelInstallJob.cancel(payload.modelId);
+        yield* publishAppState(dependencies);
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.refreshModelReadiness, () =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const cache =
+          dependencies.whisperCppRuntimeReadinessCache ?? defaultWhisperCppRuntimeReadinessCache;
+
+        cache.clear();
         yield* publishAppState(dependencies);
       }),
     ),
