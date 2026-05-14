@@ -29,6 +29,12 @@ import {
 import { createWhisperCppRuntimeResolver } from "./whisper-cpp-runtime";
 import { createWhisperKitBridge } from "./whisperkit-bridge";
 import { createMainWindow, createOverlayWindow } from "./window-manager";
+import {
+  makeDesktopObservabilityLayer,
+  makeTopoRunId,
+  resolveLogDirectory,
+  topoMainLogger,
+} from "./observability";
 
 const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) => {
   if (snapshot.overlayState === "hidden") {
@@ -61,88 +67,122 @@ const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) =>
   }
 };
 
-app.whenReady().then(async () => {
-  const userDataDirectory = app.getPath("userData");
-  const bundledCatalog = getBundledModelCatalog({ includeDev: !app.isPackaged });
-  const catalog = await Effect.runPromise(
-    createModelCatalogService({
+const bootstrapDesktop = (userDataDirectory: string): Effect.Effect<void, unknown> =>
+  Effect.gen(function* () {
+    yield* topoMainLogger.logInfo("desktop startup begin");
+    const bundledCatalog = getBundledModelCatalog({ includeDev: !app.isPackaged });
+    const catalog = yield* createModelCatalogService({
       bundledCatalog,
       cachePath: join(userDataDirectory, "model-catalog.v1.json"),
       manifestUrl: process.env.TOPO_MODEL_MANIFEST_URL ?? null,
       fetch,
-    }).load(),
-  );
-  const database = Effect.runSync(openAppDatabase(userDataDirectory));
-  const audio = createSubmittedAudioCaptureService();
-  const appleIntelligenceBridge = createAppleIntelligenceBridge();
-  const whisperKitBridge = createWhisperKitBridge();
-  const appleIntelligenceService = createMacosAppleIntelligenceService({
-    bridge: {
-      getAvailability: appleIntelligenceBridge.getAvailability,
-      generate: appleIntelligenceBridge.bridge.generate,
-    },
-  });
-  const dictation = createDictationOrchestrator({
-    audio,
-    transcription: createRuntimeTranscriptionProvider({
-      whisperCpp: createWhisperCppTranscriptionProvider(),
-      whisperKit: createWhisperKitTranscriptionProvider({ bridge: whisperKitBridge }),
-    }),
-    postProcessing: createAiSdkPostProcessingProvider({
-      model: (modelId) =>
-        appleIntelligence(modelId, {
-          generate: (request) =>
-            Effect.runPromise(
-              appleIntelligenceService.generateAppleIntelligenceText({
-                prompt: request.prompt,
-                maxTokens: 512,
-              }),
-            ),
-        }),
-    }),
-    now: () => new Date(),
-    createId: () => crypto.randomUUID(),
-  });
-
-  createMainWindow();
-  const overlayWindow = createOverlayWindow();
-
-  const nativeBridge = createElectronHotkeyBridge();
-
-  registerIpcHandlers({
-    database,
-    dictation,
-    audio,
-    catalog,
-    modelInstallJob: createFileModelInstallJob({
-      installRoot: join(userDataDirectory, "models"),
-      resourcesRoot: join(app.getAppPath(), "resources"),
-      catalog,
-      fetch,
-    }),
-    runtimeInstallJob: createFileRuntimeInstallJob({
-      installRoot: join(userDataDirectory, "runtimes"),
-      repository: database.installedRuntimes,
-      fetch,
-    }),
-    appleIntelligence: appleIntelligenceService,
-    whisperKitBridge,
-    nativeBridge,
-    createWhisperCppRuntimeResolver: (installedBinaryPath) =>
-      createWhisperCppRuntimeResolver({
-        resourcesRoot: join(app.getAppPath(), "resources"),
-        installedBinaryPath,
+    }).load();
+    const database = Effect.runSync(openAppDatabase(userDataDirectory));
+    const audio = createSubmittedAudioCaptureService();
+    const appleIntelligenceBridge = createAppleIntelligenceBridge();
+    const whisperKitBridge = createWhisperKitBridge();
+    const appleIntelligenceService = createMacosAppleIntelligenceService({
+      bridge: {
+        getAvailability: appleIntelligenceBridge.getAvailability,
+        generate: appleIntelligenceBridge.bridge.generate,
+      },
+    });
+    const dictation = createDictationOrchestrator({
+      audio,
+      transcription: createRuntimeTranscriptionProvider({
+        whisperCpp: createWhisperCppTranscriptionProvider(),
+        whisperKit: createWhisperKitTranscriptionProvider({ bridge: whisperKitBridge }),
       }),
-    resolveOverlayPositionFromPreviewPoint: (point) => {
-      const windowBounds = overlayWindow.getBounds();
-      const center = {
-        x: windowBounds.x + point.centerX,
-        y: windowBounds.y + point.centerY,
-      };
-      const display = screen.getDisplayNearestPoint(center);
+      postProcessing: createAiSdkPostProcessingProvider({
+        model: (modelId) =>
+          appleIntelligence(modelId, {
+            generate: (request) =>
+              Effect.runPromise(
+                appleIntelligenceService.generateAppleIntelligenceText({
+                  prompt: request.prompt,
+                  maxTokens: 512,
+                }),
+              ),
+          }),
+      }),
+      now: () => new Date(),
+      createId: () => crypto.randomUUID(),
+    });
 
-      return getNearestOverlayPosition({ center, workArea: display.workArea });
-    },
-    onAppStateChanged: (snapshot) => syncOverlayWindow(overlayWindow, snapshot),
+    createMainWindow();
+    const overlayWindow = createOverlayWindow();
+
+    const nativeBridge = createElectronHotkeyBridge();
+
+    registerIpcHandlers({
+      database,
+      dictation,
+      audio,
+      catalog,
+      modelInstallJob: createFileModelInstallJob({
+        installRoot: join(userDataDirectory, "models"),
+        resourcesRoot: join(app.getAppPath(), "resources"),
+        catalog,
+        fetch,
+      }),
+      runtimeInstallJob: createFileRuntimeInstallJob({
+        installRoot: join(userDataDirectory, "runtimes"),
+        repository: database.installedRuntimes,
+        fetch,
+      }),
+      appleIntelligence: appleIntelligenceService,
+      whisperKitBridge,
+      nativeBridge,
+      createWhisperCppRuntimeResolver: (installedBinaryPath) =>
+        createWhisperCppRuntimeResolver({
+          resourcesRoot: join(app.getAppPath(), "resources"),
+          installedBinaryPath,
+        }),
+      resolveOverlayPositionFromPreviewPoint: (point) => {
+        const windowBounds = overlayWindow.getBounds();
+        const center = {
+          x: windowBounds.x + point.centerX,
+          y: windowBounds.y + point.centerY,
+        };
+        const display = screen.getDisplayNearestPoint(center);
+
+        return getNearestOverlayPosition({ center, workArea: display.workArea });
+      },
+      onAppStateChanged: (snapshot) => syncOverlayWindow(overlayWindow, snapshot),
+    });
   });
+
+app.whenReady().then(async () => {
+  const userDataDirectory = app.getPath("userData");
+  const logDir = resolveLogDirectory({ userDataDirectory });
+  const runId = makeTopoRunId();
+  const observabilityLayer = makeDesktopObservabilityLayer({
+    logDir,
+    runId,
+    isPackaged: app.isPackaged,
+    platform: process.platform,
+    arch: process.arch,
+  });
+
+  await Effect.runPromise(
+    Effect.scoped(
+      bootstrapDesktop(userDataDirectory).pipe(
+        topoMainLogger.annotate({
+          runId,
+          logDir,
+          isPackaged: app.isPackaged,
+          platform: process.platform,
+          arch: process.arch,
+        }),
+        Effect.tap(() => topoMainLogger.logInfo("desktop startup complete", { runId })),
+        Effect.tapError((error) =>
+          topoMainLogger.logError("desktop startup failed", {
+            runId,
+            error,
+          }),
+        ),
+        Effect.withSpan("topo.desktop.bootstrap"),
+      ),
+    ).pipe(Effect.provide(observabilityLayer)),
+  );
 });

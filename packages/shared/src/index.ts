@@ -4,7 +4,9 @@ export * from "./errors";
 export { formatHotkey, normalizeHotkeyFromKeys } from "@topo/contracts";
 export * from "./installed-model";
 export * from "./ipc";
+export * from "./logging";
 export * from "./model-installation";
+export * from "./observability";
 export type {
   ApiPostProcessingProvider,
   ApiPostProcessingSettings,
