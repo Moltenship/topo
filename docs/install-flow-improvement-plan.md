@@ -506,9 +506,9 @@ git commit -m "feat(macos): add local post processing readiness"
 
 - No planned source edits unless verification reveals issues.
 
-- [ ] Run `pnpm run check`.
-- [ ] Run `pnpm run test`.
-- [ ] Run `pnpm --filter @topo/desktop run build`.
+- [x] Run `pnpm run check`.
+- [x] Run `pnpm run test`.
+- [x] Run `pnpm --filter @topo/desktop run build`.
 - [ ] On Windows, install a `whisper.cpp` runtime pack and `whisper-cpp-small`; confirm readiness is green only after both are verified.
 - [ ] On Windows, verify toggle-to-talk still works.
 - [ ] On Windows, verify push-to-talk starts on down and stops on release using the native hook path.

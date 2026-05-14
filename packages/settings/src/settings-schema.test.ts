@@ -9,6 +9,7 @@ describe("appSettingsSchema", () => {
       silenceTimeoutMs: null,
       insertionMode: "paste",
       postProcessingMode: "lightweight",
+      postProcessingApiProvider: null,
       language: "auto",
       historyEnabled: true,
       autoDeleteHistoryDays: null,
