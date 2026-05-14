@@ -37,6 +37,7 @@ import {
 import type { OverlayPosition } from "@topo/shared";
 import type { ModelInstallJob } from "./model-install-job";
 import { createInstallPlan } from "./install-plan";
+import { getModelSourceRevision } from "./model-artifact-revision";
 import type { RuntimeInstallJob } from "./runtime-install-job";
 import {
   computeModelReadinessForCatalog,
@@ -235,13 +236,6 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
     };
   });
 
-const sourceRevision = (model: ModelCatalogEntry): string =>
-  "revision" in model.source
-    ? model.source.revision
-    : "tag" in model.source
-      ? model.source.tag
-      : model.downloadUrl;
-
 const recordInstalledModel = (
   dependencies: IpcHandlerDependencies,
   model: ModelCatalogEntry,
@@ -252,7 +246,7 @@ const recordInstalledModel = (
       modelId: model.id,
       runtime: model.runtime,
       sourceType: model.source.type,
-      sourceRevision: sourceRevision(model),
+      sourceRevision: getModelSourceRevision(model),
       installedPath:
         dependencies.modelInstallJob.getInstalledModelPath(model.id) ?? model.downloadUrl,
       checksumSha256: model.checksumSha256,
