@@ -10,6 +10,7 @@ import type { AppStateSnapshot } from "@topo/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
 import { createElectronHotkeyBridge } from "./electron-hotkey-bridge";
 import { createFileModelInstallJob } from "./model-install-job";
+import { createFileRuntimeInstallJob } from "./runtime-install-job";
 import {
   getNearestOverlayPosition,
   getOverlayWindowBounds,
@@ -75,6 +76,11 @@ app.whenReady().then(() => {
       installRoot: join(userDataDirectory, "models"),
       resourcesRoot: join(app.getAppPath(), "resources"),
       catalog,
+      fetch,
+    }),
+    runtimeInstallJob: createFileRuntimeInstallJob({
+      installRoot: join(userDataDirectory, "runtimes"),
+      repository: database.installedRuntimes,
       fetch,
     }),
     nativeBridge,

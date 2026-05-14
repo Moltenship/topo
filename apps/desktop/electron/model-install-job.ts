@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rename, rm, stat } from "node:fs/promises";
 import { dirname, join, normalize } from "node:path";
@@ -11,6 +10,12 @@ import {
   verifyDownloadedModel,
 } from "@topo/model-catalog";
 import type { ModelInstallProgress } from "@topo/shared";
+import {
+  calculateFileSha256,
+  createInstallProgress,
+  readContentLength,
+  streamResponseBodyToFile,
+} from "./artifact-install-helpers";
 
 export interface ModelInstallJob {
   readonly getCurrentProgress: () => ModelInstallProgress | null;
@@ -28,44 +33,6 @@ export interface FileModelInstallJobOptions {
   readonly fetch: typeof fetch;
   readonly catalog?: readonly ModelCatalogEntry[];
 }
-
-const createProgress = (
-  modelId: string,
-  status: ModelInstallProgress["status"],
-  receivedBytes: number,
-  totalBytes: number,
-  errorMessage: string | null = null,
-): ModelInstallProgress => ({
-  modelId,
-  status,
-  receivedBytes,
-  totalBytes,
-  percent: totalBytes > 0 ? Math.min(1, receivedBytes / totalBytes) : 0,
-  errorMessage,
-});
-
-const calculateSha256 = (path: string): Effect.Effect<string, Error> =>
-  Effect.tryPromise({
-    try: async () => {
-      const hash = createHash("sha256");
-      await pipeline(createReadStream(path), hash);
-
-      return hash.digest("hex");
-    },
-    catch: (error) => (error instanceof Error ? error : new Error(String(error))),
-  });
-
-const readContentLength = (response: Response): number | null => {
-  const value = response.headers.get("content-length");
-
-  if (!value) {
-    return null;
-  }
-
-  const parsed = Number(value);
-
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
-};
 
 export const createFileModelInstallJob = ({
   installRoot,
@@ -99,7 +66,7 @@ export const createFileModelInstallJob = ({
                 status: "canceled",
                 errorMessage: null,
               }
-            : createProgress(modelId, "canceled", 0, 0);
+            : createInstallProgress(modelId, "canceled", 0, 0);
         }
       }),
     start: (modelId, onProgressChanged) =>
@@ -124,7 +91,7 @@ export const createFileModelInstallJob = ({
         activeModelId = modelId;
 
         setProgress(
-          createProgress(modelId, "queued", 0, plan.expectedSizeBytes),
+          createInstallProgress(modelId, "queued", 0, plan.expectedSizeBytes),
           onProgressChanged,
         );
         yield* Effect.tryPromise({
@@ -133,7 +100,7 @@ export const createFileModelInstallJob = ({
         });
 
         setProgress(
-          createProgress(modelId, "resolving", 0, plan.expectedSizeBytes),
+          createInstallProgress(modelId, "resolving", 0, plan.expectedSizeBytes),
           onProgressChanged,
         );
 
@@ -145,7 +112,7 @@ export const createFileModelInstallJob = ({
           const sourcePath = normalize(join(resourcesRoot, model.source.relativePath));
 
           setProgress(
-            createProgress(modelId, "downloading", 0, plan.expectedSizeBytes),
+            createInstallProgress(modelId, "downloading", 0, plan.expectedSizeBytes),
             onProgressChanged,
           );
 
@@ -158,7 +125,12 @@ export const createFileModelInstallJob = ({
               readStream.on("data", (chunk) => {
                 receivedBytes += chunk.length;
                 setProgress(
-                  createProgress(modelId, "downloading", receivedBytes, plan.expectedSizeBytes),
+                  createInstallProgress(
+                    modelId,
+                    "downloading",
+                    receivedBytes,
+                    plan.expectedSizeBytes,
+                  ),
                   onProgressChanged,
                 );
               });
@@ -180,53 +152,27 @@ export const createFileModelInstallJob = ({
           }
 
           const responseSizeBytes = readContentLength(response) ?? plan.expectedSizeBytes;
-          const reader = response.body.getReader();
-          const writeStream = createWriteStream(tempFilePath);
-          let receivedBytes = 0;
 
           setProgress(
-            createProgress(modelId, "downloading", 0, responseSizeBytes),
+            createInstallProgress(modelId, "downloading", 0, responseSizeBytes),
             onProgressChanged,
           );
 
-          yield* Effect.tryPromise({
-            try: async () => {
-              try {
-                while (true) {
-                  if (abortController.signal.aborted) {
-                    throw new Error("Model install canceled");
-                  }
-
-                  const { done, value } = await reader.read();
-
-                  if (done) {
-                    break;
-                  }
-
-                  receivedBytes += value.byteLength;
-                  if (!writeStream.write(value)) {
-                    await new Promise<void>((resolve) => writeStream.once("drain", resolve));
-                  }
-
-                  setProgress(
-                    createProgress(modelId, "downloading", receivedBytes, responseSizeBytes),
-                    onProgressChanged,
-                  );
-                }
-              } finally {
-                writeStream.end();
-                await new Promise<void>((resolve, reject) => {
-                  writeStream.once("finish", resolve);
-                  writeStream.once("error", reject);
-                });
-              }
+          yield* streamResponseBodyToFile({
+            response,
+            filePath: tempFilePath,
+            abortSignal: abortController.signal,
+            onChunk: (receivedBytes) => {
+              setProgress(
+                createInstallProgress(modelId, "downloading", receivedBytes, responseSizeBytes),
+                onProgressChanged,
+              );
             },
-            catch: (error) => (error instanceof Error ? error : new Error(String(error))),
           });
         }
 
         setProgress(
-          createProgress(
+          createInstallProgress(
             modelId,
             "verifying",
             currentProgress?.receivedBytes ?? plan.expectedSizeBytes,
@@ -239,7 +185,7 @@ export const createFileModelInstallJob = ({
           try: () => stat(tempFilePath),
           catch: (error) => (error instanceof Error ? error : new Error(String(error))),
         });
-        const checksumSha256 = yield* calculateSha256(tempFilePath);
+        const checksumSha256 = yield* calculateFileSha256(tempFilePath);
         const verification = verifyDownloadedModel(plan, {
           path: tempFilePath,
           sizeBytes: fileStat.size,
@@ -258,7 +204,7 @@ export const createFileModelInstallJob = ({
         }
 
         setProgress(
-          createProgress(
+          createInstallProgress(
             modelId,
             "installing",
             currentProgress?.receivedBytes ?? plan.expectedSizeBytes,
@@ -274,7 +220,7 @@ export const createFileModelInstallJob = ({
           catch: (error) => (error instanceof Error ? error : new Error(String(error))),
         });
 
-        const installedProgress = createProgress(
+        const installedProgress = createInstallProgress(
           modelId,
           "installed",
           plan.expectedSizeBytes,

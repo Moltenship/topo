@@ -18,6 +18,19 @@ export const installedModels = sqliteTable("installed_models", {
   installedAt: text("installed_at").notNull(),
 });
 
+export const installedRuntimes = sqliteTable("installed_runtimes", {
+  id: text("id").primaryKey(),
+  runtimeId: text("runtime_id").notNull(),
+  engine: text("engine").notNull(),
+  installedPath: text("installed_path").notNull(),
+  binaryPath: text("binary_path"),
+  checksumSha256: text("checksum_sha256"),
+  verificationStatus: text("verification_status").notNull(),
+  installedAt: text("installed_at").notNull(),
+  lastProbedAt: text("last_probed_at"),
+  lastProbeMessage: text("last_probe_message"),
+});
+
 export const transcripts = sqliteTable("transcripts", {
   id: text("id").primaryKey(),
   text: text("text").notNull(),

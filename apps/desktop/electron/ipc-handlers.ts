@@ -26,6 +26,7 @@ import {
 } from "@topo/shared";
 import type { OverlayPosition } from "@topo/shared";
 import type { ModelInstallJob } from "./model-install-job";
+import type { RuntimeInstallJob } from "./runtime-install-job";
 import {
   computeModelReadinessForCatalog,
   createWhisperCppRuntimeReadinessCache,
@@ -53,6 +54,7 @@ interface IpcHandlerDependencies {
   readonly dictation: DictationOrchestrator;
   readonly audio?: SubmittedAudioCaptureService;
   readonly modelInstallJob: ModelInstallJob;
+  readonly runtimeInstallJob: RuntimeInstallJob;
   readonly nativeBridge: NativeBridgeService;
   readonly catalog?: readonly ModelCatalogEntry[];
   readonly whisperCppRuntimeReadinessCache?: WhisperCppRuntimeReadinessCache;
@@ -158,6 +160,7 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
     yield* pruneExpiredTranscripts(dependencies, settings);
     const transcripts = yield* dependencies.database.transcripts.list();
     const installedModels = yield* dependencies.database.installedModels.list();
+    const installedRuntimes = yield* dependencies.database.installedRuntimes.list();
     const shouldProbeWhisperCppRuntime = shouldResolveWhisperCppRuntimeForCatalog({
       catalog,
       installedModels,
@@ -180,10 +183,10 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
       settings,
       transcripts,
       installedModels,
-      installedRuntimes: [],
+      installedRuntimes,
       modelReadiness,
       modelInstallProgress: dependencies.modelInstallJob.getCurrentProgress(),
-      runtimeInstallProgress: null,
+      runtimeInstallProgress: dependencies.runtimeInstallJob.getCurrentProgress(),
       errorMessage: currentErrorMessage,
     };
   });

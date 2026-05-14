@@ -7,14 +7,19 @@ import {
   createInstalledModelRepository,
   type InstalledModelRepository,
 } from "./installed-model-repository";
+import {
+  createInstalledRuntimeRepository,
+  type InstalledRuntimeRepository,
+} from "./installed-runtime-repository";
 import { applyMigrations } from "./migrations";
 import { createSettingsRepository, type SettingsRepository } from "./settings-repository";
 import { createTranscriptRepository, type TranscriptRepository } from "./transcript-repository";
-import { installedModels, settings, transcripts } from "./schema";
+import { installedModels, installedRuntimes, settings, transcripts } from "./schema";
 
 export interface AppDatabase {
   readonly path: string;
   readonly installedModels: InstalledModelRepository;
+  readonly installedRuntimes: InstalledRuntimeRepository;
   readonly settings: SettingsRepository;
   readonly transcripts: TranscriptRepository;
   readonly close: () => Effect.Effect<void>;
@@ -31,11 +36,14 @@ export const openAppDatabase = (appDataDirectory: string): Effect.Effect<AppData
     sqlite.pragma("foreign_keys = ON");
     yield* applyMigrations(sqlite);
 
-    const db = drizzle(sqlite, { schema: { installedModels, settings, transcripts } });
+    const db = drizzle(sqlite, {
+      schema: { installedModels, installedRuntimes, settings, transcripts },
+    });
 
     return {
       path,
       installedModels: createInstalledModelRepository(db),
+      installedRuntimes: createInstalledRuntimeRepository(db),
       settings: createSettingsRepository(db),
       transcripts: createTranscriptRepository(db),
       close: () =>

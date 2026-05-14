@@ -169,12 +169,12 @@ git commit -m "feat(model-catalog): add runtime catalog metadata"
 - Modify `apps/desktop/electron/model-install-job.ts`
 - Modify `apps/desktop/electron/ipc-handlers.ts`
 
-- [ ] Extract common streamed artifact download helpers from `model-install-job.ts` into a private helper module or shared functions in the same Electron folder.
-- [ ] Implement `RuntimeInstallJob` with the same lifecycle as model install: `queued`, `resolving`, `downloading`, `verifying`, `installing`, `installed`, `failed`, `canceled`.
-- [ ] Support archive extraction for runtime packs, because Windows and macOS runtime releases are likely zipped.
-- [ ] Verify extracted binary existence after extraction.
-- [ ] Record installed runtime rows in SQLite only after checksum and binary probe pass.
-- [ ] Keep runtime installation separate from model installation so a single runtime can serve multiple model artifacts.
+- [x] Extract common streamed artifact download helpers from `model-install-job.ts` into a private helper module or shared functions in the same Electron folder.
+- [x] Implement `RuntimeInstallJob` with the same lifecycle as model install: `queued`, `resolving`, `downloading`, `verifying`, `installing`, `installed`, `failed`, `canceled`.
+- [x] Support archive extraction for runtime packs, because Windows and macOS runtime releases are likely zipped.
+- [x] Verify extracted binary existence after extraction.
+- [x] Record installed runtime rows in SQLite only after checksum and binary probe pass.
+- [x] Keep runtime installation separate from model installation so a single runtime can serve multiple model artifacts.
 
 Test cases:
 

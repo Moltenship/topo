@@ -68,6 +68,23 @@ const migrations: readonly Migration[] = [
       );
     `,
   },
+  {
+    id: "0003_installed_runtimes",
+    sql: `
+      CREATE TABLE IF NOT EXISTS installed_runtimes (
+        id TEXT PRIMARY KEY,
+        runtime_id TEXT NOT NULL,
+        engine TEXT NOT NULL,
+        installed_path TEXT NOT NULL,
+        binary_path TEXT,
+        checksum_sha256 TEXT,
+        verification_status TEXT NOT NULL,
+        installed_at TEXT NOT NULL,
+        last_probed_at TEXT,
+        last_probe_message TEXT
+      );
+    `,
+  },
 ];
 
 const createMigrationTable = (sqlite: Database.Database) => {
