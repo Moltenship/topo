@@ -64,6 +64,17 @@ export const computeModelReadiness = ({
     };
   }
 
+  if (runtime === "whisperkit") {
+    return {
+      modelId,
+      status: "ready",
+      lamp: "green",
+      message: "Model and WhisperKit runtime are ready.",
+      runtimeBinaryPath: null,
+      checkedAt: checkedAtFor(runtimeResult),
+    };
+  }
+
   if (runtime !== "whisper-cpp") {
     if (installedRuntime?.verificationStatus === "verified") {
       return {

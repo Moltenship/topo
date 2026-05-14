@@ -140,6 +140,44 @@ describe("computeModelReadiness", () => {
       runtimeBinaryPath: null,
     });
   });
+
+  it("returns ready for a verified installed WhisperKit model without a runtime record", () => {
+    expect(
+      computeModelReadiness({
+        modelId: "whisperkit-small",
+        runtime: "whisperkit",
+        installedModel: {
+          ...installedModel(),
+          modelId: "whisperkit-small",
+          runtime: "whisperkit",
+          installedPath: "/models/whisperkit-small",
+        },
+        installedRuntime: null,
+        runtimeResult: null,
+      }),
+    ).toMatchObject({
+      status: "ready",
+      lamp: "green",
+      message: "Model and WhisperKit runtime are ready.",
+      runtimeBinaryPath: null,
+    });
+  });
+
+  it("returns not-installed for a missing WhisperKit model", () => {
+    expect(
+      computeModelReadiness({
+        modelId: "whisperkit-small",
+        runtime: "whisperkit",
+        installedModel: null,
+        installedRuntime: null,
+        runtimeResult: null,
+      }),
+    ).toMatchObject({
+      status: "not-installed",
+      lamp: "none",
+      runtimeBinaryPath: null,
+    });
+  });
 });
 
 describe("createWhisperCppRuntimeReadinessCache", () => {
