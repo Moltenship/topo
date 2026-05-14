@@ -3,6 +3,7 @@ import { createMockAudioCaptureService } from "@topo/audio";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 import { createDictationOrchestrator } from "./dictation-orchestrator";
+import { PostProcessingError } from "./post-processing-provider";
 import type { TranscriptionInput } from "./transcription-provider";
 import { createMockTranscriptionProvider } from "./transcription-provider";
 
@@ -92,5 +93,45 @@ describe("createDictationOrchestrator", () => {
       ),
     ).rejects.toThrow("transcription failed");
     expect(cleanedAudioPaths).toEqual(["file:///tmp/session_1.wav"]);
+  });
+
+  it("keeps raw transcript text when post-processing fails", async () => {
+    const orchestrator = createDictationOrchestrator({
+      audio: createMockAudioCaptureService(),
+      transcription: {
+        transcribe: () =>
+          Effect.succeed({
+            text: "raw transcript",
+            language: "en",
+            durationInSeconds: 1.2,
+            warnings: [],
+          }),
+      },
+      postProcessing: {
+        process: (input) =>
+          Effect.fail(
+            new PostProcessingError("provider_failed", "cleanup failed", input.rawTranscript),
+          ),
+      },
+      now: () => new Date("2026-05-07T00:00:00.000Z"),
+      createId: () => "session_1",
+    });
+
+    const transcript = await Effect.runPromise(
+      Effect.gen(function* () {
+        yield* orchestrator.start();
+        return yield* orchestrator.stop({
+          language: "en",
+          modelId: "whisper-cpp-small",
+          runtime: "whisper-cpp",
+          installedModelPath: "C:\\models\\ggml-small.bin",
+          runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
+          postProcessingMode: "api",
+          recordingMode: "toggle-to-talk",
+        });
+      }),
+    );
+
+    expect(transcript.text).toBe("raw transcript");
   });
 });

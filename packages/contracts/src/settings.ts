@@ -1,11 +1,9 @@
 import * as Schema from "effect/Schema";
 import { InsertionMode, LanguageCode, RecordingMode } from "./dictation";
+import { ApiPostProcessingSettings, PostProcessingMode } from "./post-processing";
 
 export const SilenceTimeoutMs = Schema.Literal(1200, 1500, 2000, 3000);
 export type SilenceTimeoutMs = typeof SilenceTimeoutMs.Type;
-
-export const PostProcessingMode = Schema.Literal("raw", "lightweight");
-export type PostProcessingMode = typeof PostProcessingMode.Type;
 
 export const OverlayPosition = Schema.Literal(
   "bottom-center",
@@ -23,6 +21,9 @@ export const AppSettings = Schema.Struct({
   silenceTimeoutMs: Schema.optionalWith(Schema.NullOr(SilenceTimeoutMs), { default: () => null }),
   insertionMode: Schema.optionalWith(InsertionMode, { default: () => "paste" }),
   postProcessingMode: Schema.optionalWith(PostProcessingMode, { default: () => "lightweight" }),
+  postProcessingApiProvider: Schema.optionalWith(Schema.NullOr(ApiPostProcessingSettings), {
+    default: () => null,
+  }),
   language: Schema.optionalWith(LanguageCode, { default: () => "auto" }),
   historyEnabled: Schema.optionalWith(Schema.Boolean, { default: () => true }),
   autoDeleteHistoryDays: Schema.optionalWith(Schema.NullOr(Schema.Int.pipe(Schema.positive())), {

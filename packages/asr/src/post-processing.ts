@@ -1,7 +1,13 @@
-export type PostProcessingMode = "raw" | "lightweight";
+import type { PostProcessingMode } from "@topo/shared";
+
+export type { PostProcessingMode };
 
 export const normalizeTranscript = (text: string, mode: PostProcessingMode): string => {
   if (mode === "raw") {
+    return text;
+  }
+
+  if (mode !== "lightweight") {
     return text;
   }
 

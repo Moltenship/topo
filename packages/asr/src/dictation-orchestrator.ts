@@ -1,12 +1,17 @@
 import type { AudioCaptureService } from "@topo/audio";
 import type { LanguageCode, RecordingMode, TranscriptRecord } from "@topo/shared";
 import { Effect } from "effect";
-import { normalizeTranscript, type PostProcessingMode } from "./post-processing";
+import type { PostProcessingMode } from "./post-processing";
+import {
+  createLightweightPostProcessingProvider,
+  type PostProcessingProvider,
+} from "./post-processing-provider";
 import type { TranscriptionProvider } from "./transcription-provider";
 
 export interface DictationOrchestratorDependencies {
   readonly audio: AudioCaptureService;
   readonly transcription: TranscriptionProvider;
+  readonly postProcessing?: PostProcessingProvider;
   readonly now: () => Date;
   readonly createId: () => string;
 }
@@ -28,6 +33,7 @@ export const createDictationOrchestrator = (
   dependencies: DictationOrchestratorDependencies,
 ): DictationOrchestrator => {
   let sessionId: string | null = null;
+  const postProcessing = dependencies.postProcessing ?? createLightweightPostProcessingProvider();
 
   return {
     start: () =>
@@ -62,9 +68,23 @@ export const createDictationOrchestrator = (
 
         sessionId = null;
 
+        const processed =
+          input.postProcessingMode === "raw"
+            ? { text: result.text, warning: null }
+            : yield* postProcessing
+                .process({
+                  rawTranscript: result.text,
+                  language: result.language,
+                  promptId: "default-cleanup",
+                  providerId: getPostProcessingProviderId(input.postProcessingMode),
+                  modelId: getPostProcessingModelId(input.postProcessingMode),
+                  targetSchema: "plain-text",
+                })
+                .pipe(Effect.catchAll((error) => Effect.succeed(error.recoverableResult)));
+
         return {
           id: dependencies.createId(),
-          text: normalizeTranscript(result.text, input.postProcessingMode),
+          text: processed.text,
           createdAt: dependencies.now().toISOString(),
           durationMs: audio.durationMs,
           modelId: input.modelId,
@@ -78,4 +98,28 @@ export const createDictationOrchestrator = (
         };
       }),
   };
+};
+
+const getPostProcessingProviderId = (mode: PostProcessingMode) => {
+  if (mode === "apple-intelligence") {
+    return "apple-intelligence";
+  }
+
+  if (mode === "api") {
+    return "openai";
+  }
+
+  return "lightweight";
+};
+
+const getPostProcessingModelId = (mode: PostProcessingMode) => {
+  if (mode === "apple-intelligence") {
+    return "default";
+  }
+
+  if (mode === "api") {
+    return "configured";
+  }
+
+  return "local";
 };

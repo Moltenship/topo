@@ -379,14 +379,14 @@ git commit -m "feat(dictation): add true push to talk coordination"
 - Modify `packages/asr/src/dictation-orchestrator.ts`
 - Modify `apps/desktop/electron/ipc-handlers.ts`
 
-- [ ] Split post-processing into modes: `raw`, `lightweight`, `apple-intelligence`, `api`.
-- [ ] Add provider settings for `openai`, `openrouter`, and `custom-openai-compatible`.
-- [ ] Store API keys through Electron main using safe storage, not renderer state or plain SQLite.
-- [ ] Use AI SDK for API providers so OpenAI and OpenRouter share one abstraction.
-- [ ] Add an AI SDK-compatible `appleIntelligence("default")` language model wrapper that calls a local bridge instead of HTTP.
+- [x] Split post-processing into modes: `raw`, `lightweight`, `apple-intelligence`, `api`.
+- [x] Add provider settings for `openai`, `openrouter`, and `custom-openai-compatible`.
+- [x] Store API keys through Electron main using safe storage, not renderer state or plain SQLite.
+- [x] Use AI SDK for API providers so OpenAI and OpenRouter share one abstraction.
+- [x] Add an AI SDK-compatible `appleIntelligence("default")` language model wrapper that calls a local bridge instead of HTTP.
 - [ ] Keep the wrapper boundary in TypeScript and the Foundation Models access in Electron main/native bridge so renderer code never calls Apple APIs directly.
-- [ ] Add a post-processing request object containing raw transcript, language, prompt id, provider id, model id, and target schema.
-- [ ] Keep lightweight normalization as the offline default.
+- [x] Add a post-processing request object containing raw transcript, language, prompt id, provider id, model id, and target schema.
+- [x] Keep lightweight normalization as the offline default.
 - [ ] Make post-processing failure non-destructive: preserve raw transcript and show a recoverable warning unless the user explicitly requires post-processing.
 
 Provider interface:
