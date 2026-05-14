@@ -32,7 +32,7 @@ export const createMainWindow = (): BrowserWindow => {
     frame: isMac,
     title: "Topo",
     titleBarStyle: isMac ? "hiddenInset" : "hidden",
-    ...(isMac ? { trafficLightPosition: { x: 14, y: 13 } } : {}),
+    ...(isMac ? { trafficLightPosition: { x: 16, y: 18 } } : {}),
     webPreferences: {
       preload: join(currentDirectory, "../preload/preload.cjs"),
       contextIsolation: true,

@@ -24,7 +24,7 @@ export const AppTitleBar = ({ canRestoreDefaults, onRestoreDefaults }: AppTitleB
       <div
         className={cn(
           "flex h-full items-center border-r bg-card/70 pl-[22px]",
-          isMac && "pl-[76px]",
+          isMac && "pl-[90px]",
         )}
       >
         <BrandMark className="text-[12px]" />
