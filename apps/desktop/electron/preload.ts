@@ -19,6 +19,7 @@ const api: TopoApi = {
   commitOverlayPreviewPosition: (input) =>
     ipcRenderer.invoke(IpcChannels.commitOverlayPreviewPosition, input),
   installModel: (modelId) => ipcRenderer.invoke(IpcChannels.installModel, { modelId }),
+  installModelBundle: (modelId) => ipcRenderer.invoke(IpcChannels.installModelBundle, { modelId }),
   cancelModelInstall: (modelId) => ipcRenderer.invoke(IpcChannels.cancelModelInstall, { modelId }),
   startTestDictation: () => ipcRenderer.invoke(IpcChannels.startTestDictation),
   stopTestDictation: (input) => ipcRenderer.invoke(IpcChannels.stopTestDictation, input),

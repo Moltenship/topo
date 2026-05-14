@@ -158,7 +158,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
   const installModel = useCallback(
     async (modelId: string) => {
       await runAction(async () => {
-        await getRendererApi().installModel(modelId);
+        await getRendererApi().installModelBundle(modelId);
         await refreshSnapshot();
       });
     },

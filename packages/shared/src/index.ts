@@ -13,6 +13,7 @@ import type { AppStateSnapshot } from "@topo/contracts";
 import type {
   AppSettings,
   InstalledModelRecord,
+  InstallBundleProgress,
   ModelInstallProgress,
   NativeHotkeyEvent,
   NativeHotkeyPhase,
@@ -24,6 +25,7 @@ export type {
   AppSettings,
   AppStateSnapshot,
   InstalledModelRecord,
+  InstallBundleProgress,
   ModelInstallProgress,
   NativeHotkeyEvent,
   NativeHotkeyPhase,
@@ -47,6 +49,7 @@ export interface TopoApi {
     readonly centerY: number;
   }) => Promise<void>;
   readonly installModel: (modelId: string) => Promise<ModelInstallProgress>;
+  readonly installModelBundle: (modelId: string) => Promise<InstallBundleProgress>;
   readonly cancelModelInstall: (modelId: string) => Promise<void>;
   readonly startTestDictation: () => Promise<void>;
   readonly stopTestDictation: (input: {

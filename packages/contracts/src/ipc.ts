@@ -2,7 +2,7 @@ import * as Schema from "effect/Schema";
 import { OverlayState, TranscriptRecord } from "./dictation";
 import { InstalledModelRecord, ModelReadinessRecord } from "./installed-model";
 import { InstalledRuntimeRecord } from "./installed-runtime";
-import { ModelInstallProgress } from "./model-installation";
+import { InstallBundleProgress, ModelInstallProgress } from "./model-installation";
 import { AppSettings } from "./settings";
 
 export const IpcChannels = {
@@ -19,6 +19,7 @@ export const IpcChannels = {
   stopTestDictation: "dictation:stop-test",
   globalHotkeyEvent: "dictation:global-hotkey-event",
   installModel: "models:install",
+  installModelBundle: "models:install-bundle",
   cancelModelInstall: "models:cancel-install",
   windowMinimize: "window:minimize",
   windowMaximize: "window:maximize",
@@ -38,6 +39,7 @@ export const AppStateSnapshot = Schema.Struct({
   modelReadiness: Schema.Array(ModelReadinessRecord),
   modelInstallProgress: Schema.NullOr(ModelInstallProgress),
   runtimeInstallProgress: Schema.NullOr(ModelInstallProgress),
+  bundleInstallProgress: Schema.NullOr(InstallBundleProgress),
   errorMessage: Schema.NullOr(Schema.String),
 });
 export type AppStateSnapshot = typeof AppStateSnapshot.Type;
@@ -65,6 +67,9 @@ export const InstallModelRequest = Schema.Struct({
   modelId: Schema.String,
 });
 export type InstallModelRequest = typeof InstallModelRequest.Type;
+
+export const InstallModelBundleRequest = InstallModelRequest;
+export type InstallModelBundleRequest = typeof InstallModelBundleRequest.Type;
 
 export const CancelModelInstallRequest = Schema.Struct({
   modelId: Schema.String,

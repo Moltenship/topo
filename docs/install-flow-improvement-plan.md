@@ -209,13 +209,13 @@ git commit -m "feat(desktop): install runtime packs"
 - Modify `apps/desktop/renderer/src/api/renderer-api.ts`
 - Modify `packages/contracts/src/ipc.ts`
 
-- [ ] Add a typed `InstallModelBundleRequest` IPC request with `modelId`.
-- [ ] Build an install plan that resolves selected model, matching runtime for current platform/arch, installed runtime state, and installed model state.
-- [ ] If runtime is already verified, skip runtime download.
-- [ ] If model is already verified, skip model download.
-- [ ] If either artifact is corrupt or missing, repair only that artifact.
-- [ ] Publish progress as a single bundle operation with child progress for runtime and model.
-- [ ] Keep existing `installModel` IPC as a low-level operation for tests or future advanced UI, but make setup use the bundle install.
+- [x] Add a typed `InstallModelBundleRequest` IPC request with `modelId`.
+- [x] Build an install plan that resolves selected model, matching runtime for current platform/arch, installed runtime state, and installed model state.
+- [x] If runtime is already verified, skip runtime download.
+- [x] If model is already verified, skip model download.
+- [x] If either artifact is corrupt or missing, repair only that artifact.
+- [x] Publish progress as a single bundle operation with child progress for runtime and model.
+- [x] Keep existing `installModel` IPC as a low-level operation for tests or future advanced UI, but make setup use the bundle install.
 
 Bundle progress shape:
 

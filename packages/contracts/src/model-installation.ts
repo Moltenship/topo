@@ -22,3 +22,23 @@ export const ModelInstallProgress = Schema.Struct({
   errorMessage: Schema.NullOr(Schema.String),
 });
 export type ModelInstallProgress = typeof ModelInstallProgress.Type;
+
+export const InstallBundleStage = Schema.Literal(
+  "runtime",
+  "model",
+  "readiness",
+  "installed",
+  "failed",
+  "canceled",
+);
+export type InstallBundleStage = typeof InstallBundleStage.Type;
+
+export const InstallBundleProgress = Schema.Struct({
+  modelId: Schema.String,
+  runtimeId: Schema.NullOr(Schema.String),
+  stage: InstallBundleStage,
+  runtimeProgress: Schema.NullOr(ModelInstallProgress),
+  modelProgress: Schema.NullOr(ModelInstallProgress),
+  errorMessage: Schema.NullOr(Schema.String),
+});
+export type InstallBundleProgress = typeof InstallBundleProgress.Type;

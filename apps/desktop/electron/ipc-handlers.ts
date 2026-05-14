@@ -3,11 +3,18 @@ import { Effect } from "effect";
 import * as Schema from "effect/Schema";
 import type { DictationOrchestrator } from "@topo/asr";
 import type { AppDatabase } from "@topo/db";
-import { bundledModelCatalog, type ModelCatalogEntry } from "@topo/model-catalog";
+import {
+  bundledModelCatalog,
+  bundledRuntimeCatalog,
+  type ModelCatalogEntry,
+  type RuntimeCatalogEntry,
+  type RuntimePlatform,
+} from "@topo/model-catalog";
 import type { NativeBridgeService } from "@topo/native-bridge";
 import type {
   AppSettings,
   AppStateSnapshot,
+  InstallBundleProgress,
   NativeHotkeyEvent,
   TranscriptRecord,
 } from "@topo/shared";
@@ -19,6 +26,7 @@ import {
   CopyTranscriptRequest,
   DeleteTranscriptRequest,
   InstallModelRequest,
+  InstallModelBundleRequest,
   IpcChannels,
   ListTranscriptsRequest,
   ReinsertTranscriptRequest,
@@ -26,6 +34,7 @@ import {
 } from "@topo/shared";
 import type { OverlayPosition } from "@topo/shared";
 import type { ModelInstallJob } from "./model-install-job";
+import { createInstallPlan } from "./install-plan";
 import type { RuntimeInstallJob } from "./runtime-install-job";
 import {
   computeModelReadinessForCatalog,
@@ -48,6 +57,7 @@ const state: MainProcessState = {
 };
 
 let currentErrorMessage: string | null = null;
+let currentBundleInstallProgress: InstallBundleProgress | null = null;
 
 interface IpcHandlerDependencies {
   readonly database: AppDatabase;
@@ -57,6 +67,9 @@ interface IpcHandlerDependencies {
   readonly runtimeInstallJob: RuntimeInstallJob;
   readonly nativeBridge: NativeBridgeService;
   readonly catalog?: readonly ModelCatalogEntry[];
+  readonly runtimeCatalog?: readonly RuntimeCatalogEntry[];
+  readonly installPlatform?: RuntimePlatform;
+  readonly installArchitecture?: string;
   readonly whisperCppRuntimeReadinessCache?: WhisperCppRuntimeReadinessCache;
   readonly whisperCppRuntimeResolver?: WhisperCppRuntimeResolver;
   readonly resolveOverlayPositionFromPreviewPoint?: (point: {
@@ -151,6 +164,20 @@ const listTranscripts = (
 const getCatalog = (dependencies: IpcHandlerDependencies): readonly ModelCatalogEntry[] =>
   dependencies.catalog ?? bundledModelCatalog;
 
+const getRuntimeCatalog = (dependencies: IpcHandlerDependencies): readonly RuntimeCatalogEntry[] =>
+  dependencies.runtimeCatalog ?? bundledRuntimeCatalog;
+
+const getInstallPlatform = (dependencies: IpcHandlerDependencies): RuntimePlatform => {
+  if (dependencies.installPlatform) {
+    return dependencies.installPlatform;
+  }
+
+  return process.platform === "darwin" ? "macos" : "windows";
+};
+
+const getInstallArchitecture = (dependencies: IpcHandlerDependencies): string =>
+  dependencies.installArchitecture ?? process.arch;
+
 const defaultWhisperCppRuntimeReadinessCache = createWhisperCppRuntimeReadinessCache();
 
 const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppStateSnapshot> =>
@@ -187,9 +214,36 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
       modelReadiness,
       modelInstallProgress: dependencies.modelInstallJob.getCurrentProgress(),
       runtimeInstallProgress: dependencies.runtimeInstallJob.getCurrentProgress(),
+      bundleInstallProgress: currentBundleInstallProgress,
       errorMessage: currentErrorMessage,
     };
   });
+
+const sourceRevision = (model: ModelCatalogEntry): string =>
+  "revision" in model.source
+    ? model.source.revision
+    : "tag" in model.source
+      ? model.source.tag
+      : model.downloadUrl;
+
+const recordInstalledModel = (
+  dependencies: IpcHandlerDependencies,
+  model: ModelCatalogEntry,
+): Effect.Effect<void> =>
+  dependencies.database.installedModels
+    .upsert({
+      id: `installed_${model.id}`,
+      modelId: model.id,
+      runtime: model.runtime,
+      sourceType: model.source.type,
+      sourceRevision: sourceRevision(model),
+      installedPath:
+        dependencies.modelInstallJob.getInstalledModelPath(model.id) ?? model.downloadUrl,
+      checksumSha256: model.checksumSha256,
+      verificationStatus: "verified",
+      installedAt: new Date().toISOString(),
+    })
+    .pipe(Effect.asVoid);
 
 const publishAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
   Effect.gen(function* () {
@@ -201,6 +255,101 @@ const publishAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<vo
 
     dependencies.onAppStateChanged?.(snapshot);
   });
+
+const setBundleProgress = (
+  progress: InstallBundleProgress,
+  dependencies: IpcHandlerDependencies,
+): Effect.Effect<void> =>
+  Effect.sync(() => {
+    currentBundleInstallProgress = progress;
+  }).pipe(Effect.zipRight(publishAppState(dependencies)));
+
+const installModelBundle = (
+  dependencies: IpcHandlerDependencies,
+  modelId: string,
+): Effect.Effect<InstallBundleProgress, Error> =>
+  Effect.gen(function* () {
+    const catalog = getCatalog(dependencies);
+    const runtimeCatalog = getRuntimeCatalog(dependencies);
+    const installedModels = yield* dependencies.database.installedModels.list();
+    const installedRuntimes = yield* dependencies.database.installedRuntimes.list();
+    const plan = createInstallPlan({
+      modelId,
+      platform: getInstallPlatform(dependencies),
+      architecture: getInstallArchitecture(dependencies),
+      modelCatalog: catalog,
+      runtimeCatalog,
+      installedModels,
+      installedRuntimes,
+    });
+
+    const makeBundleProgress = (
+      stage: InstallBundleProgress["stage"],
+      errorMessage: string | null = null,
+    ): InstallBundleProgress => ({
+      modelId: plan.modelId,
+      runtimeId: plan.runtimeId,
+      stage,
+      runtimeProgress: dependencies.runtimeInstallJob.getCurrentProgress(),
+      modelProgress: dependencies.modelInstallJob.getCurrentProgress(),
+      errorMessage,
+    });
+
+    if (plan.runtime && plan.installRuntime) {
+      yield* setBundleProgress(makeBundleProgress("runtime"), dependencies);
+      const runtimeProgress = yield* dependencies.runtimeInstallJob.start(plan.runtime.id, () => {
+        currentBundleInstallProgress = makeBundleProgress("runtime");
+        void Effect.runPromise(publishAppState(dependencies));
+      });
+
+      if (runtimeProgress.status === "canceled") {
+        const canceledProgress = makeBundleProgress("canceled");
+        yield* setBundleProgress(canceledProgress, dependencies);
+
+        return canceledProgress;
+      }
+    }
+
+    if (plan.installModel) {
+      yield* setBundleProgress(makeBundleProgress("model"), dependencies);
+      const modelProgress = yield* dependencies.modelInstallJob.start(plan.model.id, () => {
+        currentBundleInstallProgress = makeBundleProgress("model");
+        void Effect.runPromise(publishAppState(dependencies));
+      });
+
+      if (modelProgress.status === "canceled") {
+        const canceledProgress = makeBundleProgress("canceled");
+        yield* setBundleProgress(canceledProgress, dependencies);
+
+        return canceledProgress;
+      }
+
+      if (modelProgress.status === "installed") {
+        yield* recordInstalledModel(dependencies, plan.model);
+      }
+    }
+
+    yield* setBundleProgress(makeBundleProgress("readiness"), dependencies);
+
+    const installedProgress = makeBundleProgress("installed");
+    yield* setBundleProgress(installedProgress, dependencies);
+
+    return installedProgress;
+  }).pipe(
+    Effect.tapError((error) =>
+      setBundleProgress(
+        {
+          modelId,
+          runtimeId: currentBundleInstallProgress?.runtimeId ?? null,
+          stage: "failed",
+          runtimeProgress: dependencies.runtimeInstallJob.getCurrentProgress(),
+          modelProgress: dependencies.modelInstallJob.getCurrentProgress(),
+          errorMessage: error.message,
+        },
+        dependencies,
+      ),
+    ),
+  );
 
 const publishGlobalHotkeyEvent = (event: NativeHotkeyEvent) => {
   for (const window of BrowserWindow.getAllWindows()) {
@@ -544,24 +693,7 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
                 );
 
                 if (model) {
-                  yield* dependencies.database.installedModels.upsert({
-                    id: `installed_${model.id}`,
-                    modelId: model.id,
-                    runtime: model.runtime,
-                    sourceType: model.source.type,
-                    sourceRevision:
-                      "revision" in model.source
-                        ? model.source.revision
-                        : "tag" in model.source
-                          ? model.source.tag
-                          : model.downloadUrl,
-                    installedPath:
-                      dependencies.modelInstallJob.getInstalledModelPath(model.id) ??
-                      model.downloadUrl,
-                    checksumSha256: model.checksumSha256,
-                    verificationStatus: "verified",
-                    installedAt: new Date().toISOString(),
-                  });
+                  yield* recordInstalledModel(dependencies, model);
                 }
               }
 
@@ -572,6 +704,15 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
         yield* publishAppState(dependencies);
 
         return progress;
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.installModelBundle, (_event, input: unknown) =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const payload = yield* decodeIpcPayload(InstallModelBundleRequest, input);
+
+        return yield* installModelBundle(dependencies, payload.modelId);
       }),
     ),
   );
