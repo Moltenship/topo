@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-14T00:00:00.000Z",
+  "models": [
+    {
+      "id": "whisperkit-small",
+      "displayName": "WhisperKit Small",
+      "runtime": "whisperkit",
+      "runtimeRequirement": {
+        "engine": "whisperkit",
+        "supportedRuntimeIds": ["whisperkit"]
+      },
+      "platforms": ["macos"],
+      "architectures": ["arm64"],
+      "languages": ["en", "ru"],
+      "source": {
+        "type": "direct-url",
+        "url": "https://example.invalid/models/whisperkit-small.zip"
+      },
+      "installStrategy": {
+        "type": "archive-directory",
+        "requiredFiles": ["config.json"]
+      },
+      "checksumSha256": "0000000000000000000000000000000000000000000000000000000000000001",
+      "downloadSizeBytes": 536870912,
+      "diskSizeBytes": 1288490189,
+      "estimatedMemoryBytes": 1932735283,
+      "qualityLabel": "balanced",
+      "speedLabel": "fast",
+      "accuracyScore": 72,
+      "speedScore": 78,
+      "recommendedReason": "Recommended for Apple Silicon because it balances latency and accuracy.",
+      "badges": ["recommended"],
+      "experimental": false
+    }
+  ]
+}

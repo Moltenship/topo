@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 import {
   bundledDevModelCatalog,
@@ -6,6 +8,7 @@ import {
   getBundledModelCatalog,
   getCatalogModelDownloadUrl,
 } from "./model-catalog";
+import { ModelCatalogManifest } from "./model-manifest";
 
 describe("bundledModelCatalog", () => {
   it("contains English and Russian capable models", () => {
@@ -54,5 +57,16 @@ describe("bundledModelCatalog", () => {
     expect(
       getBundledModelCatalog({ includeDev: true }).some((model) => model.id === "dev-smoke-model"),
     ).toBe(true);
+  });
+
+  it("validates the bundled manifest fixture", () => {
+    const manifestJson = readFileSync(
+      new URL("../../../manifests/model-catalog.v1.json", import.meta.url),
+      "utf8",
+    );
+    const manifest = Schema.decodeUnknownSync(ModelCatalogManifest)(JSON.parse(manifestJson));
+    const modelIds = manifest.models.map((model) => model.id);
+
+    expect(new Set(modelIds).size).toBe(modelIds.length);
   });
 });
