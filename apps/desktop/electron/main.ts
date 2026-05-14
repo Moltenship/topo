@@ -16,6 +16,7 @@ import { registerIpcHandlers } from "./ipc-handlers";
 import { createAppleIntelligenceBridge } from "./apple-intelligence-bridge";
 import { createMacosAppleIntelligenceService } from "./macos-apple-intelligence";
 import { createElectronHotkeyBridge } from "./electron-hotkey-bridge";
+import { createModelCatalogService } from "./model-catalog-service";
 import { createFileModelInstallJob } from "./model-install-job";
 import { createFileRuntimeInstallJob } from "./runtime-install-job";
 import {
@@ -57,9 +58,17 @@ const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) =>
   }
 };
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   const userDataDirectory = app.getPath("userData");
-  const catalog = getBundledModelCatalog({ includeDev: !app.isPackaged });
+  const bundledCatalog = getBundledModelCatalog({ includeDev: !app.isPackaged });
+  const catalog = await Effect.runPromise(
+    createModelCatalogService({
+      bundledCatalog,
+      cachePath: join(userDataDirectory, "model-catalog.v1.json"),
+      manifestUrl: process.env.TOPO_MODEL_MANIFEST_URL ?? null,
+      fetch,
+    }).load(),
+  );
   const database = Effect.runSync(openAppDatabase(userDataDirectory));
   const audio = createSubmittedAudioCaptureService();
   const appleIntelligenceBridge = createAppleIntelligenceBridge();

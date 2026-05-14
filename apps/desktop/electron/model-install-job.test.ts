@@ -24,6 +24,9 @@ const createTestModel = (content: string): ModelCatalogEntry => ({
     type: "direct-url",
     url: "https://example.test/model.bin",
   },
+  installStrategy: {
+    type: "single-file",
+  },
   downloadUrl: "https://example.test/model.bin",
   checksumSha256: sha256(content),
   downloadSizeBytes: Buffer.byteLength(content),

@@ -193,6 +193,9 @@ describe("computeModelReadinessForCatalog", () => {
             type: "local-file",
             relativePath: "dev-models/dev-smoke-model.bin",
           },
+          installStrategy: {
+            type: "single-file",
+          },
           downloadUrl: "local-file://dev-models/dev-smoke-model.bin",
           checksumSha256: "abc123",
           downloadSizeBytes: 512000,
@@ -245,6 +248,9 @@ describe("computeModelReadinessForCatalog", () => {
             type: "local-file",
             relativePath: "dev-models/dev-smoke-model.bin",
           },
+          installStrategy: {
+            type: "single-file",
+          },
           downloadUrl: "local-file://dev-models/dev-smoke-model.bin",
           checksumSha256: "abc123",
           downloadSizeBytes: 512000,
@@ -295,6 +301,9 @@ describe("computeModelReadinessForCatalog", () => {
           source: {
             type: "local-file",
             relativePath: "dev-models/dev-smoke-model.bin",
+          },
+          installStrategy: {
+            type: "single-file",
           },
           downloadUrl: "local-file://dev-models/dev-smoke-model.bin",
           checksumSha256: "abc123",
