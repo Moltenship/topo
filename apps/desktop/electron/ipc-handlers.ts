@@ -11,7 +11,7 @@ import type {
   NativeHotkeyEvent,
   TranscriptRecord,
 } from "@topo/shared";
-import { DEFAULT_APP_SETTINGS } from "@topo/shared";
+import { canStartDictation, DEFAULT_APP_SETTINGS } from "@topo/shared";
 import type { SubmittedAudioCaptureService } from "@topo/audio";
 import {
   CancelModelInstallRequest,
@@ -309,6 +309,17 @@ const commitOverlayPreviewPosition = (
 
 const startTestDictation = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
   Effect.gen(function* () {
+    const snapshot = yield* getAppState(dependencies);
+
+    if (
+      !canStartDictation({
+        settings: snapshot.settings,
+        modelReadiness: snapshot.modelReadiness,
+      })
+    ) {
+      return;
+    }
+
     currentErrorMessage = null;
     clearOverlayHideTimer();
     yield* dependencies.dictation.start();

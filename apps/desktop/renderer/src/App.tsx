@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DEFAULT_APP_SETTINGS, type AppSettings, type AppStateSnapshot } from "@topo/shared";
+import { canStartDictation } from "@topo/shared";
 import { AppShell } from "./components/AppShell";
 import { AppTitleBar } from "./components/AppTitleBar";
 import { getRendererApi } from "./api/renderer-api";
@@ -60,6 +61,16 @@ export const App = ({ view = "workbench" }: AppProps) => {
   }, []);
 
   const startTestDictation = useCallback(async () => {
+    if (
+      !snapshot ||
+      !canStartDictation({
+        settings: snapshot.settings,
+        modelReadiness: snapshot.modelReadiness,
+      })
+    ) {
+      return;
+    }
+
     await runAction(async () => {
       const recorder = await startBrowserAudioRecorder(
         snapshot?.settings.microphoneDeviceId ?? null,
@@ -73,7 +84,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
       testAudioRecorderRef.current = recorder;
       await refreshSnapshot();
     });
-  }, [refreshSnapshot, runAction, snapshot?.settings.microphoneDeviceId]);
+  }, [refreshSnapshot, runAction, snapshot]);
 
   const stopTestDictation = useCallback(async () => {
     await runAction(async () => {

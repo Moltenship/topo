@@ -1,4 +1,5 @@
 export * from "./dictation";
+export * from "./dictation-readiness";
 export * from "./errors";
 export { formatHotkey, normalizeHotkeyFromKeys } from "@topo/contracts";
 export * from "./installed-model";
