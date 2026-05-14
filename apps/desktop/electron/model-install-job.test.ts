@@ -13,6 +13,10 @@ const createTestModel = (content: string): ModelCatalogEntry => ({
   id: "test-model",
   displayName: "Test Model",
   runtime: "whisper-cpp",
+  runtimeRequirement: {
+    engine: "whisper-cpp",
+    supportedRuntimeIds: ["whisper-cpp-windows-x64"],
+  },
   platforms: ["windows"],
   architectures: ["x64"],
   languages: ["en", "ru"],
@@ -27,6 +31,9 @@ const createTestModel = (content: string): ModelCatalogEntry => ({
   estimatedMemoryBytes: 1024,
   qualityLabel: "fast",
   speedLabel: "fastest",
+  accuracyScore: 10,
+  speedScore: 100,
+  recommendedReason: "Test fixture.",
   badges: [],
   experimental: false,
 });

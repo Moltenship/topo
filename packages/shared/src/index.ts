@@ -5,6 +5,7 @@ export { formatHotkey, normalizeHotkeyFromKeys } from "@topo/contracts";
 export * from "./installed-model";
 export * from "./ipc";
 export * from "./model-installation";
+export type { InstalledRuntimeRecord } from "@topo/contracts";
 
 export type Platform = "linux" | "macos" | "windows";
 

@@ -1,6 +1,7 @@
 import * as Schema from "effect/Schema";
 import { OverlayState, TranscriptRecord } from "./dictation";
 import { InstalledModelRecord, ModelReadinessRecord } from "./installed-model";
+import { InstalledRuntimeRecord } from "./installed-runtime";
 import { ModelInstallProgress } from "./model-installation";
 import { AppSettings } from "./settings";
 
@@ -33,8 +34,10 @@ export const AppStateSnapshot = Schema.Struct({
   settings: AppSettings,
   transcripts: Schema.Array(TranscriptRecord),
   installedModels: Schema.Array(InstalledModelRecord),
+  installedRuntimes: Schema.Array(InstalledRuntimeRecord),
   modelReadiness: Schema.Array(ModelReadinessRecord),
   modelInstallProgress: Schema.NullOr(ModelInstallProgress),
+  runtimeInstallProgress: Schema.NullOr(ModelInstallProgress),
   errorMessage: Schema.NullOr(Schema.String),
 });
 export type AppStateSnapshot = typeof AppStateSnapshot.Type;

@@ -180,8 +180,10 @@ const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSta
       settings,
       transcripts,
       installedModels,
+      installedRuntimes: [],
       modelReadiness,
       modelInstallProgress: dependencies.modelInstallJob.getCurrentProgress(),
+      runtimeInstallProgress: null,
       errorMessage: currentErrorMessage,
     };
   });

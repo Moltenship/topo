@@ -23,6 +23,21 @@ describe("bundledModelCatalog", () => {
     expect(findCatalogModel("whisper-cpp-small")?.runtime).toBe("whisper-cpp");
   });
 
+  it("declares runtime requirements and comparison scores for every model", () => {
+    expect(
+      getBundledModelCatalog({ includeDev: true }).every(
+        (model) =>
+          model.runtimeRequirement.engine === model.runtime &&
+          (model.experimental || model.runtimeRequirement.supportedRuntimeIds.length > 0) &&
+          model.accuracyScore >= 0 &&
+          model.accuracyScore <= 100 &&
+          model.speedScore >= 0 &&
+          model.speedScore <= 100 &&
+          model.recommendedReason.length > 0,
+      ),
+    ).toBe(true);
+  });
+
   it("derives each model download URL from its bundled source metadata", () => {
     expect(
       getBundledModelCatalog({ includeDev: true }).every(

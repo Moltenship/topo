@@ -1,5 +1,6 @@
 import type { DownloadSource } from "./download-source";
 import { resolveDownloadSourceUrl } from "./download-source";
+import type { RuntimeId } from "./runtime-catalog";
 
 export type AsrRuntime = "whisperkit" | "whisper-cpp" | "parakeet";
 export type ModelQualityLabel = "fast" | "balanced" | "quality";
@@ -9,6 +10,10 @@ export interface ModelCatalogEntry {
   readonly id: string;
   readonly displayName: string;
   readonly runtime: AsrRuntime;
+  readonly runtimeRequirement: {
+    readonly engine: AsrRuntime;
+    readonly supportedRuntimeIds: readonly RuntimeId[];
+  };
   readonly platforms: readonly ("macos" | "windows")[];
   readonly architectures: readonly string[];
   readonly languages: readonly ("en" | "ru")[];
@@ -20,6 +25,9 @@ export interface ModelCatalogEntry {
   readonly estimatedMemoryBytes: number;
   readonly qualityLabel: ModelQualityLabel;
   readonly speedLabel: ModelSpeedLabel;
+  readonly accuracyScore: number;
+  readonly speedScore: number;
+  readonly recommendedReason: string;
   readonly badges: readonly string[];
   readonly experimental: boolean;
   readonly devOnly?: boolean;
@@ -32,20 +40,30 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     id: "whisperkit-small",
     displayName: "WhisperKit Small",
     runtime: "whisperkit",
+    runtimeRequirement: {
+      engine: "whisperkit",
+      supportedRuntimeIds: ["whisperkit"],
+    },
     platforms: ["macos"],
     architectures: ["arm64"],
     languages: ["en", "ru"],
     source: {
-      type: "direct-url",
-      url: "https://example.invalid/models/whisperkit-small",
+      type: "huggingface-snapshot",
+      repo: "argmaxinc/whisperkit-coreml",
+      revision: "main",
+      subfolder: "openai_whisper-small",
     },
-    downloadUrl: "https://example.invalid/models/whisperkit-small",
+    downloadUrl:
+      "https://huggingface.co/argmaxinc/whisperkit-coreml/tree/main/openai_whisper-small",
     checksumSha256: "0000000000000000000000000000000000000000000000000000000000000001",
     downloadSizeBytes: Math.round(0.5 * gib),
     diskSizeBytes: Math.round(1.2 * gib),
     estimatedMemoryBytes: Math.round(1.8 * gib),
     qualityLabel: "balanced",
     speedLabel: "fast",
+    accuracyScore: 72,
+    speedScore: 78,
+    recommendedReason: "Recommended for Apple Silicon because it balances latency and accuracy.",
     badges: ["recommended"],
     experimental: false,
   },
@@ -53,6 +71,10 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     id: "whisper-cpp-small",
     displayName: "Whisper.cpp Small",
     runtime: "whisper-cpp",
+    runtimeRequirement: {
+      engine: "whisper-cpp",
+      supportedRuntimeIds: ["whisper-cpp-windows-x64"],
+    },
     platforms: ["windows"],
     architectures: ["x64", "arm64"],
     languages: ["en", "ru"],
@@ -70,6 +92,9 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     estimatedMemoryBytes: 852 * 1024 * 1024,
     qualityLabel: "balanced",
     speedLabel: "fast",
+    accuracyScore: 72,
+    speedScore: 70,
+    recommendedReason: "Recommended on Windows for a stable local-first baseline.",
     badges: ["recommended"],
     experimental: false,
   },
@@ -77,6 +102,10 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     id: "parakeet-tdt-0-6b-v3",
     displayName: "Parakeet TDT 0.6B v3",
     runtime: "parakeet",
+    runtimeRequirement: {
+      engine: "parakeet",
+      supportedRuntimeIds: [],
+    },
     platforms: ["windows"],
     architectures: ["x64"],
     languages: ["en", "ru"],
@@ -91,6 +120,9 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     estimatedMemoryBytes: Math.round(3 * gib),
     qualityLabel: "quality",
     speedLabel: "moderate",
+    accuracyScore: 82,
+    speedScore: 50,
+    recommendedReason: "Experimental option for users who prefer quality over speed.",
     badges: ["experimental"],
     experimental: true,
   },
@@ -101,6 +133,10 @@ export const bundledDevModelCatalog: readonly ModelCatalogEntry[] = [
     id: "dev-smoke-model",
     displayName: "Dev Smoke Model",
     runtime: "whisper-cpp",
+    runtimeRequirement: {
+      engine: "whisper-cpp",
+      supportedRuntimeIds: ["whisper-cpp-windows-x64", "whisper-cpp-macos-arm64"],
+    },
     platforms: ["windows", "macos"],
     architectures: ["x64", "arm64"],
     languages: ["en", "ru"],
@@ -115,6 +151,9 @@ export const bundledDevModelCatalog: readonly ModelCatalogEntry[] = [
     estimatedMemoryBytes: 16 * 1024 * 1024,
     qualityLabel: "fast",
     speedLabel: "fastest",
+    accuracyScore: 10,
+    speedScore: 100,
+    recommendedReason: "Development-only smoke model for installer tests.",
     badges: ["dev", "smoke"],
     experimental: true,
     devOnly: true,

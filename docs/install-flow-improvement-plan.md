@@ -136,13 +136,13 @@ Keep the existing `qualityLabel` and `speedLabel` for UI readability, but add nu
 - Modify `packages/contracts/src/ipc.ts`
 - Modify `packages/shared/src/index.ts`
 
-- [ ] Add `RuntimeCatalogEntry`, `RuntimeId`, and `bundledRuntimeCatalog`.
-- [ ] Add `runtimeRequirement`, `accuracyScore`, `speedScore`, and `recommendedReason` to `ModelCatalogEntry`.
-- [ ] Represent macOS WhisperKit as a system runtime initially, because on-device Apple Silicon support should not require downloading a CLI.
-- [ ] Represent Windows `whisper.cpp` as a downloadable runtime pack, with `binaryRelativePath` pointing to `whisper-cli.exe`.
-- [ ] Add `InstalledRuntimeRecord` Schema contract.
-- [ ] Add `installedRuntimes` and `runtimeInstallProgress` to `AppStateSnapshot`.
-- [ ] Update existing tests in `packages/model-catalog` and `packages/contracts`.
+- [x] Add `RuntimeCatalogEntry`, `RuntimeId`, and `bundledRuntimeCatalog`.
+- [x] Add `runtimeRequirement`, `accuracyScore`, `speedScore`, and `recommendedReason` to `ModelCatalogEntry`.
+- [x] Represent macOS WhisperKit as a system runtime initially, because on-device Apple Silicon support should not require downloading a CLI.
+- [x] Represent Windows `whisper.cpp` as a downloadable runtime pack, with `binaryRelativePath` pointing to `whisper-cli.exe`.
+- [x] Add `InstalledRuntimeRecord` Schema contract.
+- [x] Add `installedRuntimes` and `runtimeInstallProgress` to `AppStateSnapshot`.
+- [x] Update existing tests in `packages/model-catalog` and `packages/contracts`.
 
 Run:
 
