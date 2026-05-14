@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Effect } from "effect";
@@ -39,6 +40,21 @@ const createTestModel = (content: string): ModelCatalogEntry => ({
   recommendedReason: "Test fixture.",
   badges: [],
   experimental: false,
+});
+
+const createArchiveModel = (content: string): ModelCatalogEntry => ({
+  ...createTestModel(content),
+  id: "archive-model",
+  displayName: "Archive Model",
+  source: {
+    type: "direct-url",
+    url: "https://example.test/archive-model.zip",
+  },
+  installStrategy: {
+    type: "archive-directory",
+    requiredFiles: ["config.json"],
+  },
+  downloadUrl: "https://example.test/archive-model.zip",
 });
 
 describe("createFileModelInstallJob", () => {
@@ -116,6 +132,65 @@ describe("createFileModelInstallJob", () => {
     await expect(readFile(job.getInstalledModelPath(model.id) ?? "", "utf8")).resolves.toBe(
       content,
     );
+  });
+
+  it("downloads, verifies, extracts, and installs an archive-directory model", async () => {
+    const content = "archive payload";
+    const installRoot = await mkdtemp(join(tmpdir(), "topo-model-install-"));
+    const model = createArchiveModel(content);
+    const observedExtractionTargets: string[] = [];
+    const job = createFileModelInstallJob({
+      installRoot,
+      catalog: [model],
+      fetch: async () =>
+        new Response(content, {
+          headers: {
+            "content-length": String(Buffer.byteLength(content)),
+          },
+        }),
+      extractArchive: async (_archivePath, targetDirectory) => {
+        observedExtractionTargets.push(targetDirectory);
+        await mkdir(targetDirectory, { recursive: true });
+        await writeFile(join(targetDirectory, "config.json"), "{}");
+      },
+    });
+
+    await expect(Effect.runPromise(job.start(model.id, () => undefined))).resolves.toMatchObject({
+      modelId: model.id,
+      status: "installed",
+    });
+
+    expect(observedExtractionTargets).toEqual([join(installRoot, model.id, ".extracting")]);
+    expect(job.getInstalledModelPath(model.id)).toBe(join(installRoot, model.id));
+    await expect(readFile(join(installRoot, model.id, "config.json"), "utf8")).resolves.toBe("{}");
+    expect(existsSync(join(installRoot, model.id, `${model.id}.zip.download`))).toBe(false);
+    expect(existsSync(join(installRoot, model.id, ".extracting"))).toBe(false);
+  });
+
+  it("removes temporary archive files when required archive contents are missing", async () => {
+    const content = "archive payload";
+    const installRoot = await mkdtemp(join(tmpdir(), "topo-model-install-"));
+    const model = createArchiveModel(content);
+    const job = createFileModelInstallJob({
+      installRoot,
+      catalog: [model],
+      fetch: async () =>
+        new Response(content, {
+          headers: {
+            "content-length": String(Buffer.byteLength(content)),
+          },
+        }),
+      extractArchive: async (_archivePath, targetDirectory) => {
+        await mkdir(targetDirectory, { recursive: true });
+        await writeFile(join(targetDirectory, "other.json"), "{}");
+      },
+    });
+
+    await expect(Effect.runPromise(job.start(model.id, () => undefined))).rejects.toThrow(
+      "Missing required model file: config.json",
+    );
+
+    await expect(readdir(join(installRoot, model.id))).resolves.toEqual([]);
   });
 
   it("fails and removes the temp file when verification fails", async () => {

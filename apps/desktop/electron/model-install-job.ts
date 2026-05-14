@@ -1,5 +1,5 @@
 import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, rename, rm, stat } from "node:fs/promises";
+import { access, mkdir, readdir, rename, rm, stat } from "node:fs/promises";
 import { dirname, join, normalize } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Effect } from "effect";
@@ -32,13 +32,34 @@ export interface FileModelInstallJobOptions {
   readonly resourcesRoot?: string;
   readonly fetch: typeof fetch;
   readonly catalog?: readonly ModelCatalogEntry[];
+  readonly extractArchive?: (archivePath: string, targetDirectory: string) => Promise<void>;
 }
+
+const defaultExtractArchive = async (archivePath: string, targetDirectory: string) => {
+  const extract = (await import("extract-zip")).default;
+
+  await extract(archivePath, { dir: targetDirectory });
+};
+
+const validateRequiredFiles = async (
+  directory: string,
+  requiredFiles: readonly string[],
+): Promise<void> => {
+  for (const requiredFile of requiredFiles) {
+    try {
+      await access(join(directory, requiredFile));
+    } catch {
+      throw new Error(`Missing required model file: ${requiredFile}`);
+    }
+  }
+};
 
 export const createFileModelInstallJob = ({
   installRoot,
   resourcesRoot,
   fetch,
   catalog = bundledModelCatalog,
+  extractArchive = defaultExtractArchive,
 }: FileModelInstallJobOptions): ModelInstallJob => {
   let currentProgress: ModelInstallProgress | null = null;
   let activeAbortController: AbortController | null = null;
@@ -54,7 +75,7 @@ export const createFileModelInstallJob = ({
     getInstalledModelPath: (modelId) => {
       const model = catalog.find((model) => model.id === modelId);
 
-      return model ? createModelInstallPlan(model, installRoot).modelFilePath : null;
+      return model ? createModelInstallPlan(model, installRoot).installedPath : null;
     },
     cancel: (modelId) =>
       Effect.sync(() => {
@@ -84,7 +105,8 @@ export const createFileModelInstallJob = ({
         }
 
         const plan = createModelInstallPlan(model, installRoot);
-        const tempFilePath = `${plan.modelFilePath}.download`;
+        const tempFilePath = plan.archivePath ?? `${plan.modelFilePath}.download`;
+        const extractingDirectory = join(plan.installDirectory, ".extracting");
         const abortController = new AbortController();
 
         activeAbortController = abortController;
@@ -215,7 +237,31 @@ export const createFileModelInstallJob = ({
         yield* Effect.tryPromise({
           try: async () => {
             await mkdir(plan.installDirectory, { recursive: true });
-            await rename(tempFilePath, plan.modelFilePath);
+            if (plan.installStrategy.type === "single-file") {
+              await rename(tempFilePath, plan.modelFilePath);
+
+              return;
+            }
+
+            await rm(extractingDirectory, { force: true, recursive: true });
+            await mkdir(extractingDirectory, { recursive: true });
+            await extractArchive(tempFilePath, extractingDirectory);
+            await validateRequiredFiles(extractingDirectory, plan.installStrategy.requiredFiles);
+
+            for (const entry of await readdir(plan.installDirectory)) {
+              if (entry === ".extracting" || entry === `${model.id}.zip.download`) {
+                continue;
+              }
+
+              await rm(join(plan.installDirectory, entry), { force: true, recursive: true });
+            }
+
+            for (const entry of await readdir(extractingDirectory)) {
+              await rename(join(extractingDirectory, entry), join(plan.installDirectory, entry));
+            }
+
+            await rm(extractingDirectory, { force: true, recursive: true });
+            await rm(tempFilePath, { force: true });
           },
           catch: (error) => (error instanceof Error ? error : new Error(String(error))),
         });
@@ -236,12 +282,19 @@ export const createFileModelInstallJob = ({
           Effect.promise(async () => {
             const wasCanceled = activeModelId === modelId && activeAbortController?.signal.aborted;
             const model = catalog.find((model) => model.id === modelId);
-            const tempFilePath = model
-              ? `${createModelInstallPlan(model, installRoot).modelFilePath}.download`
+            const plan = model ? createModelInstallPlan(model, installRoot) : null;
+            const tempFilePath = plan
+              ? (plan.archivePath ?? `${plan.modelFilePath}.download`)
               : null;
 
             if (tempFilePath) {
               await rm(tempFilePath, { force: true });
+            }
+            if (plan?.installStrategy.type === "archive-directory") {
+              await rm(join(plan.installDirectory, ".extracting"), {
+                force: true,
+                recursive: true,
+              });
             }
 
             currentProgress = {
