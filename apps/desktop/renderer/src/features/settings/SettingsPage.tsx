@@ -273,23 +273,13 @@ export const SettingsPage = ({
           title="Post-processing"
           description="Transcript cleanup and provider settings now live in the dedicated post-processing section."
         >
-          <div className="flex items-center justify-end gap-2 max-sm:justify-start">
-            <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-              {
-                postProcessingModeLabels[
-                  settings?.postProcessingMode ?? DEFAULT_APP_SETTINGS.postProcessingMode
-                ]
-              }
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              type="button"
-              render={<Link to="/post-processing" />}
-            >
-              Open
-            </Button>
-          </div>
+          <Button size="sm" variant="outline" type="button" render={<Link to="/post-processing" />}>
+            {
+              postProcessingModeLabels[
+                settings?.postProcessingMode ?? DEFAULT_APP_SETTINGS.postProcessingMode
+              ]
+            }
+          </Button>
         </SettingsRow>
       </SettingsSection>
       <SettingsSection id="models" title="Models">
