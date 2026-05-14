@@ -5,6 +5,12 @@ import type { RuntimeId } from "./runtime-catalog";
 export type AsrRuntime = "whisperkit" | "whisper-cpp" | "parakeet";
 export type ModelQualityLabel = "fast" | "balanced" | "quality";
 export type ModelSpeedLabel = "fastest" | "fast" | "moderate";
+export type ModelInstallStrategy =
+  | { readonly type: "single-file" }
+  | {
+      readonly type: "archive-directory";
+      readonly requiredFiles: readonly string[];
+    };
 
 export interface ModelCatalogEntry {
   readonly id: string;
@@ -18,6 +24,7 @@ export interface ModelCatalogEntry {
   readonly architectures: readonly string[];
   readonly languages: readonly ("en" | "ru")[];
   readonly source: DownloadSource;
+  readonly installStrategy: ModelInstallStrategy;
   readonly downloadUrl: string;
   readonly checksumSha256: string;
   readonly downloadSizeBytes: number;
@@ -53,6 +60,10 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
       revision: "main",
       subfolder: "openai_whisper-small",
     },
+    installStrategy: {
+      type: "archive-directory",
+      requiredFiles: ["config.json"],
+    },
     downloadUrl:
       "https://huggingface.co/argmaxinc/whisperkit-coreml/tree/main/openai_whisper-small",
     checksumSha256: "0000000000000000000000000000000000000000000000000000000000000001",
@@ -84,6 +95,9 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
       revision: "5359861c739e955e79d9a303bcbc70fb988958b1",
       filePath: "ggml-small.bin",
     },
+    installStrategy: {
+      type: "single-file",
+    },
     downloadUrl:
       "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin",
     checksumSha256: "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
@@ -112,6 +126,9 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     source: {
       type: "direct-url",
       url: "https://example.invalid/models/parakeet-tdt-0-6b-v3",
+    },
+    installStrategy: {
+      type: "single-file",
     },
     downloadUrl: "https://example.invalid/models/parakeet-tdt-0-6b-v3",
     checksumSha256: "0000000000000000000000000000000000000000000000000000000000000003",
@@ -143,6 +160,9 @@ export const bundledDevModelCatalog: readonly ModelCatalogEntry[] = [
     source: {
       type: "local-file",
       relativePath: "dev-models/dev-smoke-model.bin",
+    },
+    installStrategy: {
+      type: "single-file",
     },
     downloadUrl: "local-file://dev-models/dev-smoke-model.bin",
     checksumSha256: "e990a6df2e0b07318792697887c41705a2d238e7441eb5a2fd2fb5fd31e6e6b0",
