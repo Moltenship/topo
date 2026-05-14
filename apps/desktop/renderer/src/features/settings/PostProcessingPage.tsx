@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import {
-  DEFAULT_APP_SETTINGS,
   type AppleIntelligenceAvailability,
   type ApiPostProcessingProvider,
   type AppSettings,
@@ -154,7 +153,7 @@ export const PostProcessingPage = ({
   );
   const appleIntelligenceUnavailable =
     platform !== "macos" || appleIntelligenceAvailability?.status === "device-not-eligible";
-  const mode = settings?.postProcessingMode ?? DEFAULT_APP_SETTINGS.postProcessingMode;
+  const mode = settings?.postProcessingMode ?? null;
   const apiKeySummary = apiKeyDraft.length > 0 ? "Key staged for secure storage" : "No key staged";
   const selectedProviderDescription = providerDescriptions[apiSettings.providerId];
 
@@ -204,7 +203,7 @@ export const PostProcessingPage = ({
           {modeOptions.map((option) => {
             const Icon = option.icon;
             const disabled = option.value === "apple-intelligence" && appleIntelligenceUnavailable;
-            const active = mode === option.value;
+            const active = settings !== null && mode === option.value;
 
             return (
               <button

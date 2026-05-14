@@ -151,6 +151,16 @@ export const App = ({ view = "workbench" }: AppProps) => {
   const updateSettings = useCallback(
     async (settings: AppSettings) => {
       await runAction(async () => {
+        setSnapshot((current) =>
+          current
+            ? {
+                ...current,
+                setupComplete: Boolean(settings.activeModelId),
+                settings,
+              }
+            : current,
+        );
+
         const nextSettings = await getRendererApi().updateSettings(settings);
 
         setSnapshot((current) =>
