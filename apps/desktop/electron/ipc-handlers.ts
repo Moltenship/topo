@@ -383,28 +383,41 @@ const publishGlobalHotkeyEvent = (event: NativeHotkeyEvent) => {
 const registerNativeHotkey = (
   dependencies: IpcHandlerDependencies,
   hotkey: string,
-): Effect.Effect<void, Error> =>
+): Effect.Effect<void> =>
   Effect.gen(function* () {
-    hotkeyUnsubscribe?.();
-    hotkeyUnsubscribe = yield* dependencies.nativeBridge.registerHotkey(hotkey, (event) => {
-      const effectiveMode = dependencies.nativeBridge.supportsHotkeyReleaseEvents
-        ? state.settings.recordingMode
-        : "toggle-to-talk";
-      const action = hotkeyCoordinator.handle({
-        mode: effectiveMode,
-        phase: event.phase,
-        timestampMs: event.timestampMs,
-      });
+    const nextUnsubscribe = yield* dependencies.nativeBridge
+      .registerHotkey(hotkey, (event) => {
+        const effectiveMode = dependencies.nativeBridge.supportsHotkeyReleaseEvents
+          ? state.settings.recordingMode
+          : "toggle-to-talk";
+        const action = hotkeyCoordinator.handle({
+          mode: effectiveMode,
+          phase: event.phase,
+          timestampMs: event.timestampMs,
+        });
 
-      if (action === "start-recording") {
-        publishGlobalHotkeyEvent({ ...event, phase: "down" });
-        return;
-      }
+        if (action === "start-recording") {
+          publishGlobalHotkeyEvent({ ...event, phase: "down" });
+          return;
+        }
 
-      if (action === "stop-recording") {
-        publishGlobalHotkeyEvent({ ...event, phase: "up" });
-      }
-    });
+        if (action === "stop-recording") {
+          publishGlobalHotkeyEvent({ ...event, phase: "up" });
+        }
+      })
+      .pipe(
+        Effect.catchAll((error) =>
+          Effect.sync(() => {
+            currentErrorMessage = `Unable to register global hotkey: ${error.message}`;
+            return null;
+          }),
+        ),
+      );
+
+    if (nextUnsubscribe) {
+      hotkeyUnsubscribe?.();
+      hotkeyUnsubscribe = nextUnsubscribe;
+    }
   });
 
 const deleteTranscript = (dependencies: IpcHandlerDependencies, id: string): Effect.Effect<void> =>

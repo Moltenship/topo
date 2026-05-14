@@ -10,6 +10,10 @@ describe("hotkey normalization", () => {
     expect(normalizeHotkeyFromKeys(["KeyK", "Shift", "Control"])).toBe("Ctrl+Shift+K");
   });
 
+  it("normalizes international backslash key codes to an accelerator key", () => {
+    expect(normalizeHotkeyFromKeys(["IntlBackslash"])).toBe("\\");
+  });
+
   it("renders normalized hotkeys for settings", () => {
     expect(formatHotkey("Ctrl+Shift+Space")).toBe("Ctrl + Shift + Space");
   });

@@ -13,6 +13,8 @@ const keyAliases = new Map<string, string>([
   ["OSLeft", "Meta"],
   ["OSRight", "Meta"],
   [" ", "Space"],
+  ["IntlBackslash", "\\"],
+  ["Backslash", "\\"],
 ]);
 
 const normalizeKey = (key: string): string => {

@@ -13,7 +13,15 @@ import { insertTextWithWindowsAutomation } from "./windows-text-insertion";
 const toElectronAccelerator = (hotkey: string): string =>
   hotkey
     .split("+")
-    .map((part) => (part === "Ctrl" ? "CommandOrControl" : part === "CapsLock" ? "Capslock" : part))
+    .map((part) =>
+      part === "Ctrl"
+        ? "CommandOrControl"
+        : part === "CapsLock"
+          ? "Capslock"
+          : part === "IntlBackslash" || part === "Backslash"
+            ? "\\"
+            : part,
+    )
     .join("+");
 
 const repeatIdleMs = 30;
