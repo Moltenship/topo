@@ -61,8 +61,15 @@ export const createAiSdkPostProcessingProvider = ({
   generate,
   model,
 }: AiSdkPostProcessingProviderOptions): PostProcessingProvider => ({
-  process: (input) =>
-    Effect.tryPromise({
+  process: (input) => {
+    if (input.providerId === "lightweight") {
+      return Effect.succeed({
+        text: normalizeTranscript(input.rawTranscript, "lightweight"),
+        warning: null,
+      });
+    }
+
+    return Effect.tryPromise({
       try: async () => {
         const prompt = buildPostProcessingPrompt(input);
         const result =
@@ -80,7 +87,8 @@ export const createAiSdkPostProcessingProvider = ({
       },
       catch: (error) =>
         new PostProcessingError("provider_failed", getErrorMessage(error), input.rawTranscript),
-    }),
+    });
+  },
 });
 
 export const buildPostProcessingPrompt = (input: PostProcessingInput): string =>

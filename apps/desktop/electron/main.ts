@@ -2,12 +2,18 @@ import { app, screen } from "electron";
 import type { BrowserWindow } from "electron";
 import { join } from "node:path";
 import { Effect } from "effect";
-import { createDictationOrchestrator, createWhisperCppTranscriptionProvider } from "@topo/asr";
+import {
+  appleIntelligence,
+  createAiSdkPostProcessingProvider,
+  createDictationOrchestrator,
+  createWhisperCppTranscriptionProvider,
+} from "@topo/asr";
 import { createSubmittedAudioCaptureService } from "@topo/audio";
 import { openAppDatabase } from "@topo/db";
 import { getBundledModelCatalog } from "@topo/model-catalog";
 import type { AppStateSnapshot } from "@topo/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
+import { createMacosAppleIntelligenceService } from "./macos-apple-intelligence";
 import { createElectronHotkeyBridge } from "./electron-hotkey-bridge";
 import { createFileModelInstallJob } from "./model-install-job";
 import { createFileRuntimeInstallJob } from "./runtime-install-job";
@@ -55,9 +61,22 @@ app.whenReady().then(() => {
   const catalog = getBundledModelCatalog({ includeDev: !app.isPackaged });
   const database = Effect.runSync(openAppDatabase(userDataDirectory));
   const audio = createSubmittedAudioCaptureService();
+  const appleIntelligenceService = createMacosAppleIntelligenceService();
   const dictation = createDictationOrchestrator({
     audio,
     transcription: createWhisperCppTranscriptionProvider(),
+    postProcessing: createAiSdkPostProcessingProvider({
+      model: (modelId) =>
+        appleIntelligence(modelId, {
+          generate: (request) =>
+            Effect.runPromise(
+              appleIntelligenceService.generateAppleIntelligenceText({
+                prompt: request.prompt,
+                maxTokens: 512,
+              }),
+            ),
+        }),
+    }),
     now: () => new Date(),
     createId: () => crypto.randomUUID(),
   });
@@ -83,6 +102,7 @@ app.whenReady().then(() => {
       repository: database.installedRuntimes,
       fetch,
     }),
+    appleIntelligence: appleIntelligenceService,
     nativeBridge,
     createWhisperCppRuntimeResolver: (installedBinaryPath) =>
       createWhisperCppRuntimeResolver({

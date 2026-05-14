@@ -12,6 +12,7 @@ import {
   type RuntimePlatform,
 } from "@topo/model-catalog";
 import type { NativeBridgeService } from "@topo/native-bridge";
+import type { AppleIntelligenceService } from "@topo/native-bridge";
 import type {
   AppSettings,
   AppStateSnapshot,
@@ -68,6 +69,7 @@ interface IpcHandlerDependencies {
   readonly modelInstallJob: ModelInstallJob;
   readonly runtimeInstallJob: RuntimeInstallJob;
   readonly nativeBridge: NativeBridgeService;
+  readonly appleIntelligence?: AppleIntelligenceService;
   readonly catalog?: readonly ModelCatalogEntry[];
   readonly runtimeCatalog?: readonly RuntimeCatalogEntry[];
   readonly installPlatform?: RuntimePlatform;

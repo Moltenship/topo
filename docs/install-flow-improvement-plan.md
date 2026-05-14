@@ -223,13 +223,7 @@ Bundle progress shape:
 export interface InstallBundleProgress {
   readonly modelId: string;
   readonly runtimeId: string | null;
-  readonly stage:
-    | "runtime"
-    | "model"
-    | "readiness"
-    | "installed"
-    | "failed"
-    | "canceled";
+  readonly stage: "runtime" | "model" | "readiness" | "installed" | "failed" | "canceled";
   readonly runtimeProgress: ModelInstallProgress | null;
   readonly modelProgress: ModelInstallProgress | null;
   readonly errorMessage: string | null;
@@ -481,12 +475,12 @@ git commit -m "feat(settings): add post processing tab"
 - Modify `apps/desktop/electron/main.ts`
 - Modify `apps/desktop/electron/ipc-handlers.ts`
 
-- [ ] Add macOS platform detection to expose Apple Intelligence availability only on macOS devices that can support it.
-- [ ] Keep Apple Intelligence calls on-device and behind explicit user selection.
-- [ ] Implement the bridge method consumed by the AI SDK wrapper: `generateAppleIntelligenceText({ systemPrompt, prompt, maxTokens })`.
-- [ ] Return structured availability reasons: `available`, `device-not-eligible`, `apple-intelligence-disabled`, `model-not-ready`, and `unknown`.
-- [ ] Add permission/readiness state for accessibility and input monitoring.
-- [ ] Treat WhisperKit as a system/local runtime in the catalog until a packaged helper exists.
+- [x] Add macOS platform detection to expose Apple Intelligence availability only on macOS devices that can support it.
+- [x] Keep Apple Intelligence calls on-device and behind explicit user selection.
+- [x] Implement the bridge method consumed by the AI SDK wrapper: `generateAppleIntelligenceText({ systemPrompt, prompt, maxTokens })`.
+- [x] Return structured availability reasons: `available`, `device-not-eligible`, `apple-intelligence-disabled`, `model-not-ready`, and `unknown`.
+- [x] Add permission/readiness state for accessibility and input monitoring.
+- [x] Treat WhisperKit as a system/local runtime in the catalog until a packaged helper exists.
 - [ ] If a Swift helper is required, model it as a runtime pack or bundled helper with the same probe/readiness mechanism used by `whisper.cpp`.
 
 Run:
