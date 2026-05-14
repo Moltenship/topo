@@ -50,6 +50,19 @@ const overlayPositionOptions = [
   { label: "Center right", value: "center-right" },
 ] as const;
 
+const recordingModeOptions = [
+  { label: "Press once", value: "toggle-to-talk" },
+  { label: "Hold while speaking", value: "push-to-talk" },
+  { label: "Hold, stop on silence", value: "push-to-talk-with-silence-timeout" },
+] satisfies readonly { readonly label: string; readonly value: AppSettings["recordingMode"] }[];
+
+const recordingModeDescriptions: Record<AppSettings["recordingMode"], string> = {
+  "toggle-to-talk": "Press once to start recording; press again to stop and transcribe.",
+  "push-to-talk": "Hold the hotkey while speaking; release to stop and transcribe.",
+  "push-to-talk-with-silence-timeout":
+    "Hold the hotkey while speaking; release or a silence timeout can finish the recording.",
+};
+
 interface MicrophoneDeviceOption {
   readonly label: string;
   readonly value: string | null;
@@ -352,12 +365,17 @@ export const SettingsPage = ({
         </SettingsRow>
         <SettingsRow
           title="Recording mode"
-          description="One hotkey press starts recording; the next press stops and transcribes."
+          description={
+            recordingModeDescriptions[settings?.recordingMode ?? DEFAULT_APP_SETTINGS.recordingMode]
+          }
           resetAction={getResetAction("recordingMode", "recording mode")}
         >
-          <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold">
-            Press to start/stop
-          </span>
+          <SettingsSelect
+            disabled={!settings}
+            value={settings?.recordingMode ?? DEFAULT_APP_SETTINGS.recordingMode}
+            options={recordingModeOptions}
+            onChange={(value) => updateSettings("recordingMode", value)}
+          />
         </SettingsRow>
         <SettingsRow
           title="Test dictation"

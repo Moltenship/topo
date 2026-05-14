@@ -11,6 +11,8 @@ describe("createMockNativeBridgeService", () => {
       service.registerHotkey("CapsLock", (event) => events.push(event)),
     );
 
+    expect(service.supportsHotkeyReleaseEvents).toBe(true);
+
     await Effect.runPromise(service.emitHotkeyDown("CapsLock"));
     await Effect.runPromise(service.emitHotkeyUp("CapsLock"));
     unsubscribe();

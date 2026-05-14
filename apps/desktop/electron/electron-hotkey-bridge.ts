@@ -8,7 +8,6 @@ import type {
   TextInsertionResult,
   Unsubscribe,
 } from "@topo/native-bridge";
-import type { NativeHotkeyEvent } from "@topo/shared";
 import { insertTextWithWindowsAutomation } from "./windows-text-insertion";
 
 const toElectronAccelerator = (hotkey: string): string =>
@@ -17,7 +16,7 @@ const toElectronAccelerator = (hotkey: string): string =>
     .map((part) => (part === "Ctrl" ? "CommandOrControl" : part === "CapsLock" ? "Capslock" : part))
     .join("+");
 
-const repeatIdleMs = 800;
+const repeatIdleMs = 30;
 
 const runPowerShellCommand = (command: string): Promise<void> =>
   new Promise((resolve, reject) => {
@@ -52,29 +51,26 @@ export const createElectronHotkeyBridge = (): NativeBridgeService => {
   };
 
   return {
+    supportsHotkeyReleaseEvents: false,
     registerHotkey: (hotkey, listener) =>
       Effect.try({
         try: (): Unsubscribe => {
           const accelerator = toElectronAccelerator(hotkey);
-          let active = false;
           let lastEventAt = 0;
           const registered = globalShortcut.register(accelerator, () => {
             const now = Date.now();
 
-            if (active && now - lastEventAt < repeatIdleMs) {
+            if (now - lastEventAt < repeatIdleMs) {
               lastEventAt = now;
               return;
             }
 
             lastEventAt = now;
-            active = !active;
-            const event: NativeHotkeyEvent = {
+            listener({
               hotkey,
-              phase: active ? "down" : "up",
+              phase: "down",
               timestampMs: now,
-            };
-
-            listener(event);
+            });
           });
 
           if (!registered) {

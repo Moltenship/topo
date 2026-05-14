@@ -2,7 +2,11 @@ import * as Effect from "effect/Effect";
 import type * as ParseResult from "effect/ParseResult";
 import * as Schema from "effect/Schema";
 
-export const RecordingMode = Schema.Literal("toggle-to-talk", "push-to-talk", "smart-dictation");
+export const RecordingMode = Schema.Literal(
+  "toggle-to-talk",
+  "push-to-talk",
+  "push-to-talk-with-silence-timeout",
+);
 export type RecordingMode = typeof RecordingMode.Type;
 
 export const StopReason = Schema.Literal("hotkey-release", "silence-timeout", "manual-cancel");

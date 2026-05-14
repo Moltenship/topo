@@ -19,6 +19,7 @@ export interface TextInsertionResult {
 export type Unsubscribe = () => void;
 
 export interface NativeBridgeService {
+  readonly supportsHotkeyReleaseEvents: boolean;
   readonly registerHotkey: (
     hotkey: string,
     listener: (event: NativeHotkeyEvent) => void,
@@ -63,6 +64,7 @@ export const createMockNativeBridgeService = (
     });
 
   return {
+    supportsHotkeyReleaseEvents: true,
     registerHotkey: (hotkey, listener) =>
       Effect.sync(() => {
         const hotkeyListeners =

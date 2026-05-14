@@ -44,6 +44,7 @@ import {
   type WhisperCppRuntimeReadinessCache,
 } from "./model-readiness";
 import type { WhisperCppRuntimeResolver } from "./whisper-cpp-runtime";
+import { createHotkeyCoordinator } from "./hotkey-coordinator";
 
 interface MainProcessState {
   setupComplete: boolean;
@@ -85,6 +86,7 @@ interface IpcHandlerDependencies {
 
 let overlayHideTimer: NodeJS.Timeout | null = null;
 let hotkeyUnsubscribe: (() => void) | null = null;
+const hotkeyCoordinator = createHotkeyCoordinator();
 
 const clearOverlayHideTimer = () => {
   if (overlayHideTimer) {
@@ -131,10 +133,6 @@ const decodeStopTestDictationInput = (
 const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSettings> =>
   Effect.gen(function* () {
     const settings = (yield* dependencies.database.settings.get()) ?? DEFAULT_APP_SETTINGS;
-
-    if (settings.recordingMode === "push-to-talk") {
-      return { ...settings, recordingMode: "toggle-to-talk" };
-    }
 
     return settings;
   });
@@ -380,7 +378,23 @@ const registerNativeHotkey = (
   Effect.gen(function* () {
     hotkeyUnsubscribe?.();
     hotkeyUnsubscribe = yield* dependencies.nativeBridge.registerHotkey(hotkey, (event) => {
-      publishGlobalHotkeyEvent(event);
+      const effectiveMode = dependencies.nativeBridge.supportsHotkeyReleaseEvents
+        ? state.settings.recordingMode
+        : "toggle-to-talk";
+      const action = hotkeyCoordinator.handle({
+        mode: effectiveMode,
+        phase: event.phase,
+        timestampMs: event.timestampMs,
+      });
+
+      if (action === "start-recording") {
+        publishGlobalHotkeyEvent({ ...event, phase: "down" });
+        return;
+      }
+
+      if (action === "stop-recording") {
+        publishGlobalHotkeyEvent({ ...event, phase: "up" });
+      }
     });
   });
 
@@ -619,6 +633,8 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
   void Effect.runPromise(
     Effect.gen(function* () {
       const settings = yield* getSettings(dependencies);
+      state.settings = settings;
+      state.setupComplete = Boolean(settings.activeModelId);
       yield* registerNativeHotkey(dependencies, settings.hotkey);
     }),
   );
@@ -807,6 +823,7 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
               yield* publishAppState(dependencies);
             }),
           ),
+          Effect.ensuring(Effect.sync(() => hotkeyCoordinator.processingFinished())),
         );
         yield* publishAppState(dependencies);
 

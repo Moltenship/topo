@@ -329,14 +329,14 @@ git commit -m "feat(renderer): show model speed accuracy and runtime install sta
 - Modify `apps/desktop/electron/ipc-handlers.ts`
 - Modify `apps/desktop/renderer/src/features/settings/SettingsPage.tsx`
 
-- [ ] Stop coercing persisted `push-to-talk` back to `toggle-to-talk` in `getSettings`.
-- [ ] Keep `RecordingMode` values: `toggle-to-talk`, `push-to-talk`, `push-to-talk-with-silence-timeout`.
-- [ ] Add a coordinator modeled after Handy: `Idle`, `Recording`, `Processing`.
-- [ ] Debounce press events and always allow release events through for push-to-talk.
+- [x] Stop coercing persisted `push-to-talk` back to `toggle-to-talk` in `getSettings`.
+- [x] Keep `RecordingMode` values: `toggle-to-talk`, `push-to-talk`, `push-to-talk-with-silence-timeout`.
+- [x] Add a coordinator modeled after Handy: `Idle`, `Recording`, `Processing`.
+- [x] Debounce press events and always allow release events through for push-to-talk.
 - [ ] On Windows, evaluate a low-level keyboard hook helper for real down/up. Electron `globalShortcut` is not enough because it does not reliably provide release.
 - [ ] On macOS, use a native helper or Electron input-monitoring path that can emit press/release after accessibility/input monitoring permission is granted.
-- [ ] Keep toggle mode as the fallback if native down/up is unavailable.
-- [ ] Add UI copy that clearly distinguishes "Press once" from "Hold while speaking".
+- [x] Keep toggle mode as the fallback if native down/up is unavailable.
+- [x] Add UI copy that clearly distinguishes "Press once" from "Hold while speaking".
 
 Coordinator rules:
 
