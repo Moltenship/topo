@@ -9,6 +9,9 @@ export interface ModelInstallPlan {
   readonly expectedChecksumSha256: string;
   readonly expectedSizeBytes: number;
   readonly installDirectory: string;
+  readonly installStrategy: ModelCatalogEntry["installStrategy"];
+  readonly installedPath: string;
+  readonly archivePath: string | null;
   readonly modelFilePath: string;
 }
 
@@ -33,6 +36,11 @@ export const createModelInstallPlan = (
 ): ModelInstallPlan => {
   const root = normalizeRoot(installRoot);
   const installDirectory = `${root}/${model.id}`;
+  const modelFilePath = `${installDirectory}/${modelFileName(model)}`;
+  const archivePath =
+    model.installStrategy.type === "archive-directory"
+      ? `${installDirectory}/${model.id}.zip.download`
+      : null;
 
   return {
     modelId: model.id,
@@ -40,7 +48,11 @@ export const createModelInstallPlan = (
     expectedChecksumSha256: model.checksumSha256,
     expectedSizeBytes: model.downloadSizeBytes,
     installDirectory,
-    modelFilePath: `${installDirectory}/${modelFileName(model)}`,
+    installStrategy: model.installStrategy,
+    installedPath:
+      model.installStrategy.type === "archive-directory" ? installDirectory : modelFilePath,
+    archivePath,
+    modelFilePath,
   };
 };
 

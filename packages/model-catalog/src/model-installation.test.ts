@@ -19,9 +19,33 @@ describe("model installation planning", () => {
       expectedChecksumSha256: "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
       expectedSizeBytes: model.downloadSizeBytes,
       installDirectory: "C:/Users/me/AppData/Roaming/Topo/models/whisper-cpp-small",
+      installStrategy: {
+        type: "single-file",
+      },
+      installedPath:
+        "C:/Users/me/AppData/Roaming/Topo/models/whisper-cpp-small/whisper-cpp-small.bin",
+      archivePath: null,
       modelFilePath:
         "C:/Users/me/AppData/Roaming/Topo/models/whisper-cpp-small/whisper-cpp-small.bin",
     });
+  });
+
+  it("plans archive-directory models with the install directory as the installed path", () => {
+    const model = bundledModelCatalog[0];
+
+    if (!model) {
+      throw new Error("Expected bundled model catalog entry");
+    }
+
+    const plan = createModelInstallPlan(model, "/models/");
+
+    expect(plan.installStrategy).toEqual({
+      type: "archive-directory",
+      requiredFiles: ["config.json"],
+    });
+    expect(plan.installDirectory).toBe("/models/whisperkit-small");
+    expect(plan.installedPath).toBe("/models/whisperkit-small");
+    expect(plan.archivePath).toBe("/models/whisperkit-small/whisperkit-small.zip.download");
   });
 
   it("verifies size and checksum before marking a model installed", () => {
