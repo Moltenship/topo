@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   DEFAULT_APP_SETTINGS,
   formatHotkey,
@@ -61,6 +62,13 @@ const recordingModeDescriptions: Record<AppSettings["recordingMode"], string> = 
   "push-to-talk": "Hold the hotkey while speaking; release to stop and transcribe.",
   "push-to-talk-with-silence-timeout":
     "Hold the hotkey while speaking; release or a silence timeout can finish the recording.",
+};
+
+const postProcessingModeLabels: Record<AppSettings["postProcessingMode"], string> = {
+  raw: "Raw transcript",
+  lightweight: "Lightweight cleanup",
+  "apple-intelligence": "Apple Intelligence",
+  api: "API provider",
 };
 
 interface MicrophoneDeviceOption {
@@ -265,9 +273,23 @@ export const SettingsPage = ({
           title="Post-processing"
           description="Transcript cleanup and provider settings now live in the dedicated post-processing section."
         >
-          <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-            {settings?.postProcessingMode ?? "lightweight"}
-          </span>
+          <div className="flex items-center justify-end gap-2 max-sm:justify-start">
+            <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+              {
+                postProcessingModeLabels[
+                  settings?.postProcessingMode ?? DEFAULT_APP_SETTINGS.postProcessingMode
+                ]
+              }
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              render={<Link to="/post-processing" />}
+            >
+              Open
+            </Button>
+          </div>
         </SettingsRow>
       </SettingsSection>
       <SettingsSection id="models" title="Models">

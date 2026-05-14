@@ -3,6 +3,7 @@ import { OverlayState, TranscriptRecord } from "./dictation";
 import { InstalledModelRecord, ModelReadinessRecord } from "./installed-model";
 import { InstalledRuntimeRecord } from "./installed-runtime";
 import { InstallBundleProgress, ModelInstallProgress } from "./model-installation";
+import { AppleIntelligenceAvailability } from "./post-processing";
 import { AppSettings } from "./settings";
 
 export const IpcChannels = {
@@ -22,6 +23,7 @@ export const IpcChannels = {
   installModelBundle: "models:install-bundle",
   cancelModelInstall: "models:cancel-install",
   refreshModelReadiness: "models:refresh-readiness",
+  getAppleIntelligenceAvailability: "post-processing:apple-intelligence-availability",
   windowMinimize: "window:minimize",
   windowMaximize: "window:maximize",
   windowClose: "window:close",
@@ -82,3 +84,7 @@ export const CommitOverlayPreviewPositionRequest = Schema.Struct({
   centerY: Schema.Number,
 });
 export type CommitOverlayPreviewPositionRequest = typeof CommitOverlayPreviewPositionRequest.Type;
+
+export const AppleIntelligenceAvailabilityResponse = AppleIntelligenceAvailability;
+export type AppleIntelligenceAvailabilityResponse =
+  typeof AppleIntelligenceAvailabilityResponse.Type;

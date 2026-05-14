@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DEFAULT_APP_SETTINGS, type AppSettings, type AppStateSnapshot } from "@topo/shared";
+import {
+  DEFAULT_APP_SETTINGS,
+  type AppleIntelligenceAvailability,
+  type AppSettings,
+  type AppStateSnapshot,
+} from "@topo/shared";
 import { canStartDictation } from "@topo/shared";
 import { AppShell } from "./components/AppShell";
 import { AppTitleBar } from "./components/AppTitleBar";
@@ -36,6 +41,8 @@ const AppChrome = ({
 
 export const App = ({ view = "workbench" }: AppProps) => {
   const [snapshot, setSnapshot] = useState<AppStateSnapshot | null>(null);
+  const [appleIntelligenceAvailability, setAppleIntelligenceAvailability] =
+    useState<AppleIntelligenceAvailability | null>(null);
   const [historyQuery, setHistoryQuery] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const testAudioRecorderRef = useRef<BrowserAudioRecorder | null>(null);
@@ -52,6 +59,10 @@ export const App = ({ view = "workbench" }: AppProps) => {
 
   const refreshSnapshot = useCallback(async () => {
     setSnapshot(await getRendererApi().getAppState());
+  }, []);
+
+  const refreshAppleIntelligenceAvailability = useCallback(async () => {
+    setAppleIntelligenceAvailability(await getRendererApi().getAppleIntelligenceAvailability());
   }, []);
 
   const searchHistory = useCallback(async (query: string) => {
@@ -200,6 +211,12 @@ export const App = ({ view = "workbench" }: AppProps) => {
     return getRendererApi().onAppStateChanged(setSnapshot);
   }, [refreshSnapshot]);
 
+  useEffect(() => {
+    if (view === "post-processing") {
+      void refreshAppleIntelligenceAvailability();
+    }
+  }, [refreshAppleIntelligenceAvailability, view]);
+
   useEffect(
     () =>
       getRendererApi().onGlobalHotkeyEvent((event) => {
@@ -243,8 +260,10 @@ export const App = ({ view = "workbench" }: AppProps) => {
       <AppChrome canRestoreDefaults={canRestoreDefaults} onRestoreDefaults={restoreDefaultSettings}>
         <AppShell>
           <PostProcessingPage
+            appleIntelligenceAvailability={appleIntelligenceAvailability}
             platform={getRendererPlatform()}
             settings={snapshot?.settings ?? null}
+            onRefreshAppleIntelligenceAvailability={refreshAppleIntelligenceAvailability}
             onSettingsChange={updateSettings}
           />
         </AppShell>

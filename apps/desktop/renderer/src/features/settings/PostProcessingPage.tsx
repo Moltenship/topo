@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   DEFAULT_APP_SETTINGS,
+  type AppleIntelligenceAvailability,
   type ApiPostProcessingProvider,
   type AppSettings,
   type Platform,
@@ -14,8 +15,10 @@ import { SettingsRow, SettingsSection, SettingsSelect } from "@/components/setti
 import { cn } from "@/lib/utils";
 
 interface PostProcessingPageProps {
+  readonly appleIntelligenceAvailability: AppleIntelligenceAvailability | null;
   readonly platform: Platform;
   readonly settings: AppSettings | null;
+  readonly onRefreshAppleIntelligenceAvailability: () => void;
   readonly onSettingsChange: (settings: AppSettings) => void;
 }
 
@@ -81,24 +84,76 @@ const getApiSettings = (settings: AppSettings | null) =>
     apiKeyStorageKey: null,
   };
 
-const getAppleIntelligenceStatus = (platform: Platform): string => {
-  if (platform === "macos") {
-    return "Readiness is checked by the local macOS bridge before use.";
+const getAppleIntelligenceStatus = (
+  platform: Platform,
+  availability: AppleIntelligenceAvailability | null,
+): { readonly label: string; readonly description: string } => {
+  if (platform !== "macos") {
+    return {
+      label: "Unavailable",
+      description:
+        "Unavailable on this platform. Apple Intelligence cleanup requires a supported macOS device.",
+    };
   }
 
-  return "Unavailable on this platform. Apple Intelligence cleanup requires a supported macOS device.";
+  if (!availability) {
+    return {
+      label: "Check status",
+      description: "Check this Mac for Apple Intelligence readiness.",
+    };
+  }
+
+  if (availability.status === "available") {
+    return {
+      label: "Ready",
+      description: availability.reason,
+    };
+  }
+
+  if (availability.status === "apple-intelligence-disabled") {
+    return {
+      label: "Enable in macOS",
+      description: availability.reason,
+    };
+  }
+
+  if (availability.status === "model-not-ready") {
+    return {
+      label: "Model not ready",
+      description: availability.reason,
+    };
+  }
+
+  if (availability.status === "device-not-eligible") {
+    return {
+      label: "Not eligible",
+      description: availability.reason,
+    };
+  }
+
+  return {
+    label: "Unknown",
+    description: availability.reason,
+  };
 };
 
 export const PostProcessingPage = ({
+  appleIntelligenceAvailability,
   platform,
   settings,
+  onRefreshAppleIntelligenceAvailability,
   onSettingsChange,
 }: PostProcessingPageProps) => {
   const apiSettings = getApiSettings(settings);
   const [apiKeyDraft, setApiKeyDraft] = useState("");
   const [promptDraft, setPromptDraft] = useState(defaultCleanupPrompt);
   const [connectionState, setConnectionState] = useState<"idle" | "ready" | "missing-key">("idle");
-  const appleIntelligenceUnavailable = platform !== "macos";
+  const appleIntelligenceStatus = getAppleIntelligenceStatus(
+    platform,
+    appleIntelligenceAvailability,
+  );
+  const appleIntelligenceUnavailable =
+    platform !== "macos" || appleIntelligenceAvailability?.status === "device-not-eligible";
   const mode = settings?.postProcessingMode ?? DEFAULT_APP_SETTINGS.postProcessingMode;
   const apiKeySummary = apiKeyDraft.length > 0 ? "Key staged for secure storage" : "No key staged";
   const selectedProviderDescription = providerDescriptions[apiSettings.providerId];
@@ -167,16 +222,29 @@ export const PostProcessingPage = ({
                   <span className="text-[13px] font-semibold text-foreground">{option.label}</span>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground/80">
-                  {disabled ? getAppleIntelligenceStatus(platform) : option.description}
+                  {option.value === "apple-intelligence"
+                    ? appleIntelligenceStatus.description
+                    : option.description}
                 </p>
               </button>
             );
           })}
         </div>
-        <SettingsRow title="Apple Intelligence" description={getAppleIntelligenceStatus(platform)}>
-          <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-            {platform === "macos" ? "Bridge required" : "Unavailable"}
-          </span>
+        <SettingsRow title="Apple Intelligence" description={appleIntelligenceStatus.description}>
+          <div className="flex items-center justify-end gap-2 max-sm:justify-start">
+            <span className="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+              {appleIntelligenceStatus.label}
+            </span>
+            <Button
+              disabled={platform !== "macos"}
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={onRefreshAppleIntelligenceAvailability}
+            >
+              Check
+            </Button>
+          </div>
         </SettingsRow>
       </SettingsSection>
 

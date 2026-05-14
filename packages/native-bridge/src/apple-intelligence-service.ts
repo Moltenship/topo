@@ -1,16 +1,5 @@
 import { Effect } from "effect";
-
-export type AppleIntelligenceAvailabilityStatus =
-  | "available"
-  | "device-not-eligible"
-  | "apple-intelligence-disabled"
-  | "model-not-ready"
-  | "unknown";
-
-export interface AppleIntelligenceAvailability {
-  readonly status: AppleIntelligenceAvailabilityStatus;
-  readonly reason: string;
-}
+import type { AppleIntelligenceAvailability } from "@topo/shared";
 
 export type NativePermissionStatus = "granted" | "denied" | "not-determined" | "unknown";
 

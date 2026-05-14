@@ -13,6 +13,7 @@ import { openAppDatabase } from "@topo/db";
 import { getBundledModelCatalog } from "@topo/model-catalog";
 import type { AppStateSnapshot } from "@topo/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
+import { createAppleIntelligenceBridge } from "./apple-intelligence-bridge";
 import { createMacosAppleIntelligenceService } from "./macos-apple-intelligence";
 import { createElectronHotkeyBridge } from "./electron-hotkey-bridge";
 import { createFileModelInstallJob } from "./model-install-job";
@@ -61,7 +62,13 @@ app.whenReady().then(() => {
   const catalog = getBundledModelCatalog({ includeDev: !app.isPackaged });
   const database = Effect.runSync(openAppDatabase(userDataDirectory));
   const audio = createSubmittedAudioCaptureService();
-  const appleIntelligenceService = createMacosAppleIntelligenceService();
+  const appleIntelligenceBridge = createAppleIntelligenceBridge();
+  const appleIntelligenceService = createMacosAppleIntelligenceService({
+    bridge: {
+      getAvailability: appleIntelligenceBridge.getAvailability,
+      generate: appleIntelligenceBridge.bridge.generate,
+    },
+  });
   const dictation = createDictationOrchestrator({
     audio,
     transcription: createWhisperCppTranscriptionProvider(),

@@ -37,3 +37,18 @@ export const PostProcessingRequest = Schema.Struct({
   targetSchema: PostProcessingTargetSchema,
 });
 export type PostProcessingRequest = typeof PostProcessingRequest.Type;
+
+export const AppleIntelligenceAvailabilityStatus = Schema.Literal(
+  "available",
+  "device-not-eligible",
+  "apple-intelligence-disabled",
+  "model-not-ready",
+  "unknown",
+);
+export type AppleIntelligenceAvailabilityStatus = typeof AppleIntelligenceAvailabilityStatus.Type;
+
+export const AppleIntelligenceAvailability = Schema.Struct({
+  status: AppleIntelligenceAvailabilityStatus,
+  reason: Schema.String,
+});
+export type AppleIntelligenceAvailability = typeof AppleIntelligenceAvailability.Type;

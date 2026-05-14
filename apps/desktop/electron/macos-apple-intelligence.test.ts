@@ -44,4 +44,23 @@ describe("createMacosAppleIntelligenceService", () => {
       ),
     ).resolves.toBe("cleanup:raw:16");
   });
+
+  it("uses bridge availability when the helper can report system readiness", async () => {
+    const service = createMacosAppleIntelligenceService({
+      platform: "darwin",
+      bridge: {
+        getAvailability: () =>
+          Effect.succeed({
+            status: "apple-intelligence-disabled",
+            reason: "Apple Intelligence is disabled in macOS settings.",
+          }),
+        generate: async () => "unused",
+      },
+    });
+
+    await expect(Effect.runPromise(service.getAvailability())).resolves.toEqual({
+      status: "apple-intelligence-disabled",
+      reason: "Apple Intelligence is disabled in macOS settings.",
+    });
+  });
 });

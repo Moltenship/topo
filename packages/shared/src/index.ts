@@ -8,6 +8,8 @@ export * from "./model-installation";
 export type {
   ApiPostProcessingProvider,
   ApiPostProcessingSettings,
+  AppleIntelligenceAvailability,
+  AppleIntelligenceAvailabilityStatus,
   PostProcessingMode,
   PostProcessingProviderId,
   PostProcessingRequest,
@@ -19,6 +21,7 @@ export type Platform = "linux" | "macos" | "windows";
 
 import type { AppStateSnapshot } from "@topo/contracts";
 import type {
+  AppleIntelligenceAvailability,
   AppSettings,
   InstalledModelRecord,
   InstallBundleProgress,
@@ -60,6 +63,7 @@ export interface TopoApi {
   readonly installModelBundle: (modelId: string) => Promise<InstallBundleProgress>;
   readonly cancelModelInstall: (modelId: string) => Promise<void>;
   readonly refreshModelReadiness: () => Promise<void>;
+  readonly getAppleIntelligenceAvailability: () => Promise<AppleIntelligenceAvailability>;
   readonly startTestDictation: () => Promise<void>;
   readonly stopTestDictation: (input: {
     readonly wavBytes: Uint8Array;

@@ -802,6 +802,15 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
       }),
     ),
   );
+  ipcMain.handle(IpcChannels.getAppleIntelligenceAvailability, () =>
+    Effect.runPromise(
+      dependencies.appleIntelligence?.getAvailability() ??
+        Effect.succeed({
+          status: "device-not-eligible" as const,
+          reason: "Apple Intelligence is only available on supported macOS devices.",
+        }),
+    ),
+  );
   ipcMain.handle(IpcChannels.startTestDictation, () =>
     Effect.runPromise(
       Effect.gen(function* () {

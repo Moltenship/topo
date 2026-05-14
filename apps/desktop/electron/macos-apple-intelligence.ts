@@ -1,12 +1,10 @@
 import { Effect } from "effect";
-import type {
-  AppleIntelligenceAvailability,
-  AppleIntelligenceService,
-  AppleIntelligenceTextRequest,
-} from "@topo/native-bridge";
+import type { AppleIntelligenceService, AppleIntelligenceTextRequest } from "@topo/native-bridge";
+import type { AppleIntelligenceAvailability } from "@topo/shared";
 import { getMacosPermissionReadiness } from "./macos-permissions";
 
 export interface MacosAppleIntelligenceBridge {
+  readonly getAvailability?: () => Effect.Effect<AppleIntelligenceAvailability, Error>;
   readonly generate: (request: AppleIntelligenceTextRequest) => Promise<string>;
 }
 
@@ -17,12 +15,22 @@ export const createMacosAppleIntelligenceService = ({
   readonly bridge?: MacosAppleIntelligenceBridge;
   readonly platform?: NodeJS.Platform;
 } = {}): AppleIntelligenceService => ({
-  getAvailability: () => Effect.succeed(getAvailability(toAvailabilityInput(platform, bridge))),
+  getAvailability: () => {
+    const platformAvailability = getAvailability(toAvailabilityInput(platform, bridge));
+
+    if (platformAvailability.status !== "available" || !bridge?.getAvailability) {
+      return Effect.succeed(platformAvailability);
+    }
+
+    return bridge.getAvailability();
+  },
   getPermissionReadiness: () => Effect.sync(getMacosPermissionReadiness),
   generateAppleIntelligenceText: (request) =>
     Effect.tryPromise({
       try: async () => {
-        const availability = getAvailability(toAvailabilityInput(platform, bridge));
+        const availability = bridge?.getAvailability
+          ? await Effect.runPromise(bridge.getAvailability())
+          : getAvailability(toAvailabilityInput(platform, bridge));
 
         if (availability.status !== "available" || !bridge) {
           throw new Error(availability.reason);
