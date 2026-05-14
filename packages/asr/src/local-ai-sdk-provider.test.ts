@@ -20,7 +20,7 @@ describe("createLocalAiSdkTranscriptionProvider", () => {
       audio: new Uint8Array([1, 2, 3]),
       maxRetries: 0,
       providerOptions: {
-        molten: {
+        topo: {
           language: "auto",
           installedModelPath: "C:\\models\\ggml-small.bin",
           runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
@@ -47,7 +47,7 @@ describe("createLocalAiSdkTranscriptionProvider", () => {
       audio: new Uint8Array([1, 2, 3]),
       maxRetries: 0,
       providerOptions: {
-        molten: {
+        topo: {
           language: "auto",
           installedModelPath: "C:\\models\\ggml-small.bin",
           runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
@@ -79,7 +79,7 @@ describe("createLocalAiSdkTranscriptionProvider", () => {
       audio: new Uint8Array([1, 2, 3]),
       maxRetries: 0,
       providerOptions: {
-        molten: {
+        topo: {
           language: "ru",
           installedModelPath: "C:\\models\\ggml-small.bin",
           runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
@@ -120,7 +120,7 @@ describe("createLocalAiSdkTranscriptionProvider", () => {
         audio: new Uint8Array([1, 2, 3]),
         maxRetries: 0,
         providerOptions: {
-          molten: {
+          topo: {
             language: "en",
             installedModelPath: "C:\\models\\ggml-small.bin",
             runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
@@ -154,7 +154,7 @@ describe("createLocalAiSdkTranscriptionProvider", () => {
         audio: new Uint8Array([1, 2, 3]),
         maxRetries: 0,
         providerOptions: {
-          molten: {
+          topo: {
             language: "auto",
             installedModelPath: "C:\\models\\ggml-small.bin",
             runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",

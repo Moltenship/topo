@@ -32,22 +32,22 @@ importers:
       '@base-ui/react':
         specifier: ^1.4.1
         version: 1.4.1(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      '@molten-voice/asr':
+      '@topo/asr':
         specifier: workspace:*
         version: link:../../packages/asr
-      '@molten-voice/audio':
+      '@topo/audio':
         specifier: workspace:*
         version: link:../../packages/audio
-      '@molten-voice/db':
+      '@topo/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@molten-voice/model-catalog':
+      '@topo/model-catalog':
         specifier: workspace:*
         version: link:../../packages/model-catalog
-      '@molten-voice/native-bridge':
+      '@topo/native-bridge':
         specifier: workspace:*
         version: link:../../packages/native-bridge
-      '@molten-voice/shared':
+      '@topo/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@tailwindcss/vite':
@@ -138,10 +138,10 @@ importers:
 
   packages/asr:
     dependencies:
-      '@molten-voice/audio':
+      '@topo/audio':
         specifier: workspace:*
         version: link:../audio
-      '@molten-voice/shared':
+      '@topo/shared':
         specifier: workspace:*
         version: link:../shared
       ai:
@@ -153,7 +153,7 @@ importers:
 
   packages/audio:
     dependencies:
-      '@molten-voice/shared':
+      '@topo/shared':
         specifier: workspace:*
         version: link:../shared
       effect:
@@ -168,10 +168,10 @@ importers:
 
   packages/db:
     dependencies:
-      '@molten-voice/settings':
+      '@topo/settings':
         specifier: workspace:*
         version: link:../settings
-      '@molten-voice/shared':
+      '@topo/shared':
         specifier: workspace:*
         version: link:../shared
       better-sqlite3:
@@ -196,7 +196,7 @@ importers:
 
   packages/native-bridge:
     dependencies:
-      '@molten-voice/shared':
+      '@topo/shared':
         specifier: workspace:*
         version: link:../shared
       effect:
@@ -205,7 +205,7 @@ importers:
 
   packages/settings:
     dependencies:
-      '@molten-voice/contracts':
+      '@topo/contracts':
         specifier: workspace:*
         version: link:../contracts
       effect:
@@ -217,7 +217,7 @@ importers:
 
   packages/shared:
     dependencies:
-      '@molten-voice/contracts':
+      '@topo/contracts':
         specifier: workspace:*
         version: link:../contracts
       effect:

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
-import type { ModelCatalogEntry } from "@molten-voice/model-catalog";
+import type { ModelCatalogEntry } from "@topo/model-catalog";
 import { createFileModelInstallJob } from "./model-install-job";
 
 const sha256 = (content: string): string => createHash("sha256").update(content).digest("hex");
@@ -34,7 +34,7 @@ const createTestModel = (content: string): ModelCatalogEntry => ({
 describe("createFileModelInstallJob", () => {
   it("downloads, verifies, and installs a single-file model", async () => {
     const content = "tiny model payload";
-    const installRoot = await mkdtemp(join(tmpdir(), "molten-model-install-"));
+    const installRoot = await mkdtemp(join(tmpdir(), "topo-model-install-"));
     const model = createTestModel(content);
     const progressStatuses: string[] = [];
     const job = createFileModelInstallJob({
@@ -75,8 +75,8 @@ describe("createFileModelInstallJob", () => {
 
   it("installs a dev-only local file model through the same verification flow", async () => {
     const content = "local smoke payload";
-    const installRoot = await mkdtemp(join(tmpdir(), "molten-model-install-"));
-    const resourcesRoot = await mkdtemp(join(tmpdir(), "molten-model-resources-"));
+    const installRoot = await mkdtemp(join(tmpdir(), "topo-model-install-"));
+    const resourcesRoot = await mkdtemp(join(tmpdir(), "topo-model-resources-"));
     const model = {
       ...createTestModel(content),
       source: {
@@ -109,7 +109,7 @@ describe("createFileModelInstallJob", () => {
   });
 
   it("fails and removes the temp file when verification fails", async () => {
-    const installRoot = await mkdtemp(join(tmpdir(), "molten-model-install-"));
+    const installRoot = await mkdtemp(join(tmpdir(), "topo-model-install-"));
     const model = {
       ...createTestModel("expected"),
       checksumSha256: sha256("different"),
@@ -136,7 +136,7 @@ describe("createFileModelInstallJob", () => {
   });
 
   it("cancels an active download without surfacing an install error", async () => {
-    const installRoot = await mkdtemp(join(tmpdir(), "molten-model-install-"));
+    const installRoot = await mkdtemp(join(tmpdir(), "topo-model-install-"));
     const model = createTestModel("expected");
     let sawDownloading = false;
     const job = createFileModelInstallJob({

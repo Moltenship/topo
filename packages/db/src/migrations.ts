@@ -72,7 +72,7 @@ const migrations: readonly Migration[] = [
 
 const createMigrationTable = (sqlite: Database.Database) => {
   sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS _molten_migrations (
+    CREATE TABLE IF NOT EXISTS _topo_migrations (
       id TEXT PRIMARY KEY,
       applied_at TEXT NOT NULL
     );
@@ -85,7 +85,7 @@ export const applyMigrations = (sqlite: Database.Database): Effect.Effect<readon
 
     const appliedMigrationIds = new Set(
       sqlite
-        .prepare("SELECT id FROM _molten_migrations")
+        .prepare("SELECT id FROM _topo_migrations")
         .all()
         .map((row) => {
           return (row as { id: string }).id;
@@ -101,7 +101,7 @@ export const applyMigrations = (sqlite: Database.Database): Effect.Effect<readon
 
         sqlite.exec(migration.sql);
         sqlite
-          .prepare("INSERT INTO _molten_migrations (id, applied_at) VALUES (?, ?)")
+          .prepare("INSERT INTO _topo_migrations (id, applied_at) VALUES (?, ?)")
           .run(migration.id, new Date().toISOString());
         appliedNow.push(migration.id);
       }

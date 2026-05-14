@@ -9,7 +9,7 @@ import { openAppDatabase } from "./app-database";
 const temporaryDirectories: string[] = [];
 
 const makeTemporaryDirectory = () => {
-  const directory = mkdtempSync(join(tmpdir(), "molten-voice-db-"));
+  const directory = mkdtempSync(join(tmpdir(), "topo-db-"));
   temporaryDirectories.push(directory);
 
   return directory;
@@ -85,7 +85,7 @@ describe("openAppDatabase", () => {
     await Effect.runPromise(secondDatabase.close());
 
     const sqlite = new Database(secondDatabase.path, { readonly: true });
-    const migrations = sqlite.prepare("SELECT id FROM _molten_migrations ORDER BY id").all();
+    const migrations = sqlite.prepare("SELECT id FROM _topo_migrations ORDER BY id").all();
     sqlite.close();
 
     expect(migrations).toEqual([

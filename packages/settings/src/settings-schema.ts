@@ -7,7 +7,7 @@ import {
   PostProcessingMode,
   RecordingMode,
   SilenceTimeoutMs,
-} from "@molten-voice/contracts";
+} from "@topo/contracts";
 
 export const recordingModeSchema = RecordingMode;
 export const insertionModeSchema = InsertionMode;

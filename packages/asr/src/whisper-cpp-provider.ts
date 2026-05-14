@@ -38,7 +38,7 @@ const transcribeWithAiSdk = async (
     audio: new Uint8Array(),
     maxRetries: 0,
     providerOptions: {
-      molten: {
+      topo: {
         language: input.language,
         installedModelPath: input.installedModelPath ?? null,
         runtimeBinaryPath: input.runtimeBinaryPath ?? null,

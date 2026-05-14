@@ -22,7 +22,7 @@ export interface AppDatabase {
 
 export const openAppDatabase = (appDataDirectory: string): Effect.Effect<AppDatabase> =>
   Effect.gen(function* () {
-    const path = join(appDataDirectory, "molten-voice.sqlite");
+    const path = join(appDataDirectory, "topo.sqlite");
 
     mkdirSync(dirname(path), { recursive: true });
 

@@ -1,5 +1,5 @@
 {
-  "name": "@molten-voice/db",
+  "name": "@topo/db",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,8 @@
     "build": "tsgo --project tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@molten-voice/settings": "workspace:*",
-    "@molten-voice/shared": "workspace:*",
+    "@topo/settings": "workspace:*",
+    "@topo/shared": "workspace:*",
     "better-sqlite3": "^12.9.0",
     "drizzle-orm": "^0.45.2",
     "effect": "^3.21.2"

@@ -1,5 +1,5 @@
-import type { AudioCaptureService, CapturedAudio } from "@molten-voice/audio";
-import { createMockAudioCaptureService } from "@molten-voice/audio";
+import type { AudioCaptureService, CapturedAudio } from "@topo/audio";
+import { createMockAudioCaptureService } from "@topo/audio";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 import { createDictationOrchestrator } from "./dictation-orchestrator";

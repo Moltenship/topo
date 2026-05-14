@@ -17,4 +17,4 @@ export {
   type ListTranscriptsRequest as ListTranscriptsRequestPayload,
   type ReinsertTranscriptRequest as ReinsertTranscriptRequestPayload,
   type UpdateSettingsRequest as UpdateSettingsRequestPayload,
-} from "@molten-voice/contracts";
+} from "@topo/contracts";

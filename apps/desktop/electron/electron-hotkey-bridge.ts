@@ -7,8 +7,8 @@ import type {
   TextInsertionRequest,
   TextInsertionResult,
   Unsubscribe,
-} from "@molten-voice/native-bridge";
-import type { NativeHotkeyEvent } from "@molten-voice/shared";
+} from "@topo/native-bridge";
+import type { NativeHotkeyEvent } from "@topo/shared";
 import { insertTextWithWindowsAutomation } from "./windows-text-insertion";
 
 const toElectronAccelerator = (hotkey: string): string =>

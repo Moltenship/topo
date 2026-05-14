@@ -4,4 +4,4 @@ export type {
   ModelReadinessLamp,
   ModelReadinessRecord,
   ModelReadinessStatus,
-} from "@molten-voice/contracts";
+} from "@topo/contracts";

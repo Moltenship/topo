@@ -1,3 +1,3 @@
-import type { MoltenVoiceApi } from "@molten-voice/shared";
+import type { TopoApi } from "@topo/shared";
 
-export const getRendererApi = (): MoltenVoiceApi => window.moltenVoice;
+export const getRendererApi = (): TopoApi => window.topo;

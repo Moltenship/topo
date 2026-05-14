@@ -3,7 +3,7 @@ import { Context, Layer } from "effect";
 import { createTranscriptRepository, type TranscriptRepository } from "./transcript-repository";
 
 export class TranscriptRepositoryService extends Context.Tag(
-  "@molten-voice/db/TranscriptRepositoryService",
+  "@topo/db/TranscriptRepositoryService",
 )<TranscriptRepositoryService, TranscriptRepository>() {}
 
 export const makeTranscriptRepositoryLayer = (

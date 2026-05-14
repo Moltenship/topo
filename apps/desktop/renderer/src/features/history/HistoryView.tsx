@@ -1,4 +1,4 @@
-import type { TranscriptRecord } from "@molten-voice/shared";
+import type { TranscriptRecord } from "@topo/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

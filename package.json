@@ -1,5 +1,5 @@
 {
-  "name": "molten-voice",
+  "name": "topo",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "typecheck": "pnpm -r run typecheck",
     "fmt": "pnpm -r run fmt",
     "lint": "pnpm -r run lint",
-    "dev": "pnpm --filter @molten-voice/desktop dev",
+    "dev": "pnpm --filter @topo/desktop dev",
     "build": "pnpm -r run build",
     "test": "pnpm -r run test"
   },

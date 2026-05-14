@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { Effect } from "effect";
-import type { InstalledModelRecord } from "@molten-voice/shared";
+import type { InstalledModelRecord } from "@topo/shared";
 import { installedModels } from "./schema";
 
 export interface InstalledModelRepository {

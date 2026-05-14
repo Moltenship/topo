@@ -1,5 +1,5 @@
 {
-  "name": "@molten-voice/model-catalog",
+  "name": "@topo/model-catalog",
   "version": "0.0.0",
   "private": true,
   "type": "module",

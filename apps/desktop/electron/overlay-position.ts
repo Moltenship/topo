@@ -1,4 +1,4 @@
-import type { OverlayPosition } from "@molten-voice/shared";
+import type { OverlayPosition } from "@topo/shared";
 
 interface Rectangle {
   readonly x: number;

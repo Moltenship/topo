@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  DEFAULT_APP_SETTINGS,
-  type AppSettings,
-  type AppStateSnapshot,
-} from "@molten-voice/shared";
+import { DEFAULT_APP_SETTINGS, type AppSettings, type AppStateSnapshot } from "@topo/shared";
 import { AppShell } from "./components/AppShell";
 import { AppTitleBar } from "./components/AppTitleBar";
 import { getRendererApi } from "./api/renderer-api";

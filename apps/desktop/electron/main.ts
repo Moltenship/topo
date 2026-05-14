@@ -2,14 +2,11 @@ import { app, screen } from "electron";
 import type { BrowserWindow } from "electron";
 import { join } from "node:path";
 import { Effect } from "effect";
-import {
-  createDictationOrchestrator,
-  createWhisperCppTranscriptionProvider,
-} from "@molten-voice/asr";
-import { createSubmittedAudioCaptureService } from "@molten-voice/audio";
-import { openAppDatabase } from "@molten-voice/db";
-import { getBundledModelCatalog } from "@molten-voice/model-catalog";
-import type { AppStateSnapshot } from "@molten-voice/shared";
+import { createDictationOrchestrator, createWhisperCppTranscriptionProvider } from "@topo/asr";
+import { createSubmittedAudioCaptureService } from "@topo/audio";
+import { openAppDatabase } from "@topo/db";
+import { getBundledModelCatalog } from "@topo/model-catalog";
+import type { AppStateSnapshot } from "@topo/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
 import { createElectronHotkeyBridge } from "./electron-hotkey-bridge";
 import { createFileModelInstallJob } from "./model-install-job";

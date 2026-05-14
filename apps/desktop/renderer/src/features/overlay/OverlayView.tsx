@@ -2,7 +2,7 @@ import { BarVisualizer, type AgentState } from "@/components/ui/bar-visualizer";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import type { PointerEvent } from "react";
-import type { OverlayPosition, OverlayState } from "@molten-voice/shared";
+import type { OverlayPosition, OverlayState } from "@topo/shared";
 
 const visualizerState = {
   preview: "listening",

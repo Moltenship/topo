@@ -7,4 +7,4 @@ export type {
   RecordingMode,
   StopReason,
   TranscriptRecord,
-} from "@molten-voice/contracts";
+} from "@topo/contracts";

@@ -1,5 +1,5 @@
-import type { AudioCaptureService } from "@molten-voice/audio";
-import type { LanguageCode, RecordingMode, TranscriptRecord } from "@molten-voice/shared";
+import type { AudioCaptureService } from "@topo/audio";
+import type { LanguageCode, RecordingMode, TranscriptRecord } from "@topo/shared";
 import { Effect } from "effect";
 import { normalizeTranscript, type PostProcessingMode } from "./post-processing";
 import type { TranscriptionProvider } from "./transcription-provider";

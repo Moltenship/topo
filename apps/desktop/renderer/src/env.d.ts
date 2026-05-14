@@ -1,8 +1,8 @@
-import type { MoltenVoiceApi } from "@molten-voice/shared";
+import type { TopoApi } from "@topo/shared";
 
 declare global {
   interface Window {
-    moltenVoice: MoltenVoiceApi;
+    topo: TopoApi;
   }
 }
 

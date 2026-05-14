@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AppStateSnapshot } from "@molten-voice/shared";
+import type { AppStateSnapshot } from "@topo/shared";
 import { getRendererApi } from "./api/renderer-api";
 import { OverlayView } from "./features/overlay/OverlayView";
 

@@ -12,7 +12,7 @@
 
 ## Review Summary
 
-Current Molten Voice already has a good foundation:
+Current Topo already has a good foundation:
 
 - `packages/model-catalog/src/model-catalog.ts` defines model metadata, including runtime, platform, memory estimate, speed label, quality label, badges, and checksums.
 - `apps/desktop/electron/model-install-job.ts` streams model downloads, supports cancellation, verifies size and SHA-256, installs atomically through a temporary `.download` file, and handles local dev model resources.
@@ -147,8 +147,8 @@ Keep the existing `qualityLabel` and `speedLabel` for UI readability, but add nu
 Run:
 
 ```bash
-pnpm --filter @molten-voice/model-catalog run test
-pnpm --filter @molten-voice/contracts run test
+pnpm --filter @topo/model-catalog run test
+pnpm --filter @topo/contracts run test
 ```
 
 Expected: all package tests pass.
@@ -186,7 +186,7 @@ Test cases:
 Run:
 
 ```bash
-pnpm --filter @molten-voice/desktop run test -- runtime-install-job.test.ts
+pnpm --filter @topo/desktop run test -- runtime-install-job.test.ts
 pnpm run check
 ```
 
@@ -239,7 +239,7 @@ export interface InstallBundleProgress {
 Run:
 
 ```bash
-pnpm --filter @molten-voice/desktop run test -- install-plan.test.ts
+pnpm --filter @topo/desktop run test -- install-plan.test.ts
 pnpm run check
 ```
 
@@ -271,7 +271,7 @@ git commit -m "feat(desktop): orchestrate model and runtime install"
 Run:
 
 ```bash
-pnpm --filter @molten-voice/desktop run test -- model-readiness.test.ts whisper-cpp-runtime.test.ts
+pnpm --filter @topo/desktop run test -- model-readiness.test.ts whisper-cpp-runtime.test.ts
 pnpm run check
 ```
 
@@ -303,7 +303,7 @@ git commit -m "feat(desktop): compute readiness from installed runtimes"
 Run:
 
 ```bash
-pnpm --filter @molten-voice/desktop run test
+pnpm --filter @topo/desktop run test
 pnpm run check
 ```
 
@@ -352,7 +352,7 @@ Recording + cancel => cancel recording and return Idle
 Run:
 
 ```bash
-pnpm --filter @molten-voice/desktop run test -- hotkey-coordinator.test.ts electron-hotkey-bridge.test.ts
+pnpm --filter @topo/desktop run test -- hotkey-coordinator.test.ts electron-hotkey-bridge.test.ts
 pnpm run check
 ```
 
@@ -423,7 +423,7 @@ AI SDK language model wrapper
 Run:
 
 ```bash
-pnpm --filter @molten-voice/asr run test -- post-processing-provider.test.ts post-processing.test.ts
+pnpm --filter @topo/asr run test -- post-processing-provider.test.ts post-processing.test.ts
 pnpm run check
 ```
 
@@ -457,7 +457,7 @@ git commit -m "feat(asr): add post processing providers"
 Run:
 
 ```bash
-pnpm --filter @molten-voice/desktop run test
+pnpm --filter @topo/desktop run test
 pnpm run check
 ```
 
@@ -492,8 +492,8 @@ git commit -m "feat(settings): add post processing tab"
 Run:
 
 ```bash
-pnpm --filter @molten-voice/native-bridge run test
-pnpm --filter @molten-voice/desktop run test
+pnpm --filter @topo/native-bridge run test
+pnpm --filter @topo/desktop run test
 pnpm run check
 ```
 
@@ -514,7 +514,7 @@ git commit -m "feat(macos): add local post processing readiness"
 
 - [ ] Run `pnpm run check`.
 - [ ] Run `pnpm run test`.
-- [ ] Run `pnpm --filter @molten-voice/desktop run build`.
+- [ ] Run `pnpm --filter @topo/desktop run build`.
 - [ ] On Windows, install a `whisper.cpp` runtime pack and `whisper-cpp-small`; confirm readiness is green only after both are verified.
 - [ ] On Windows, verify toggle-to-talk still works.
 - [ ] On Windows, verify push-to-talk starts on down and stops on release using the native hook path.

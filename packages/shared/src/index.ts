@@ -1,13 +1,13 @@
 export * from "./dictation";
 export * from "./errors";
-export { formatHotkey, normalizeHotkeyFromKeys } from "@molten-voice/contracts";
+export { formatHotkey, normalizeHotkeyFromKeys } from "@topo/contracts";
 export * from "./installed-model";
 export * from "./ipc";
 export * from "./model-installation";
 
 export type Platform = "linux" | "macos" | "windows";
 
-import type { AppStateSnapshot } from "@molten-voice/contracts";
+import type { AppStateSnapshot } from "@topo/contracts";
 import type {
   AppSettings,
   InstalledModelRecord,
@@ -16,8 +16,8 @@ import type {
   NativeHotkeyPhase,
   OverlayPosition,
   TranscriptRecord,
-} from "@molten-voice/contracts";
-export { DEFAULT_APP_SETTINGS } from "@molten-voice/contracts";
+} from "@topo/contracts";
+export { DEFAULT_APP_SETTINGS } from "@topo/contracts";
 export type {
   AppSettings,
   AppStateSnapshot,
@@ -29,7 +29,7 @@ export type {
   TranscriptRecord,
 };
 
-export interface MoltenVoiceApi {
+export interface TopoApi {
   readonly appName: string;
   readonly platform: Platform;
   readonly getAppState: () => Promise<AppStateSnapshot>;
@@ -58,4 +58,4 @@ export interface MoltenVoiceApi {
   readonly onGlobalHotkeyEvent: (listener: (event: NativeHotkeyEvent) => void) => () => void;
 }
 
-export const APP_NAME = "Molten Voice";
+export const APP_NAME = "Topo";

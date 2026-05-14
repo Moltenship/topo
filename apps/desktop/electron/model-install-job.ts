@@ -9,8 +9,8 @@ import {
   createModelInstallPlan,
   type ModelCatalogEntry,
   verifyDownloadedModel,
-} from "@molten-voice/model-catalog";
-import type { ModelInstallProgress } from "@molten-voice/shared";
+} from "@topo/model-catalog";
+import type { ModelInstallProgress } from "@topo/shared";
 
 export interface ModelInstallJob {
   readonly getCurrentProgress: () => ModelInstallProgress | null;

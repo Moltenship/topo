@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { AppSettings, InstalledModelRecord, ModelInstallProgress } from "@molten-voice/shared";
+import type { AppSettings, InstalledModelRecord, ModelInstallProgress } from "@topo/shared";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ export const SetupFlow = ({
             <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Local system layer
             </p>
-            <h1 className="mt-0.5 text-[17px] font-semibold leading-none">Molten Voice</h1>
+            <h1 className="mt-0.5 text-[17px] font-semibold leading-none">Topo</h1>
           </div>
         </div>
         <nav className="mb-4 grid grid-cols-3 gap-1" aria-label="Workspace">

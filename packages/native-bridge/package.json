@@ -1,5 +1,5 @@
 {
-  "name": "@molten-voice/native-bridge",
+  "name": "@topo/native-bridge",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "build": "tsgo --project tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@molten-voice/shared": "workspace:*",
+    "@topo/shared": "workspace:*",
     "effect": "^3.19.7"
   }
 }

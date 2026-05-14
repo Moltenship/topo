@@ -1,12 +1,12 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { IpcChannels } from "@molten-voice/shared";
-import type { MoltenVoiceApi, Platform } from "@molten-voice/shared";
+import { IpcChannels } from "@topo/shared";
+import type { TopoApi, Platform } from "@topo/shared";
 
 const platform: Platform =
   process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 
-const api: MoltenVoiceApi = {
-  appName: "Molten Voice",
+const api: TopoApi = {
+  appName: "Topo",
   platform,
   getAppState: () => ipcRenderer.invoke(IpcChannels.getAppState),
   listTranscripts: (query) => ipcRenderer.invoke(IpcChannels.listTranscripts, { query }),
@@ -49,4 +49,4 @@ const api: MoltenVoiceApi = {
   },
 };
 
-contextBridge.exposeInMainWorld("moltenVoice", api);
+contextBridge.exposeInMainWorld("topo", api);

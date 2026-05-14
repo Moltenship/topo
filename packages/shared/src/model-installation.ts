@@ -1,1 +1,1 @@
-export type { ModelInstallProgress, ModelInstallStatus } from "@molten-voice/contracts";
+export type { ModelInstallProgress, ModelInstallStatus } from "@topo/contracts";

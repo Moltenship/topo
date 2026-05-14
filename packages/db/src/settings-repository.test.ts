@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
+import { DEFAULT_APP_SETTINGS } from "@topo/shared";
 import { settings } from "./schema";
 import { createSettingsRepository } from "./settings-repository";
 

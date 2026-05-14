@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import type { InsertionMode, NativeHotkeyEvent, NativeHotkeyPhase } from "@molten-voice/shared";
+import type { InsertionMode, NativeHotkeyEvent, NativeHotkeyPhase } from "@topo/shared";
 
 export interface ActiveApplicationSnapshot {
   readonly appName: string | null;

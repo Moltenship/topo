@@ -24,10 +24,10 @@ const createProbe =
 
 describe("createWhisperCppRuntimeResolver", () => {
   it("prefers the env override before bundled and PATH candidates", async () => {
-    const root = await mkdtemp(join(tmpdir(), "molten-whisper-runtime-"));
+    const root = await mkdtemp(join(tmpdir(), "topo-whisper-runtime-"));
     const envBinary = await createBinary(root, "env-whisper.exe");
     const bundledBinary = await createBinary(root, "whisper-cli.exe");
-    const pathRoot = await mkdtemp(join(tmpdir(), "molten-whisper-path-"));
+    const pathRoot = await mkdtemp(join(tmpdir(), "topo-whisper-path-"));
     await createBinary(pathRoot, "whisper-cli.exe");
     const probedPaths: string[] = [];
     const resolver = createWhisperCppRuntimeResolver({
@@ -58,8 +58,8 @@ describe("createWhisperCppRuntimeResolver", () => {
   });
 
   it("returns missing with every checked candidate when no binary exists", async () => {
-    const resourcesRoot = await mkdtemp(join(tmpdir(), "molten-whisper-runtime-"));
-    const pathRoot = await mkdtemp(join(tmpdir(), "molten-whisper-path-"));
+    const resourcesRoot = await mkdtemp(join(tmpdir(), "topo-whisper-runtime-"));
+    const pathRoot = await mkdtemp(join(tmpdir(), "topo-whisper-path-"));
     const resolver = createWhisperCppRuntimeResolver({
       resourcesRoot,
       env: {
@@ -94,7 +94,7 @@ describe("createWhisperCppRuntimeResolver", () => {
   });
 
   it("returns failed with the candidate path and probe error output", async () => {
-    const root = await mkdtemp(join(tmpdir(), "molten-whisper-runtime-"));
+    const root = await mkdtemp(join(tmpdir(), "topo-whisper-runtime-"));
     const binaryPath = await createBinary(root, "env-whisper.exe");
     const resolver = createWhisperCppRuntimeResolver({
       resourcesRoot: root,
@@ -128,9 +128,9 @@ describe("createWhisperCppRuntimeResolver", () => {
   });
 
   it("checks bundled candidates before PATH candidates", async () => {
-    const resourcesRoot = await mkdtemp(join(tmpdir(), "molten-whisper-runtime-"));
+    const resourcesRoot = await mkdtemp(join(tmpdir(), "topo-whisper-runtime-"));
     const bundledBinary = await createBinary(join(resourcesRoot, "whisper.cpp"), "whisper-cli.exe");
-    const pathRoot = await mkdtemp(join(tmpdir(), "molten-whisper-path-"));
+    const pathRoot = await mkdtemp(join(tmpdir(), "topo-whisper-path-"));
     await createBinary(pathRoot, "whisper-cli.exe");
     const probedPaths: string[] = [];
     const resolver = createWhisperCppRuntimeResolver({
@@ -156,9 +156,9 @@ describe("createWhisperCppRuntimeResolver", () => {
   });
 
   it("continues after a failed PATH probe and returns the next usable PATH candidate", async () => {
-    const resourcesRoot = await mkdtemp(join(tmpdir(), "molten-whisper-runtime-"));
-    const badPathRoot = await mkdtemp(join(tmpdir(), "molten-whisper-bad-path-"));
-    const goodPathRoot = await mkdtemp(join(tmpdir(), "molten-whisper-good-path-"));
+    const resourcesRoot = await mkdtemp(join(tmpdir(), "topo-whisper-runtime-"));
+    const badPathRoot = await mkdtemp(join(tmpdir(), "topo-whisper-bad-path-"));
+    const goodPathRoot = await mkdtemp(join(tmpdir(), "topo-whisper-good-path-"));
     const badBinary = await createBinary(badPathRoot, "whisper-cli.exe");
     const goodBinary = await createBinary(goodPathRoot, "whisper-cli.exe");
     const probedPaths: string[] = [];

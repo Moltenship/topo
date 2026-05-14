@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { Effect } from "effect";
-import { parseAppSettings } from "@molten-voice/settings";
-import type { AppSettings } from "@molten-voice/shared";
+import { parseAppSettings } from "@topo/settings";
+import type { AppSettings } from "@topo/shared";
 import { settings } from "./schema";
 
 const APP_SETTINGS_KEY = "app";

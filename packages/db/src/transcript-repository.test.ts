@@ -34,7 +34,7 @@ describe("createTranscriptRepository", () => {
       Effect.gen(function* () {
         yield* repository.insert({
           id: "tr_1",
-          text: "hello molten voice",
+          text: "hello topo",
           createdAt: "2026-05-07T00:00:00.000Z",
           durationMs: 1200,
           modelId: "whisper-cpp-small",
@@ -62,12 +62,12 @@ describe("createTranscriptRepository", () => {
           targetAppName: null,
         });
 
-        return yield* repository.list("molten");
+        return yield* repository.list("topo");
       }),
     );
 
     expect(results).toHaveLength(1);
-    expect(results[0]?.text).toBe("hello molten voice");
+    expect(results[0]?.text).toBe("hello topo");
   });
 
   it("returns transcript records by id", async () => {

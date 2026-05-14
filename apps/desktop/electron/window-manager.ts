@@ -30,7 +30,7 @@ export const createMainWindow = (): BrowserWindow => {
     width: 1120,
     height: 760,
     frame: isMac,
-    title: "Molten Voice",
+    title: "Topo",
     titleBarStyle: isMac ? "hiddenInset" : "hidden",
     ...(isMac ? { trafficLightPosition: { x: 14, y: 13 } } : {}),
     webPreferences: {

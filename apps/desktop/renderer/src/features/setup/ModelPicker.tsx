@@ -1,5 +1,5 @@
-import type { InstalledModelRecord, ModelInstallProgress } from "@molten-voice/shared";
-import { getBundledModelCatalog } from "@molten-voice/model-catalog";
+import type { InstalledModelRecord, ModelInstallProgress } from "@topo/shared";
+import { getBundledModelCatalog } from "@topo/model-catalog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

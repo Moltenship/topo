@@ -1,6 +1,6 @@
 import { Effect } from "effect";
-import type { AsrRuntime, ModelCatalogEntry } from "@molten-voice/model-catalog";
-import type { InstalledModelRecord, ModelReadinessRecord } from "@molten-voice/shared";
+import type { AsrRuntime, ModelCatalogEntry } from "@topo/model-catalog";
+import type { InstalledModelRecord, ModelReadinessRecord } from "@topo/shared";
 import type { WhisperCppRuntimeResolver, WhisperCppRuntimeResult } from "./whisper-cpp-runtime";
 
 export interface ComputeModelReadinessInput {

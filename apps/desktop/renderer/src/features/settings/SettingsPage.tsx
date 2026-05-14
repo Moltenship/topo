@@ -8,8 +8,8 @@ import {
   type ModelInstallProgress,
   type ModelReadinessRecord,
   type ModelReadinessStatus,
-} from "@molten-voice/shared";
-import { getBundledModelCatalog } from "@molten-voice/model-catalog";
+} from "@topo/shared";
+import { getBundledModelCatalog } from "@topo/model-catalog";
 import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

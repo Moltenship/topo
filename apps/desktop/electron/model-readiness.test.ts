@@ -1,4 +1,4 @@
-import type { InstalledModelRecord } from "@molten-voice/shared";
+import type { InstalledModelRecord } from "@topo/shared";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 import {

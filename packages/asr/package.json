@@ -1,5 +1,5 @@
 {
-  "name": "@molten-voice/asr",
+  "name": "@topo/asr",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,8 @@
     "build": "tsgo --project tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@molten-voice/audio": "workspace:*",
-    "@molten-voice/shared": "workspace:*",
+    "@topo/audio": "workspace:*",
+    "@topo/shared": "workspace:*",
     "ai": "^6.0.177",
     "effect": "^3.21.2"
   }

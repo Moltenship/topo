@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project Snapshot
-Molten Voice is local-first clone of whisprflow, a voice-based workflow automation tool. It allows users to create and manage voice-based workflows on their local machines, providing a seamless experience for automating tasks using voice commands.
+Topo is local-first clone of whisprflow, a voice-based workflow automation tool. It allows users to create and manage voice-based workflows on their local machines, providing a seamless experience for automating tasks using voice commands.
 
 ## Task Completion Requirements
 

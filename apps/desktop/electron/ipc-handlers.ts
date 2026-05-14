@@ -1,18 +1,18 @@
 import { BrowserWindow, clipboard, ipcMain } from "electron";
 import { Effect } from "effect";
 import * as Schema from "effect/Schema";
-import type { DictationOrchestrator } from "@molten-voice/asr";
-import type { AppDatabase } from "@molten-voice/db";
-import { bundledModelCatalog, type ModelCatalogEntry } from "@molten-voice/model-catalog";
-import type { NativeBridgeService } from "@molten-voice/native-bridge";
+import type { DictationOrchestrator } from "@topo/asr";
+import type { AppDatabase } from "@topo/db";
+import { bundledModelCatalog, type ModelCatalogEntry } from "@topo/model-catalog";
+import type { NativeBridgeService } from "@topo/native-bridge";
 import type {
   AppSettings,
   AppStateSnapshot,
   NativeHotkeyEvent,
   TranscriptRecord,
-} from "@molten-voice/shared";
-import { DEFAULT_APP_SETTINGS } from "@molten-voice/shared";
-import type { SubmittedAudioCaptureService } from "@molten-voice/audio";
+} from "@topo/shared";
+import { DEFAULT_APP_SETTINGS } from "@topo/shared";
+import type { SubmittedAudioCaptureService } from "@topo/audio";
 import {
   CancelModelInstallRequest,
   CommitOverlayPreviewPositionRequest,
@@ -23,8 +23,8 @@ import {
   ListTranscriptsRequest,
   ReinsertTranscriptRequest,
   UpdateSettingsRequest,
-} from "@molten-voice/shared";
-import type { OverlayPosition } from "@molten-voice/shared";
+} from "@topo/shared";
+import type { OverlayPosition } from "@topo/shared";
 import type { ModelInstallJob } from "./model-install-job";
 import {
   computeModelReadinessForCatalog,

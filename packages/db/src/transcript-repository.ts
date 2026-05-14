@@ -1,7 +1,7 @@
 import { desc, eq, like, lt } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { Effect } from "effect";
-import type { TranscriptRecord } from "@molten-voice/shared";
+import type { TranscriptRecord } from "@topo/shared";
 import { transcripts } from "./schema";
 
 export interface TranscriptRepository {

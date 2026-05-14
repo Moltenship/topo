@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import type { LevelFrame, StopReason } from "@molten-voice/shared";
+import type { LevelFrame, StopReason } from "@topo/shared";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -143,7 +143,7 @@ const writeWavBytes = async (
   wavBytes: Uint8Array,
   directoryName: string,
 ): Promise<string> => {
-  const directory = join(tmpdir(), "molten-voice", directoryName);
+  const directory = join(tmpdir(), "topo", directoryName);
   await mkdir(directory, { recursive: true });
 
   const audioPath = join(directory, `${sessionId}.wav`);

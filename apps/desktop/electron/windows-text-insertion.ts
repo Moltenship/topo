@@ -1,4 +1,4 @@
-import type { InsertionMode } from "@molten-voice/shared";
+import type { InsertionMode } from "@topo/shared";
 
 export interface TextClipboard {
   readonly readText: () => string;

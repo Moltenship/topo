@@ -3,14 +3,14 @@ import type { TranscriptionModel } from "ai";
 
 export type LocalAiSdkTranscriptionLanguage = "en" | "ru" | "auto";
 
-export interface MoltenTranscriptionModelOptions {
+export interface TopoTranscriptionModelOptions {
   readonly language?: LocalAiSdkTranscriptionLanguage | null;
   readonly installedModelPath?: string | null;
   readonly runtimeBinaryPath?: string | null;
   readonly audioPath?: string | null;
 }
 
-interface ParsedMoltenTranscriptionModelOptions {
+interface ParsedTopoTranscriptionModelOptions {
   readonly language: LocalAiSdkTranscriptionLanguage;
   readonly installedModelPath: string;
   readonly runtimeBinaryPath: string;
@@ -93,10 +93,10 @@ export const createLocalAiSdkTranscriptionProvider = ({
 } = {}): LocalAiSdkTranscriptionProvider => ({
   transcription: (modelId) => ({
     specificationVersion: "v3",
-    provider: "molten",
+    provider: "topo",
     modelId,
     doGenerate: async ({ abortSignal, providerOptions }) => {
-      const options = parseMoltenOptions(providerOptions?.molten);
+      const options = parseTopoOptions(providerOptions?.topo);
       const args = buildWhisperCppArgs(options);
       const command: WhisperCppRunnerCommand =
         abortSignal === undefined
@@ -148,7 +148,7 @@ export const createLocalAiSdkTranscriptionProvider = ({
   }),
 });
 
-const parseMoltenOptions = (input: unknown): ParsedMoltenTranscriptionModelOptions => {
+const parseTopoOptions = (input: unknown): ParsedTopoTranscriptionModelOptions => {
   const options = isRecord(input) ? input : {};
   const language = options.language ?? "auto";
 
@@ -165,7 +165,7 @@ const parseMoltenOptions = (input: unknown): ParsedMoltenTranscriptionModelOptio
 };
 
 export const buildWhisperCppArgs = (
-  options: ParsedMoltenTranscriptionModelOptions,
+  options: ParsedTopoTranscriptionModelOptions,
 ): readonly string[] => {
   const args = ["-m", options.installedModelPath, "-f", options.audioPath, "-otxt", "-np"];
 
