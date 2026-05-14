@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   DEFAULT_APP_SETTINGS,
-  formatHotkey,
   normalizeHotkeyFromKeys,
   type AppSettings,
   type InstallBundleProgress,
@@ -11,6 +10,7 @@ import {
   type ModelReadinessRecord,
 } from "@topo/shared";
 import { getBundledModelCatalog } from "@topo/model-catalog";
+import { HotkeyKbd } from "@/components/hotkey-kbd";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ModelCard } from "@/features/models/ModelCard";
@@ -459,12 +459,20 @@ export const SettingsPage = ({
           resetAction={getResetAction("hotkey", "hotkey")}
         >
           <div className="flex items-center justify-end gap-2 max-sm:flex-wrap max-sm:justify-start">
-            <span className="min-w-[150px] rounded-md border bg-background px-3 py-1.5 text-center text-xs font-semibold">
-              {recordingHotkey
-                ? pressedHotkeyKeys.length > 0
-                  ? formatHotkey(normalizeHotkeyFromKeys(pressedHotkeyKeys))
-                  : "Press shortcut..."
-                : formatHotkey(settings?.hotkey ?? "CapsLock")}
+            <span className="flex min-w-[150px] justify-center rounded-md border bg-background px-3 py-1.5">
+              {recordingHotkey && pressedHotkeyKeys.length === 0 ? (
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Press shortcut...
+                </span>
+              ) : (
+                <HotkeyKbd
+                  hotkey={
+                    recordingHotkey
+                      ? normalizeHotkeyFromKeys(pressedHotkeyKeys)
+                      : (settings?.hotkey ?? "CapsLock")
+                  }
+                />
+              )}
             </span>
             <Button
               disabled={!settings}

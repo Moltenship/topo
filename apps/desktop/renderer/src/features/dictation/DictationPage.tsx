@@ -1,6 +1,7 @@
 import type { AppSettings, InstalledModelRecord, ModelInstallProgress } from "@topo/shared";
 import { getBundledModelCatalog } from "@topo/model-catalog";
 import { Check } from "lucide-react";
+import { HotkeyKbd } from "@/components/hotkey-kbd";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SelectionButton } from "@/components/ui/selection-button";
@@ -86,7 +87,7 @@ export const DictationPage = ({
           description="Run a local microphone check without leaving the app surface."
         >
           <div className="flex flex-wrap justify-end gap-1.5 max-sm:justify-start">
-            <Badge variant="secondary">{settings?.hotkey ?? "CapsLock"}</Badge>
+            <HotkeyKbd hotkey={settings?.hotkey ?? "CapsLock"} />
             <Badge variant="secondary">{settings?.insertionMode ?? "paste"}</Badge>
             <Button
               disabled={isRecording}
