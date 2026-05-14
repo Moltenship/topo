@@ -534,6 +534,13 @@ const stopTestDictation = (
       return yield* Effect.fail(new Error("model_not_installed"));
     }
 
+    if (selectedModel.runtime === "whisperkit") {
+      currentErrorMessage = "WhisperKit transcription bridge is not implemented yet.";
+      state.overlayState = "error";
+
+      return yield* Effect.fail(new Error("whisperkit_bridge_missing"));
+    }
+
     if (
       selectedModel.runtime !== "whisper-cpp" ||
       (!dependencies.whisperCppRuntimeResolver && !dependencies.createWhisperCppRuntimeResolver)

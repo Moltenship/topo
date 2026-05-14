@@ -141,7 +141,7 @@ describe("computeModelReadiness", () => {
     });
   });
 
-  it("returns ready for a verified installed WhisperKit model without a runtime record", () => {
+  it("returns runtime-missing for a verified installed WhisperKit model until the bridge exists", () => {
     expect(
       computeModelReadiness({
         modelId: "whisperkit-small",
@@ -155,11 +155,13 @@ describe("computeModelReadiness", () => {
         installedRuntime: null,
         runtimeResult: null,
       }),
-    ).toMatchObject({
-      status: "ready",
-      lamp: "green",
-      message: "Model and WhisperKit runtime are ready.",
+    ).toEqual({
+      modelId: "whisperkit-small",
+      status: "runtime-missing",
+      lamp: "yellow",
+      message: "WhisperKit transcription bridge is not implemented yet.",
       runtimeBinaryPath: null,
+      checkedAt: expect.any(String),
     });
   });
 

@@ -67,9 +67,9 @@ export const computeModelReadiness = ({
   if (runtime === "whisperkit") {
     return {
       modelId,
-      status: "ready",
-      lamp: "green",
-      message: "Model and WhisperKit runtime are ready.",
+      status: "runtime-missing",
+      lamp: "yellow",
+      message: "WhisperKit transcription bridge is not implemented yet.",
       runtimeBinaryPath: null,
       checkedAt: checkedAtFor(runtimeResult),
     };
