@@ -9,9 +9,9 @@ import { canStartDictation } from "@topo/shared";
 import { AppShell } from "./components/app-shell";
 import { AppTitleBar } from "./components/app-title-bar";
 import { getRendererApi, getRendererPlatform } from "./api/renderer-api";
-import { HistoryView } from "./features/history/HistoryView";
-import { PostProcessingPage } from "./features/settings/PostProcessingPage";
-import { SettingsPage } from "./features/settings/SettingsPage";
+import { HistoryView } from "./features/history/history-view";
+import { PostProcessingPage } from "./features/settings/post-processing-page";
+import { SettingsPage } from "./features/settings/settings-page";
 import {
   startBrowserAudioRecorder,
   type BrowserAudioRecorder,

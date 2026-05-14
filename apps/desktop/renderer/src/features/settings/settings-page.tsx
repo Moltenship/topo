@@ -13,7 +13,7 @@ import { getBundledModelCatalog } from "@topo/model-catalog";
 import { HotkeyKbd } from "@/components/hotkey-kbd";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ModelCard } from "@/features/models/ModelCard";
+import { ModelCard } from "@/features/models/model-card";
 import {
   SettingResetButton,
   SettingsRow,
