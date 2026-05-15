@@ -16,6 +16,7 @@ import type { AppleIntelligenceService } from "@topo/native-bridge";
 import type {
   AppSettings,
   AppStateSnapshot,
+  InstalledRuntimeRecord,
   InstallBundleProgress,
   NativeHotkeyEvent,
   TranscriptRecord,
@@ -82,9 +83,11 @@ interface IpcHandlerDependencies {
   readonly whisperCppRuntimeResolver?: WhisperCppRuntimeResolver;
   readonly whisperKitBridge?: WhisperKitBridge;
   readonly transcriptAudioStore?: TranscriptAudioStore;
-  readonly createWhisperCppRuntimeResolver?: (
-    installedBinaryPath: string | null,
-  ) => WhisperCppRuntimeResolver;
+  readonly createWhisperCppRuntimeResolver?: (input: {
+    readonly installedBinaryPath: string | null;
+    readonly preferredAccelerator: AppSettings["whisperCppAccelerator"];
+    readonly installedRuntimes: readonly InstalledRuntimeRecord[];
+  }) => WhisperCppRuntimeResolver;
   readonly resolveOverlayPositionFromPreviewPoint?: (point: {
     readonly centerX: number;
     readonly centerY: number;
@@ -267,6 +270,26 @@ const getInstallArchitecture = (dependencies: IpcHandlerDependencies): string =>
 
 const defaultWhisperCppRuntimeReadinessCache = createWhisperCppRuntimeReadinessCache();
 
+const findInstalledWhisperCppRuntime = (
+  installedRuntimes: readonly InstalledRuntimeRecord[],
+): InstalledRuntimeRecord | null =>
+  installedRuntimes.find(
+    (runtime) =>
+      runtime.engine === "whisper-cpp" &&
+      runtime.verificationStatus === "verified" &&
+      runtime.binaryPath,
+  ) ?? null;
+
+const findInstalledWhisperCppCpuRuntime = (
+  installedRuntimes: readonly InstalledRuntimeRecord[],
+): InstalledRuntimeRecord | null =>
+  installedRuntimes.find(
+    (runtime) =>
+      runtime.runtimeId === "whisper-cpp-windows-x64-cpu" &&
+      runtime.verificationStatus === "verified" &&
+      runtime.binaryPath,
+  ) ?? null;
+
 const getAppState = (
   dependencies: IpcHandlerDependencies,
 ): Effect.Effect<AppStateSnapshot, Error> =>
@@ -283,17 +306,13 @@ const getAppState = (
     });
     const whisperCppRuntimeReadinessCache =
       dependencies.whisperCppRuntimeReadinessCache ?? defaultWhisperCppRuntimeReadinessCache;
-    const installedWhisperCppRuntime =
-      installedRuntimes.find(
-        (runtime) =>
-          runtime.engine === "whisper-cpp" &&
-          runtime.verificationStatus === "verified" &&
-          runtime.binaryPath,
-      ) ?? null;
+    const installedWhisperCppRuntime = findInstalledWhisperCppRuntime(installedRuntimes);
     const whisperCppRuntimeResolver =
-      dependencies.createWhisperCppRuntimeResolver?.(
-        installedWhisperCppRuntime?.binaryPath ?? null,
-      ) ?? dependencies.whisperCppRuntimeResolver;
+      dependencies.createWhisperCppRuntimeResolver?.({
+        installedBinaryPath: installedWhisperCppRuntime?.binaryPath ?? null,
+        preferredAccelerator: settings.whisperCppAccelerator,
+        installedRuntimes,
+      }) ?? dependencies.whisperCppRuntimeResolver;
     const whisperCppRuntimeResult =
       shouldProbeWhisperCppRuntime && whisperCppRuntimeResolver
         ? yield* whisperCppRuntimeReadinessCache.resolve(whisperCppRuntimeResolver)
@@ -767,17 +786,14 @@ const stopTestDictation = (
     }
 
     const installedRuntimes = yield* dependencies.database.installedRuntimes.list();
-    const installedWhisperCppRuntime =
-      installedRuntimes.find(
-        (runtime) =>
-          runtime.engine === "whisper-cpp" &&
-          runtime.verificationStatus === "verified" &&
-          runtime.binaryPath,
-      ) ?? null;
+    const installedWhisperCppRuntime = findInstalledWhisperCppRuntime(installedRuntimes);
+    const installedWhisperCppCpuRuntime = findInstalledWhisperCppCpuRuntime(installedRuntimes);
     const runtimeResolver =
-      dependencies.createWhisperCppRuntimeResolver?.(
-        installedWhisperCppRuntime?.binaryPath ?? null,
-      ) ?? dependencies.whisperCppRuntimeResolver;
+      dependencies.createWhisperCppRuntimeResolver?.({
+        installedBinaryPath: installedWhisperCppRuntime?.binaryPath ?? null,
+        preferredAccelerator: settings.whisperCppAccelerator,
+        installedRuntimes,
+      }) ?? dependencies.whisperCppRuntimeResolver;
 
     if (!runtimeResolver) {
       currentErrorMessage = "runtime_missing";
@@ -816,6 +832,11 @@ const stopTestDictation = (
       runtime: selectedModel.runtime,
       installedModelPath: installedModel.installedPath,
       runtimeBinaryPath: runtimeResult.binaryPath,
+      fallbackRuntimeBinaryPath:
+        runtimeResult.accelerator === "gpu"
+          ? (installedWhisperCppCpuRuntime?.binaryPath ?? null)
+          : null,
+      accelerator: settings.whisperCppAccelerator,
       postProcessingMode: settings.postProcessingMode,
       recordingMode: settings.recordingMode,
       ...(audioPreservation ? { preserveCapturedAudio: audioPreservation } : {}),

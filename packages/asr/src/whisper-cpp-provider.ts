@@ -42,6 +42,8 @@ const transcribeWithAiSdk = async (
         language: input.language,
         installedModelPath: input.installedModelPath ?? null,
         runtimeBinaryPath: input.runtimeBinaryPath ?? null,
+        fallbackRuntimeBinaryPath: input.fallbackRuntimeBinaryPath ?? null,
+        accelerator: input.accelerator ?? null,
         audioPath: input.audioPath,
       },
     },

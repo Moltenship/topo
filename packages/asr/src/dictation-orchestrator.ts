@@ -30,6 +30,8 @@ export interface DictationOrchestrator {
     readonly runtime: string;
     readonly installedModelPath: string;
     readonly runtimeBinaryPath: string | null;
+    readonly fallbackRuntimeBinaryPath?: string | null;
+    readonly accelerator?: "auto" | "cpu" | "gpu" | null;
     readonly postProcessingMode: PostProcessingMode;
     readonly recordingMode: RecordingMode;
     readonly preserveCapturedAudio?: (input: {
@@ -73,6 +75,8 @@ export const createDictationOrchestrator = (
                   runtime: input.runtime,
                   installedModelPath: input.installedModelPath,
                   runtimeBinaryPath: input.runtimeBinaryPath,
+                  fallbackRuntimeBinaryPath: input.fallbackRuntimeBinaryPath ?? null,
+                  accelerator: input.accelerator ?? null,
                 });
 
                 const processed =

@@ -7,6 +7,8 @@ export interface TopoTranscriptionModelOptions {
   readonly language?: LocalAiSdkTranscriptionLanguage | null;
   readonly installedModelPath?: string | null;
   readonly runtimeBinaryPath?: string | null;
+  readonly fallbackRuntimeBinaryPath?: string | null;
+  readonly accelerator?: "auto" | "cpu" | "gpu" | null;
   readonly audioPath?: string | null;
 }
 
@@ -14,6 +16,8 @@ interface ParsedTopoTranscriptionModelOptions {
   readonly language: LocalAiSdkTranscriptionLanguage;
   readonly installedModelPath: string;
   readonly runtimeBinaryPath: string;
+  readonly fallbackRuntimeBinaryPath: string | null;
+  readonly accelerator: "auto" | "cpu" | "gpu";
   readonly audioPath: string;
 }
 
@@ -98,18 +102,18 @@ export const createLocalAiSdkTranscriptionProvider = ({
     doGenerate: async ({ abortSignal, providerOptions }) => {
       const options = parseTopoOptions(providerOptions?.topo);
       const args = buildWhisperCppArgs(options);
-      const command: WhisperCppRunnerCommand =
+      const command =
         abortSignal === undefined
-          ? {
+          ? createRunnerCommand({
               binaryPath: options.runtimeBinaryPath,
               args,
-            }
-          : {
+            })
+          : createRunnerCommand({
               binaryPath: options.runtimeBinaryPath,
               args,
               abortSignal,
-            };
-      const result = await runWhisperCpp(runner, command, {
+            });
+      const { result, usedFallback } = await runWhisperCppWithFallback(runner, command, options, {
         modelId,
         audioPath: options.audioPath,
         installedModelPath: options.installedModelPath,
@@ -141,6 +145,7 @@ export const createLocalAiSdkTranscriptionProvider = ({
           modelId,
           body: {
             stderr: result.stderr,
+            accelerator: usedFallback ? "cpu-fallback" : options.accelerator,
           },
         },
       };
@@ -160,6 +165,8 @@ const parseTopoOptions = (input: unknown): ParsedTopoTranscriptionModelOptions =
     language,
     installedModelPath: requireString(options.installedModelPath, "model_not_installed"),
     runtimeBinaryPath: requireString(options.runtimeBinaryPath, "runtime_missing"),
+    fallbackRuntimeBinaryPath: optionalString(options.fallbackRuntimeBinaryPath),
+    accelerator: isSupportedAccelerator(options.accelerator) ? options.accelerator : "auto",
     audioPath: requireString(options.audioPath, "audio_path_missing"),
   };
 };
@@ -171,6 +178,10 @@ export const buildWhisperCppArgs = (
 
   if (options.language !== "auto") {
     args.push("-l", options.language);
+  }
+
+  if (options.accelerator === "cpu") {
+    args.push("--no-gpu");
   }
 
   return args;
@@ -185,6 +196,41 @@ export const parseWhisperCppText = (stdout: string): string =>
     .join(" ")
     .trim()
     .replace(/\s+/g, " ");
+
+const runWhisperCppWithFallback = async (
+  runner: WhisperCppRunner,
+  command: WhisperCppRunnerCommand,
+  options: ParsedTopoTranscriptionModelOptions,
+  context: Pick<
+    LocalAiSdkTranscriptionErrorDetails,
+    "audioPath" | "installedModelPath" | "modelId"
+  >,
+): Promise<{ readonly result: WhisperCppRunnerResult; readonly usedFallback: boolean }> => {
+  try {
+    const result = await runWhisperCpp(runner, command, context);
+
+    return { result, usedFallback: false };
+  } catch (error) {
+    if (!shouldRetryWithCpuFallback(error, command.abortSignal, options)) {
+      throw error;
+    }
+
+    const fallbackRuntimeBinaryPath = options.fallbackRuntimeBinaryPath;
+
+    if (fallbackRuntimeBinaryPath === null) {
+      throw error;
+    }
+
+    const fallbackCommand = createRunnerCommand({
+      binaryPath: fallbackRuntimeBinaryPath,
+      args: buildWhisperCppArgs({ ...options, accelerator: "cpu" }),
+      ...(command.abortSignal === undefined ? {} : { abortSignal: command.abortSignal }),
+    });
+    const result = await runWhisperCpp(runner, fallbackCommand, context);
+
+    return { result, usedFallback: true };
+  }
+};
 
 const runWhisperCpp = async (
   runner: WhisperCppRunner,
@@ -224,6 +270,37 @@ const runWhisperCpp = async (
     });
   }
 };
+
+const shouldRetryWithCpuFallback = (
+  error: unknown,
+  abortSignal: AbortSignal | undefined,
+  options: ParsedTopoTranscriptionModelOptions,
+): boolean =>
+  error instanceof LocalAiSdkTranscriptionError &&
+  !abortSignal?.aborted &&
+  options.accelerator !== "cpu" &&
+  options.fallbackRuntimeBinaryPath !== null &&
+  options.fallbackRuntimeBinaryPath !== options.runtimeBinaryPath;
+
+const createRunnerCommand = ({
+  binaryPath,
+  args,
+  abortSignal,
+}: {
+  readonly binaryPath: string;
+  readonly args: readonly string[];
+  readonly abortSignal?: AbortSignal;
+}): WhisperCppRunnerCommand =>
+  abortSignal === undefined
+    ? {
+        binaryPath,
+        args,
+      }
+    : {
+        binaryPath,
+        args,
+        abortSignal,
+      };
 
 const createWhisperCppRunner = (): WhisperCppRunner => (command) =>
   new Promise((resolve, reject) => {
@@ -269,11 +346,17 @@ const requireString = (value: unknown, code: LocalAiSdkTranscriptionErrorCode): 
   return value;
 };
 
+const optionalString = (value: unknown): string | null =>
+  typeof value === "string" && value.length > 0 ? value : null;
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
 const isSupportedLanguage = (value: unknown): value is LocalAiSdkTranscriptionLanguage =>
   value === "en" || value === "ru" || value === "auto";
+
+const isSupportedAccelerator = (value: unknown): value is "auto" | "cpu" | "gpu" =>
+  value === "auto" || value === "cpu" || value === "gpu";
 
 const excerpt = (value: string | undefined): string | undefined => {
   const trimmed = value?.trim();

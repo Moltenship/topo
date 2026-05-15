@@ -138,10 +138,16 @@ const bootstrapDesktop = (userDataDirectory: string): Effect.Effect<void, unknow
       appleIntelligence: appleIntelligenceService,
       whisperKitBridge,
       nativeBridge,
-      createWhisperCppRuntimeResolver: (installedBinaryPath) =>
+      createWhisperCppRuntimeResolver: ({
+        installedBinaryPath,
+        preferredAccelerator,
+        installedRuntimes,
+      }) =>
         createWhisperCppRuntimeResolver({
           resourcesRoot: join(app.getAppPath(), "resources"),
           installedBinaryPath,
+          preferredAccelerator,
+          installedRuntimes,
         }),
       resolveOverlayPositionFromPreviewPoint: (point) => {
         const windowBounds = overlayWindow.getBounds();

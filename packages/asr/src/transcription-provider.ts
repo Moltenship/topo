@@ -7,6 +7,8 @@ export interface TranscriptionInput {
   readonly runtime?: string | null;
   readonly installedModelPath?: string | null;
   readonly runtimeBinaryPath?: string | null;
+  readonly fallbackRuntimeBinaryPath?: string | null;
+  readonly accelerator?: "auto" | "cpu" | "gpu" | null;
 }
 
 export interface TranscriptionResult {

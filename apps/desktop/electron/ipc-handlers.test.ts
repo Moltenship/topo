@@ -5,6 +5,7 @@ import {
   IpcChannels,
   DEFAULT_APP_SETTINGS,
   type AppSettings,
+  type InstalledRuntimeRecord,
   type TranscriptRecord,
 } from "@topo/shared";
 import { registerIpcHandlers } from "./ipc-handlers";
@@ -136,6 +137,7 @@ const createReadyDependencies = (
   selectedModel = readyModel,
   options: {
     readonly insertTranscript?: (record: TranscriptRecord) => Effect.Effect<void, Error>;
+    readonly installedRuntimes?: readonly InstalledRuntimeRecord[];
     readonly transcriptAudioStore?: {
       readonly saveWavForTranscript: (input: {
         readonly transcriptId: string;
@@ -163,6 +165,7 @@ const createReadyDependencies = (
 ) => {
   let insertedTranscript: TranscriptRecord | null = null;
   let savedInput: { readonly transcriptId: string; readonly sourcePath: string } | null = null;
+  let stopInput: unknown = null;
   const installedModel = createInstalledModel(selectedModel);
   const transcriptAudioStore = options.transcriptAudioStore ?? {
     saveWavForTranscript: (input: { readonly transcriptId: string; readonly sourcePath: string }) =>
@@ -204,7 +207,10 @@ const createReadyDependencies = (
         getByModelId: () => Effect.succeed(installedModel),
         list: () => Effect.succeed([installedModel]),
       },
-      installedRuntimes: createDependencies().database.installedRuntimes,
+      installedRuntimes: {
+        ...createDependencies().database.installedRuntimes,
+        list: () => Effect.succeed(options.installedRuntimes ?? []),
+      },
       close: () => Effect.void,
       path: ":memory:",
     },
@@ -226,8 +232,10 @@ const createReadyDependencies = (
           readonly text: string;
         }) => boolean;
         readonly onPreserveCapturedAudioError?: (error: Error) => Effect.Effect<void>;
-      }) =>
-        Effect.gen(function* () {
+      }) => {
+        stopInput = input;
+
+        return Effect.gen(function* () {
           const nextTranscript = {
             ...transcript,
             ...transcriptOverride,
@@ -257,7 +265,8 @@ const createReadyDependencies = (
             audioMimeType: audioMetadata?.audioMimeType ?? null,
             audioByteSize: audioMetadata?.audioByteSize ?? null,
           };
-        }),
+        });
+      },
     },
     catalog: [selectedModel],
     whisperCppRuntimeResolver: {
@@ -265,6 +274,10 @@ const createReadyDependencies = (
         Effect.succeed({
           status: "available" as const,
           binaryPath: "/bin/whisper-cli",
+          source: "path" as const,
+          accelerator: "cpu" as const,
+          runtimeId: null,
+          probeOutput: "usage: whisper-cli",
           checkedAt: "2026-05-15T00:00:00.000Z",
         }),
     },
@@ -276,6 +289,7 @@ const createReadyDependencies = (
     dependencies,
     getInsertedTranscript: () => insertedTranscript,
     getSavedInput: () => savedInput,
+    getStopInput: () => stopInput,
   };
 };
 
@@ -302,6 +316,71 @@ describe("registerIpcHandlers", () => {
     expect(getInsertedTranscript()?.audioFileName).toBe(`${transcript.id}.wav`);
     expect(getInsertedTranscript()?.audioMimeType).toBe("audio/wav");
     expect(getInsertedTranscript()?.audioByteSize).toBe(4);
+  });
+
+  it("passes CUDA accelerator and CPU fallback runtime to whisper.cpp dictation", async () => {
+    const cpuRuntime: InstalledRuntimeRecord = {
+      id: "installed-cpu",
+      runtimeId: "whisper-cpp-windows-x64-cpu",
+      engine: "whisper-cpp",
+      installedPath: "C:/runtimes/cpu",
+      binaryPath: "C:/runtimes/cpu/whisper-cli.exe",
+      checksumSha256: "cpu",
+      verificationStatus: "verified",
+      installedAt: "2026-05-15T00:00:00.000Z",
+      lastProbedAt: "2026-05-15T00:00:00.000Z",
+      lastProbeMessage: "usage",
+    };
+    const cudaRuntime: InstalledRuntimeRecord = {
+      id: "installed-cuda",
+      runtimeId: "whisper-cpp-windows-x64-cuda",
+      engine: "whisper-cpp",
+      installedPath: "C:/runtimes/cuda",
+      binaryPath: "C:/runtimes/cuda/whisper-cli.exe",
+      checksumSha256: "cuda",
+      verificationStatus: "verified",
+      installedAt: "2026-05-15T00:00:00.000Z",
+      lastProbedAt: "2026-05-15T00:00:00.000Z",
+      lastProbeMessage: "usage",
+    };
+    const { dependencies, getStopInput } = createReadyDependencies(
+      {
+        ...readySettings,
+        whisperCppAccelerator: "gpu",
+      },
+      {
+        whisperCppRuntimeResolver: {
+          resolve: () =>
+            Effect.succeed({
+              status: "available" as const,
+              binaryPath: cudaRuntime.binaryPath,
+              source: "installed" as const,
+              accelerator: "gpu" as const,
+              runtimeId: cudaRuntime.runtimeId,
+              probeOutput: "usage",
+              checkedAt: "2026-05-15T00:00:00.000Z",
+            }),
+        },
+      },
+      {},
+      readyModel,
+      {
+        installedRuntimes: [cudaRuntime, cpuRuntime],
+      },
+    );
+
+    registerIpcHandlers(dependencies);
+
+    await invoke(IpcChannels.stopTestDictation, {
+      wavBytes: new Uint8Array([1, 2, 3, 4]),
+      durationMs: 1200,
+    });
+
+    expect(getStopInput()).toMatchObject({
+      runtimeBinaryPath: cudaRuntime.binaryPath,
+      fallbackRuntimeBinaryPath: cpuRuntime.binaryPath,
+      accelerator: "gpu",
+    });
   });
 
   it("does not preserve audio when history is disabled", async () => {
