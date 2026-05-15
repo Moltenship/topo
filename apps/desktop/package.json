@@ -20,6 +20,7 @@
     "@tanstack/react-router": "^1.139.3",
     "@topo/asr": "workspace:*",
     "@topo/audio": "workspace:*",
+    "@topo/contracts": "workspace:*",
     "@topo/db": "workspace:*",
     "@topo/model-catalog": "workspace:*",
     "@topo/native-bridge": "workspace:*",

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { IpcChannels } from "@topo/shared";
+import { IpcChannels } from "@topo/contracts";
 import type { TopoApi, Platform } from "@topo/shared";
 
 const platform: Platform =

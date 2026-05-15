@@ -44,6 +44,9 @@ importers:
       '@topo/audio':
         specifier: workspace:*
         version: link:../../packages/audio
+      '@topo/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@topo/db':
         specifier: workspace:*
         version: link:../../packages/db
