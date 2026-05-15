@@ -35,7 +35,7 @@ const installedRuntime = (
 });
 
 describe("createInstallPlan", () => {
-  it("selects the matching Windows runtime and installs both missing artifacts", () => {
+  it("plans CUDA plus CPU fallback for auto Windows whisper.cpp installs", () => {
     const plan = createInstallPlan({
       modelId: "whisper-cpp-small",
       platform: "windows",
@@ -48,10 +48,60 @@ describe("createInstallPlan", () => {
 
     expect(plan).toMatchObject({
       modelId: "whisper-cpp-small",
-      runtimeId: "whisper-cpp-windows-x64-cpu",
+      runtimeId: "whisper-cpp-windows-x64-cuda",
       installRuntime: true,
       installModel: true,
     });
+    expect(plan.runtimeIds).toEqual([
+      "whisper-cpp-windows-x64-cpu",
+      "whisper-cpp-windows-x64-cuda",
+    ]);
+    expect(plan.runtimeInstallQueue.map((entry) => [entry.runtime.id, entry.required])).toEqual([
+      ["whisper-cpp-windows-x64-cpu", true],
+      ["whisper-cpp-windows-x64-cuda", false],
+    ]);
+  });
+
+  it("plans only CPU runtime when CPU acceleration is selected", () => {
+    const plan = createInstallPlan({
+      modelId: "whisper-cpp-small",
+      platform: "windows",
+      architecture: "x64",
+      modelCatalog: bundledModelCatalog,
+      runtimeCatalog: bundledRuntimeCatalog,
+      installedModels: [],
+      installedRuntimes: [],
+      whisperCppAccelerator: "cpu",
+    });
+
+    expect(plan.runtimeId).toBe("whisper-cpp-windows-x64-cpu");
+    expect(plan.runtimeIds).toEqual(["whisper-cpp-windows-x64-cpu"]);
+    expect(plan.runtimeInstallQueue.map((entry) => [entry.runtime.id, entry.required])).toEqual([
+      ["whisper-cpp-windows-x64-cpu", true],
+    ]);
+  });
+
+  it("plans CUDA plus required CPU fallback when GPU acceleration is selected", () => {
+    const plan = createInstallPlan({
+      modelId: "whisper-cpp-small",
+      platform: "windows",
+      architecture: "x64",
+      modelCatalog: bundledModelCatalog,
+      runtimeCatalog: bundledRuntimeCatalog,
+      installedModels: [],
+      installedRuntimes: [],
+      whisperCppAccelerator: "gpu",
+    });
+
+    expect(plan.runtimeId).toBe("whisper-cpp-windows-x64-cuda");
+    expect(plan.runtimeIds).toEqual([
+      "whisper-cpp-windows-x64-cpu",
+      "whisper-cpp-windows-x64-cuda",
+    ]);
+    expect(plan.runtimeInstallQueue.map((entry) => [entry.runtime.id, entry.required])).toEqual([
+      ["whisper-cpp-windows-x64-cpu", true],
+      ["whisper-cpp-windows-x64-cuda", true],
+    ]);
   });
 
   it("skips verified runtime and model artifacts", () => {
@@ -62,7 +112,10 @@ describe("createInstallPlan", () => {
       modelCatalog: bundledModelCatalog,
       runtimeCatalog: bundledRuntimeCatalog,
       installedModels: [installedModel("whisper-cpp-small")],
-      installedRuntimes: [installedRuntime("whisper-cpp-windows-x64-cpu")],
+      installedRuntimes: [
+        installedRuntime("whisper-cpp-windows-x64-cpu"),
+        installedRuntime("whisper-cpp-windows-x64-cuda"),
+      ],
     });
 
     expect(plan.installRuntime).toBe(false);
@@ -77,7 +130,10 @@ describe("createInstallPlan", () => {
       modelCatalog: bundledModelCatalog,
       runtimeCatalog: bundledRuntimeCatalog,
       installedModels: [installedModel("whisper-cpp-small", "corrupt")],
-      installedRuntimes: [installedRuntime("whisper-cpp-windows-x64-cpu")],
+      installedRuntimes: [
+        installedRuntime("whisper-cpp-windows-x64-cpu"),
+        installedRuntime("whisper-cpp-windows-x64-cuda"),
+      ],
     });
 
     expect(plan.installRuntime).toBe(false);

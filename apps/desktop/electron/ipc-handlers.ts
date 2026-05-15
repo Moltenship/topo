@@ -395,6 +395,7 @@ const installModelBundle = (
   Effect.gen(function* () {
     const catalog = getCatalog(dependencies);
     const runtimeCatalog = getRuntimeCatalog(dependencies);
+    const settings = yield* getSettings(dependencies);
     const installedModels = yield* dependencies.database.installedModels.list();
     const installedRuntimes = yield* dependencies.database.installedRuntimes.list();
     const plan = createInstallPlan({
@@ -405,26 +406,59 @@ const installModelBundle = (
       runtimeCatalog,
       installedModels,
       installedRuntimes,
+      whisperCppAccelerator: settings.whisperCppAccelerator,
     });
+    let runtimeWarning: string | null = null;
 
     const makeBundleProgress = (
       stage: InstallBundleProgress["stage"],
       errorMessage: string | null = null,
+      runtimeId: RuntimeId | null = plan.runtimeId,
     ): InstallBundleProgress => ({
       modelId: plan.modelId,
-      runtimeId: plan.runtimeId,
+      runtimeId,
       stage,
       runtimeProgress: dependencies.runtimeInstallJob.getCurrentProgress(),
       modelProgress: dependencies.modelInstallJob.getCurrentProgress(),
       errorMessage,
     });
 
-    if (plan.runtime && plan.installRuntime) {
-      yield* setBundleProgress(makeBundleProgress("runtime"), dependencies);
-      const runtimeProgress = yield* dependencies.runtimeInstallJob.start(plan.runtime.id, () => {
-        currentBundleInstallProgress = makeBundleProgress("runtime");
-        void Effect.runPromise(publishAppState(dependencies));
-      });
+    for (const runtimePlan of plan.runtimeInstallQueue) {
+      yield* setBundleProgress(
+        makeBundleProgress("runtime", runtimeWarning, runtimePlan.runtime.id),
+        dependencies,
+      );
+      const runtimeInstallEffect = dependencies.runtimeInstallJob.start(
+        runtimePlan.runtime.id,
+        () => {
+          currentBundleInstallProgress = makeBundleProgress(
+            "runtime",
+            runtimeWarning,
+            runtimePlan.runtime.id,
+          );
+          void Effect.runPromise(publishAppState(dependencies));
+        },
+      );
+      const runtimeProgress = runtimePlan.required
+        ? yield* runtimeInstallEffect
+        : yield* Effect.either(runtimeInstallEffect).pipe(
+            Effect.flatMap((result) => {
+              if (result._tag === "Right") {
+                return Effect.succeed(result.right);
+              }
+
+              runtimeWarning = `Optional runtime ${runtimePlan.runtime.id} failed: ${result.left.message}`;
+
+              return Effect.succeed({
+                modelId: runtimePlan.runtime.id,
+                status: "failed" as const,
+                receivedBytes: 0,
+                totalBytes: runtimePlan.runtime.downloadSizeBytes,
+                percent: 0,
+                errorMessage: result.left.message,
+              });
+            }),
+          );
 
       if (runtimeProgress.status === "canceled") {
         const canceledProgress = makeBundleProgress("canceled");
@@ -453,9 +487,9 @@ const installModelBundle = (
       }
     }
 
-    yield* setBundleProgress(makeBundleProgress("readiness"), dependencies);
+    yield* setBundleProgress(makeBundleProgress("readiness", runtimeWarning), dependencies);
 
-    const installedProgress = makeBundleProgress("installed");
+    const installedProgress = makeBundleProgress("installed", runtimeWarning);
     yield* setBundleProgress(installedProgress, dependencies);
 
     return installedProgress;
