@@ -150,6 +150,8 @@ const deleteTranscriptAudioFiles = (
   return dependencies.transcriptAudioStore.deleteByFileNames(audioFileNames);
 };
 
+const UNREFERENCED_AUDIO_GRACE_MS = 10 * 60 * 1000;
+
 const cleanupSavedTranscriptAudio = (
   dependencies: IpcHandlerDependencies,
   transcript: TranscriptRecord,
@@ -167,12 +169,16 @@ const reconcileUnreferencedTranscriptAudio = (
       return;
     }
 
-    const [storedFileNames, referencedFileNames] = yield* Effect.all([
-      dependencies.transcriptAudioStore.listFileNames(),
+    const [storedFileEntries, referencedFileNames] = yield* Effect.all([
+      dependencies.transcriptAudioStore.listFileEntries(),
       dependencies.database.transcripts.listAudioFileNames(),
     ]);
     const referenced = new Set(referencedFileNames);
-    const unreferencedFileNames = storedFileNames.filter((fileName) => !referenced.has(fileName));
+    const orphanCutoffMs = Date.now() - UNREFERENCED_AUDIO_GRACE_MS;
+    const unreferencedFileNames = storedFileEntries
+      .filter((entry) => entry.modifiedAtMs <= orphanCutoffMs)
+      .map((entry) => entry.fileName)
+      .filter((fileName) => !referenced.has(fileName));
 
     yield* deleteTranscriptAudioFiles(dependencies, unreferencedFileNames);
   });
@@ -212,14 +218,15 @@ const pruneExpiredTranscripts = (
   dependencies: IpcHandlerDependencies,
   settings: AppSettings,
 ): Effect.Effect<void, Error> => {
-  if (settings.autoDeleteHistoryDays === null) {
-    return reconcileUnreferencedTranscriptAudio(dependencies);
-  }
-
-  const retentionMs = settings.autoDeleteHistoryDays * 24 * 60 * 60 * 1000;
-  const cutoffIso = new Date(Date.now() - retentionMs).toISOString();
-
   return Effect.gen(function* () {
+    yield* reconcileUnreferencedTranscriptAudio(dependencies);
+
+    if (settings.autoDeleteHistoryDays === null) {
+      return;
+    }
+
+    const retentionMs = settings.autoDeleteHistoryDays * 24 * 60 * 60 * 1000;
+    const cutoffIso = new Date(Date.now() - retentionMs).toISOString();
     const audioFileNames = dependencies.transcriptAudioStore
       ? yield* dependencies.database.transcripts.getAudioFileNamesCreatedBefore(cutoffIso)
       : [];

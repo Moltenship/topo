@@ -14,13 +14,18 @@ export interface LoadedTranscriptAudio {
   readonly byteSize: number;
 }
 
+export interface TranscriptAudioFileEntry {
+  readonly fileName: string;
+  readonly modifiedAtMs: number;
+}
+
 export interface TranscriptAudioStore {
   readonly saveWavForTranscript: (input: {
     readonly transcriptId: string;
     readonly sourcePath: string;
   }) => Effect.Effect<TranscriptAudioMetadata, Error>;
   readonly loadByFileName: (fileName: string) => Effect.Effect<LoadedTranscriptAudio, Error>;
-  readonly listFileNames: () => Effect.Effect<readonly string[], Error>;
+  readonly listFileEntries: () => Effect.Effect<readonly TranscriptAudioFileEntry[], Error>;
   readonly deleteByFileNames: (fileNames: readonly string[]) => Effect.Effect<void, Error>;
 }
 
@@ -58,17 +63,27 @@ export const createTranscriptAudioStore = (rootDirectory: string): TranscriptAud
         },
         catch: toError,
       }),
-    listFileNames: () =>
+    listFileEntries: () =>
       Effect.tryPromise({
         try: async () => {
           await mkdir(rootDirectory, { recursive: true });
           const entries = await readdir(rootDirectory, { withFileTypes: true });
-
-          return entries
+          const fileNames = entries
             .filter((entry) => entry.isFile())
             .map((entry) => entry.name)
             .filter(isSimpleWavFileName)
             .sort();
+
+          return Promise.all(
+            fileNames.map(async (fileName) => {
+              const fileStat = await stat(resolveFile(fileName));
+
+              return {
+                fileName,
+                modifiedAtMs: fileStat.mtimeMs,
+              };
+            }),
+          );
         },
         catch: toError,
       }),
