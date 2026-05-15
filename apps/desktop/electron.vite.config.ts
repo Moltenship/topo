@@ -1,7 +1,8 @@
 import { builtinModules } from "node:module";
 import { resolve } from "node:path";
+import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "electron-vite";
 
 const external = [
@@ -45,7 +46,7 @@ export default defineConfig({
   },
   renderer: {
     root: "renderer",
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()],
     resolve: {
       alias: {
         "@": resolve(__dirname, "renderer/src"),
