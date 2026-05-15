@@ -49,6 +49,7 @@ import {
 import type { WhisperCppRuntimeResolver } from "./whisper-cpp-runtime";
 import type { WhisperKitBridge } from "./whisperkit-bridge";
 import { createHotkeyCoordinator } from "./hotkey-coordinator";
+import type { TranscriptAudioStore } from "./transcript-audio-store";
 
 interface MainProcessState {
   setupComplete: boolean;
@@ -80,6 +81,7 @@ interface IpcHandlerDependencies {
   readonly whisperCppRuntimeReadinessCache?: WhisperCppRuntimeReadinessCache;
   readonly whisperCppRuntimeResolver?: WhisperCppRuntimeResolver;
   readonly whisperKitBridge?: WhisperKitBridge;
+  readonly transcriptAudioStore?: TranscriptAudioStore;
   readonly createWhisperCppRuntimeResolver?: (
     installedBinaryPath: string | null,
   ) => WhisperCppRuntimeResolver;
@@ -87,6 +89,7 @@ interface IpcHandlerDependencies {
     readonly centerX: number;
     readonly centerY: number;
   }) => OverlayPosition;
+  readonly onTranscriptAudioPreservationError?: (error: Error) => Effect.Effect<void>;
   readonly onAppStateChanged?: (snapshot: AppStateSnapshot) => void;
 }
 
@@ -136,6 +139,50 @@ const decodeStopTestDictationInput = (
   return { wavBytes, durationMs: candidate.durationMs };
 };
 
+const deleteTranscriptAudioFiles = (
+  dependencies: IpcHandlerDependencies,
+  audioFileNames: readonly string[],
+): Effect.Effect<void, Error> => {
+  if (!dependencies.transcriptAudioStore || audioFileNames.length === 0) {
+    return Effect.void;
+  }
+
+  return dependencies.transcriptAudioStore.deleteByFileNames(audioFileNames);
+};
+
+const cleanupSavedTranscriptAudio = (
+  dependencies: IpcHandlerDependencies,
+  transcript: TranscriptRecord,
+): Effect.Effect<void, Error> =>
+  deleteTranscriptAudioFiles(
+    dependencies,
+    transcript.audioFileName ? [transcript.audioFileName] : [],
+  );
+
+const errorMessage = (error: Error): string => error.message || String(error);
+
+const combineSavedAudioCleanupError = (operationError: Error, cleanupError: Error): Error =>
+  new Error(
+    `Transcript audio cleanup failed after operation failure. Operation error: ${errorMessage(operationError)}. Cleanup error: ${errorMessage(cleanupError)}.`,
+    { cause: { operationError, cleanupError } },
+  );
+
+const withSavedAudioCleanupOnError = <A>(
+  dependencies: IpcHandlerDependencies,
+  transcript: TranscriptRecord,
+  effect: Effect.Effect<A, Error>,
+): Effect.Effect<A, Error> =>
+  effect.pipe(
+    Effect.catchAll((error) =>
+      cleanupSavedTranscriptAudio(dependencies, transcript).pipe(
+        Effect.catchAll((cleanupError) =>
+          Effect.fail(combineSavedAudioCleanupError(error, cleanupError)),
+        ),
+        Effect.zipRight(Effect.fail(error)),
+      ),
+    ),
+  );
+
 const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSettings> =>
   Effect.gen(function* () {
     const settings = (yield* dependencies.database.settings.get()) ?? DEFAULT_APP_SETTINGS;
@@ -146,7 +193,7 @@ const getSettings = (dependencies: IpcHandlerDependencies): Effect.Effect<AppSet
 const pruneExpiredTranscripts = (
   dependencies: IpcHandlerDependencies,
   settings: AppSettings,
-): Effect.Effect<void> => {
+): Effect.Effect<void, Error> => {
   if (settings.autoDeleteHistoryDays === null) {
     return Effect.void;
   }
@@ -154,13 +201,20 @@ const pruneExpiredTranscripts = (
   const retentionMs = settings.autoDeleteHistoryDays * 24 * 60 * 60 * 1000;
   const cutoffIso = new Date(Date.now() - retentionMs).toISOString();
 
-  return dependencies.database.transcripts.deleteCreatedBefore(cutoffIso);
+  return Effect.gen(function* () {
+    const audioFileNames = dependencies.transcriptAudioStore
+      ? yield* dependencies.database.transcripts.getAudioFileNamesCreatedBefore(cutoffIso)
+      : [];
+
+    yield* deleteTranscriptAudioFiles(dependencies, audioFileNames);
+    yield* dependencies.database.transcripts.deleteCreatedBefore(cutoffIso);
+  });
 };
 
 const listTranscripts = (
   dependencies: IpcHandlerDependencies,
   query?: string,
-): Effect.Effect<readonly TranscriptRecord[]> =>
+): Effect.Effect<readonly TranscriptRecord[], Error> =>
   Effect.gen(function* () {
     const settings = yield* getSettings(dependencies);
 
@@ -188,7 +242,9 @@ const getInstallArchitecture = (dependencies: IpcHandlerDependencies): string =>
 
 const defaultWhisperCppRuntimeReadinessCache = createWhisperCppRuntimeReadinessCache();
 
-const getAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<AppStateSnapshot> =>
+const getAppState = (
+  dependencies: IpcHandlerDependencies,
+): Effect.Effect<AppStateSnapshot, Error> =>
   Effect.gen(function* () {
     const catalog = getCatalog(dependencies);
     const settings = yield* getSettings(dependencies);
@@ -269,7 +325,7 @@ const recordInstalledModel = (
     })
     .pipe(Effect.asVoid);
 
-const publishAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
+const publishAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<void, Error> =>
   Effect.gen(function* () {
     const snapshot = yield* getAppState(dependencies);
 
@@ -283,7 +339,7 @@ const publishAppState = (dependencies: IpcHandlerDependencies): Effect.Effect<vo
 const setBundleProgress = (
   progress: InstallBundleProgress,
   dependencies: IpcHandlerDependencies,
-): Effect.Effect<void> =>
+): Effect.Effect<void, Error> =>
   Effect.sync(() => {
     currentBundleInstallProgress = progress;
   }).pipe(Effect.zipRight(publishAppState(dependencies)));
@@ -421,11 +477,28 @@ const registerNativeHotkey = (
     }
   });
 
-const deleteTranscript = (dependencies: IpcHandlerDependencies, id: string): Effect.Effect<void> =>
-  dependencies.database.transcripts.deleteById(id);
+const deleteTranscript = (
+  dependencies: IpcHandlerDependencies,
+  id: string,
+): Effect.Effect<void, Error> =>
+  Effect.gen(function* () {
+    const audioFileName = dependencies.transcriptAudioStore
+      ? yield* dependencies.database.transcripts.getAudioFileNameById(id)
+      : null;
 
-const clearTranscripts = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
-  dependencies.database.transcripts.clear();
+    yield* deleteTranscriptAudioFiles(dependencies, audioFileName ? [audioFileName] : []);
+    yield* dependencies.database.transcripts.deleteById(id);
+  });
+
+const clearTranscripts = (dependencies: IpcHandlerDependencies): Effect.Effect<void, Error> =>
+  Effect.gen(function* () {
+    const audioFileNames = dependencies.transcriptAudioStore
+      ? yield* dependencies.database.transcripts.listAudioFileNames()
+      : [];
+
+    yield* deleteTranscriptAudioFiles(dependencies, audioFileNames);
+    yield* dependencies.database.transcripts.clear();
+  });
 
 const getTranscriptById = (
   dependencies: IpcHandlerDependencies,
@@ -468,6 +541,65 @@ const reinsertTranscript = (
       return yield* Effect.fail(new Error("Transcript insertion failed."));
     }
   });
+
+const loadTranscriptAudio = (
+  dependencies: IpcHandlerDependencies,
+  id: string,
+): Effect.Effect<
+  { readonly bytes: Uint8Array; readonly mimeType: string; readonly byteSize: number },
+  Error
+> =>
+  Effect.gen(function* () {
+    if (!dependencies.transcriptAudioStore) {
+      return yield* Effect.fail(new Error("Transcript audio storage is not available."));
+    }
+
+    const transcript = yield* getTranscriptById(dependencies, id);
+
+    if (!transcript.audioFileName) {
+      return yield* Effect.fail(new Error("Transcript has no saved audio."));
+    }
+
+    return yield* dependencies.transcriptAudioStore.loadByFileName(transcript.audioFileName);
+  });
+
+const finalizeStoppedTranscript = (
+  dependencies: IpcHandlerDependencies,
+  settings: AppSettings,
+  transcript: TranscriptRecord,
+): Effect.Effect<TranscriptRecord, Error> =>
+  withSavedAudioCleanupOnError(
+    dependencies,
+    transcript,
+    Effect.gen(function* () {
+      if (transcript.text.trim().length === 0) {
+        currentErrorMessage = "No speech detected. Hold the hotkey and speak before releasing it.";
+        state.overlayState = "error";
+
+        return yield* Effect.fail(new Error(currentErrorMessage));
+      }
+
+      const insertion = yield* dependencies.nativeBridge.insertText({
+        text: transcript.text,
+        mode: settings.insertionMode,
+      });
+      const transcriptWithInsertion: TranscriptRecord = {
+        ...transcript,
+        insertionMode: settings.insertionMode,
+        insertionStatus: insertion.inserted ? "inserted" : "failed",
+        targetAppName: insertion.targetAppName,
+      };
+
+      state.overlayState = "hidden";
+      currentErrorMessage = null;
+
+      if (settings.historyEnabled) {
+        yield* dependencies.database.transcripts.insert(transcriptWithInsertion);
+      }
+
+      return transcriptWithInsertion;
+    }),
+  );
 
 const updateSettings = (
   dependencies: IpcHandlerDependencies,
@@ -514,7 +646,7 @@ const commitOverlayPreviewPosition = (
     return yield* updateSettings(dependencies, { ...settings, overlayPosition });
   });
 
-const startTestDictation = (dependencies: IpcHandlerDependencies): Effect.Effect<void> =>
+const startTestDictation = (dependencies: IpcHandlerDependencies): Effect.Effect<void, Error> =>
   Effect.gen(function* () {
     const snapshot = yield* getAppState(dependencies);
 
@@ -586,6 +718,7 @@ const stopTestDictation = (
           yield* dependencies.audio.submitCapturedAudio(submittedAudio);
         }
 
+        const audioPreservation = preserveCapturedAudio(dependencies, settings);
         const transcript = yield* dependencies.dictation.stop({
           language: settings.language,
           modelId: selectedModel.id,
@@ -594,35 +727,12 @@ const stopTestDictation = (
           runtimeBinaryPath: null,
           postProcessingMode: settings.postProcessingMode,
           recordingMode: settings.recordingMode,
+          ...(audioPreservation ? { preserveCapturedAudio: audioPreservation } : {}),
+          onPreserveCapturedAudioError: observeTranscriptAudioPreservationError(dependencies),
+          shouldPreserveCapturedAudio: ({ text }) => text.trim().length > 0,
         });
 
-        if (transcript.text.trim().length === 0) {
-          currentErrorMessage =
-            "No speech detected. Hold the hotkey and speak before releasing it.";
-          state.overlayState = "error";
-
-          return yield* Effect.fail(new Error(currentErrorMessage));
-        }
-
-        const insertion = yield* dependencies.nativeBridge.insertText({
-          text: transcript.text,
-          mode: settings.insertionMode,
-        });
-        const transcriptWithInsertion: TranscriptRecord = {
-          ...transcript,
-          insertionMode: settings.insertionMode,
-          insertionStatus: insertion.inserted ? "inserted" : "failed",
-          targetAppName: insertion.targetAppName,
-        };
-
-        state.overlayState = "hidden";
-        currentErrorMessage = null;
-
-        if (settings.historyEnabled) {
-          yield* dependencies.database.transcripts.insert(transcriptWithInsertion);
-        }
-
-        return transcriptWithInsertion;
+        return yield* finalizeStoppedTranscript(dependencies, settings, transcript);
       }
 
       currentErrorMessage = "runtime_missing";
@@ -674,6 +784,7 @@ const stopTestDictation = (
       yield* dependencies.audio.submitCapturedAudio(submittedAudio);
     }
 
+    const audioPreservation = preserveCapturedAudio(dependencies, settings);
     const transcript = yield* dependencies.dictation.stop({
       language: settings.language,
       modelId: selectedModel.id,
@@ -682,35 +793,45 @@ const stopTestDictation = (
       runtimeBinaryPath: runtimeResult.binaryPath,
       postProcessingMode: settings.postProcessingMode,
       recordingMode: settings.recordingMode,
+      ...(audioPreservation ? { preserveCapturedAudio: audioPreservation } : {}),
+      onPreserveCapturedAudioError: observeTranscriptAudioPreservationError(dependencies),
+      shouldPreserveCapturedAudio: ({ text }) => text.trim().length > 0,
     });
 
-    if (transcript.text.trim().length === 0) {
-      currentErrorMessage = "No speech detected. Hold the hotkey and speak before releasing it.";
-      state.overlayState = "error";
-
-      return yield* Effect.fail(new Error(currentErrorMessage));
-    }
-
-    const insertion = yield* dependencies.nativeBridge.insertText({
-      text: transcript.text,
-      mode: settings.insertionMode,
-    });
-    const transcriptWithInsertion: TranscriptRecord = {
-      ...transcript,
-      insertionMode: settings.insertionMode,
-      insertionStatus: insertion.inserted ? "inserted" : "failed",
-      targetAppName: insertion.targetAppName,
-    };
-
-    state.overlayState = "hidden";
-    currentErrorMessage = null;
-
-    if (settings.historyEnabled) {
-      yield* dependencies.database.transcripts.insert(transcriptWithInsertion);
-    }
-
-    return transcriptWithInsertion;
+    return yield* finalizeStoppedTranscript(dependencies, settings, transcript);
   });
+
+const preserveCapturedAudio = (
+  dependencies: IpcHandlerDependencies,
+  settings: AppSettings,
+): Parameters<DictationOrchestrator["stop"]>[0]["preserveCapturedAudio"] | undefined => {
+  if (
+    !settings.historyEnabled ||
+    !settings.saveTranscriptAudio ||
+    !dependencies.transcriptAudioStore
+  ) {
+    return undefined;
+  }
+
+  return ({ transcriptId, audioPath }) =>
+    dependencies.transcriptAudioStore!.saveWavForTranscript({
+      transcriptId,
+      sourcePath: audioPath,
+    });
+};
+
+const observeTranscriptAudioPreservationError =
+  (
+    dependencies: IpcHandlerDependencies,
+  ): NonNullable<Parameters<DictationOrchestrator["stop"]>[0]["onPreserveCapturedAudioError"]> =>
+  (error) =>
+    Effect.gen(function* () {
+      currentErrorMessage = `Transcript audio could not be saved: ${error.message}`;
+      const observer = dependencies.onTranscriptAudioPreservationError;
+      if (observer) {
+        yield* observer(error);
+      }
+    });
 
 export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
   void Effect.runPromise(
@@ -773,13 +894,9 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
   ipcMain.handle(IpcChannels.loadTranscriptAudio, (_event, input: unknown) =>
     Effect.runPromise(
       Effect.gen(function* () {
-        yield* decodeIpcPayload(LoadTranscriptAudioRequest, input);
+        const payload = yield* decodeIpcPayload(LoadTranscriptAudioRequest, input);
 
-        return yield* Effect.fail(
-          new Error(
-            "Transcript audio loading is not available until transcript audio storage is initialized.",
-          ),
-        );
+        return yield* loadTranscriptAudio(dependencies, payload.id);
       }),
     ),
   );

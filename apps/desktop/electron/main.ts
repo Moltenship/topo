@@ -35,6 +35,7 @@ import {
   resolveLogDirectory,
   topoMainLogger,
 } from "./observability";
+import { createTranscriptAudioStore } from "./transcript-audio-store";
 
 const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) => {
   if (snapshot.overlayState === "hidden") {
@@ -79,6 +80,9 @@ const bootstrapDesktop = (userDataDirectory: string): Effect.Effect<void, unknow
     }).load();
     const database = Effect.runSync(openAppDatabase(userDataDirectory));
     const audio = createSubmittedAudioCaptureService();
+    const transcriptAudioStore = createTranscriptAudioStore(
+      join(userDataDirectory, "transcript-audio"),
+    );
     const appleIntelligenceBridge = createAppleIntelligenceBridge();
     const whisperKitBridge = createWhisperKitBridge();
     const appleIntelligenceService = createMacosAppleIntelligenceService({
@@ -118,6 +122,7 @@ const bootstrapDesktop = (userDataDirectory: string): Effect.Effect<void, unknow
       database,
       dictation,
       audio,
+      transcriptAudioStore,
       catalog,
       modelInstallJob: createFileModelInstallJob({
         installRoot: join(userDataDirectory, "models"),
@@ -148,6 +153,11 @@ const bootstrapDesktop = (userDataDirectory: string): Effect.Effect<void, unknow
 
         return getNearestOverlayPosition({ center, workArea: display.workArea });
       },
+      onTranscriptAudioPreservationError: (error) =>
+        topoMainLogger.logWarning("transcript audio preservation failed", {
+          errorMessage: error.message,
+          errorName: error.name,
+        }),
       onAppStateChanged: (snapshot) => syncOverlayWindow(overlayWindow, snapshot),
     });
   });

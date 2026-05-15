@@ -65,7 +65,28 @@ describe("createTranscriptAudioStore", () => {
     const store = createTranscriptAudioStore(root);
 
     await expect(Effect.runPromise(store.loadByFileName("../escape.wav"))).rejects.toThrow(
-      "Transcript audio file name must be a simple file name.",
+      "Transcript audio file name must be a simple wav file name.",
+    );
+  });
+
+  it("rejects current and parent directory file names", async () => {
+    const root = await mkdtemp(join(tmpdir(), "topo-audio-"));
+    const store = createTranscriptAudioStore(root);
+
+    await expect(Effect.runPromise(store.loadByFileName("."))).rejects.toThrow(
+      "Transcript audio file name must be a simple wav file name.",
+    );
+    await expect(Effect.runPromise(store.loadByFileName(".."))).rejects.toThrow(
+      "Transcript audio file name must be a simple wav file name.",
+    );
+  });
+
+  it("rejects non-wav file names", async () => {
+    const root = await mkdtemp(join(tmpdir(), "topo-audio-"));
+    const store = createTranscriptAudioStore(root);
+
+    await expect(Effect.runPromise(store.loadByFileName("tr_1.txt"))).rejects.toThrow(
+      "Transcript audio file name must be a simple wav file name.",
     );
   });
 });

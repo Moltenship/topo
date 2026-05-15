@@ -16,6 +16,12 @@ export interface DictationOrchestratorDependencies {
   readonly createId: () => string;
 }
 
+export interface PreservedCapturedAudioMetadata {
+  readonly audioFileName: string;
+  readonly audioMimeType: string;
+  readonly audioByteSize: number;
+}
+
 export interface DictationOrchestrator {
   readonly start: () => Effect.Effect<string>;
   readonly stop: (input: {
@@ -26,6 +32,12 @@ export interface DictationOrchestrator {
     readonly runtimeBinaryPath: string | null;
     readonly postProcessingMode: PostProcessingMode;
     readonly recordingMode: RecordingMode;
+    readonly preserveCapturedAudio?: (input: {
+      readonly transcriptId: string;
+      readonly audioPath: string;
+    }) => Effect.Effect<PreservedCapturedAudioMetadata, Error>;
+    readonly onPreserveCapturedAudioError?: (error: Error) => Effect.Effect<void>;
+    readonly shouldPreserveCapturedAudio?: (input: { readonly text: string }) => boolean;
   }) => Effect.Effect<TranscriptRecord, Error>;
 }
 
@@ -48,58 +60,88 @@ export const createDictationOrchestrator = (
           return yield* Effect.fail(new Error("No active dictation session"));
         }
 
-        const audio = yield* dependencies.audio.stopRecording("hotkey-release");
-        const result = yield* Effect.acquireUseRelease(
-          Effect.succeed(audio),
-          (capturedAudio) =>
-            dependencies.transcription.transcribe({
-              audioPath: capturedAudio.audioPath,
-              language: input.language,
-              modelId: input.modelId,
-              runtime: input.runtime,
-              installedModelPath: input.installedModelPath,
-              runtimeBinaryPath: input.runtimeBinaryPath,
-            }),
-          (capturedAudio) =>
-            Effect.catchAll(
-              dependencies.audio.cleanupCapturedAudio(capturedAudio),
-              () => Effect.void,
-            ),
-        );
+        return yield* Effect.gen(function* () {
+          const audio = yield* dependencies.audio.stopRecording("hotkey-release");
+          const transcript = yield* Effect.acquireUseRelease(
+            Effect.succeed(audio),
+            (capturedAudio) =>
+              Effect.gen(function* () {
+                const result = yield* dependencies.transcription.transcribe({
+                  audioPath: capturedAudio.audioPath,
+                  language: input.language,
+                  modelId: input.modelId,
+                  runtime: input.runtime,
+                  installedModelPath: input.installedModelPath,
+                  runtimeBinaryPath: input.runtimeBinaryPath,
+                });
 
-        sessionId = null;
-
-        const processed =
-          input.postProcessingMode === "raw"
-            ? { text: result.text, warning: null }
-            : yield* postProcessing
-                .process({
-                  rawTranscript: result.text,
+                const processed =
+                  input.postProcessingMode === "raw"
+                    ? { text: result.text, warning: null }
+                    : yield* postProcessing
+                        .process({
+                          rawTranscript: result.text,
+                          language: result.language,
+                          promptId: "default-cleanup",
+                          providerId: getPostProcessingProviderId(input.postProcessingMode),
+                          modelId: getPostProcessingModelId(input.postProcessingMode),
+                          targetSchema: "plain-text",
+                        })
+                        .pipe(Effect.catchAll((error) => Effect.succeed(error.recoverableResult)));
+                const transcriptId = dependencies.createId();
+                const shouldPreserveAudio =
+                  input.shouldPreserveCapturedAudio?.({ text: processed.text }) ?? true;
+                const preservedAudio =
+                  input.preserveCapturedAudio && shouldPreserveAudio
+                    ? yield* input
+                        .preserveCapturedAudio({
+                          transcriptId,
+                          audioPath: capturedAudio.audioPath,
+                        })
+                        .pipe(
+                          Effect.catchAll((error) =>
+                            (input.onPreserveCapturedAudioError?.(error) ?? Effect.void).pipe(
+                              Effect.catchAll(() => Effect.void),
+                              Effect.as(null),
+                            ),
+                          ),
+                        )
+                    : null;
+                const transcript: TranscriptRecord = {
+                  id: transcriptId,
+                  text: processed.text,
+                  createdAt: dependencies.now().toISOString(),
+                  durationMs: capturedAudio.durationMs,
+                  modelId: input.modelId,
+                  runtime: input.runtime,
                   language: result.language,
-                  promptId: "default-cleanup",
-                  providerId: getPostProcessingProviderId(input.postProcessingMode),
-                  modelId: getPostProcessingModelId(input.postProcessingMode),
-                  targetSchema: "plain-text",
-                })
-                .pipe(Effect.catchAll((error) => Effect.succeed(error.recoverableResult)));
+                  recordingMode: input.recordingMode,
+                  stopReason: "hotkey-release",
+                  insertionMode: "paste",
+                  insertionStatus: "skipped",
+                  targetAppName: null,
+                  audioFileName: preservedAudio?.audioFileName ?? null,
+                  audioMimeType: preservedAudio?.audioMimeType ?? null,
+                  audioByteSize: preservedAudio?.audioByteSize ?? null,
+                };
 
-        return {
-          id: dependencies.createId(),
-          text: processed.text,
-          createdAt: dependencies.now().toISOString(),
-          durationMs: audio.durationMs,
-          modelId: input.modelId,
-          runtime: input.runtime,
-          language: result.language,
-          recordingMode: input.recordingMode,
-          stopReason: "hotkey-release",
-          insertionMode: "paste",
-          insertionStatus: "skipped",
-          targetAppName: null,
-          audioFileName: null,
-          audioMimeType: null,
-          audioByteSize: null,
-        };
+                return transcript;
+              }),
+            (capturedAudio) =>
+              Effect.catchAll(
+                dependencies.audio.cleanupCapturedAudio(capturedAudio),
+                () => Effect.void,
+              ),
+          );
+
+          return transcript;
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => {
+              sessionId = null;
+            }),
+          ),
+        );
       }),
   };
 };

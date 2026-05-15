@@ -95,6 +95,196 @@ describe("createDictationOrchestrator", () => {
     expect(cleanedAudioPaths).toEqual(["file:///tmp/session_1.wav"]);
   });
 
+  it("attaches preserved audio metadata before cleaning up captured audio", async () => {
+    const cleanupCalls: string[] = [];
+    const orchestrator = createDictationOrchestrator({
+      audio: {
+        startRecording: () => Effect.void,
+        stopRecording: () =>
+          Effect.succeed({
+            sessionId: "session_1",
+            audioPath: "/tmp/topo-capture.wav",
+            durationMs: 1200,
+          }),
+        cleanupCapturedAudio: (audio) =>
+          Effect.sync(() => {
+            cleanupCalls.push(audio.audioPath);
+          }),
+        onLevelFrame: () => () => undefined,
+      },
+      transcription: {
+        transcribe: () =>
+          Effect.succeed({
+            text: "hello",
+            language: "en",
+            durationInSeconds: 1.2,
+            warnings: [],
+          }),
+      },
+      postProcessing: {
+        process: ({ rawTranscript }) => Effect.succeed({ text: rawTranscript, warning: null }),
+      },
+      now: () => new Date("2026-05-15T00:00:00.000Z"),
+      createId: () => "tr_audio",
+    });
+
+    await Effect.runPromise(orchestrator.start());
+    const transcript = await Effect.runPromise(
+      orchestrator.stop({
+        language: "en",
+        modelId: "whisper-cpp-small",
+        runtime: "whisper-cpp",
+        installedModelPath: "/models/model.bin",
+        runtimeBinaryPath: "/bin/whisper-cli",
+        postProcessingMode: "raw",
+        recordingMode: "toggle-to-talk",
+        preserveCapturedAudio: ({ transcriptId, audioPath }) => {
+          expect(cleanupCalls).toEqual([]);
+
+          return Effect.succeed({
+            audioFileName: `${transcriptId}.wav`,
+            audioMimeType: "audio/wav",
+            audioByteSize: audioPath.length,
+          });
+        },
+      }),
+    );
+
+    expect(transcript.audioFileName).toBe("tr_audio.wav");
+    expect(transcript.audioMimeType).toBe("audio/wav");
+    expect(transcript.audioByteSize).toBe("/tmp/topo-capture.wav".length);
+    expect(cleanupCalls).toEqual(["/tmp/topo-capture.wav"]);
+  });
+
+  it("keeps transcript text and reports an observer error when audio preservation fails", async () => {
+    const cleanupCalls: string[] = [];
+    const preservationErrors: string[] = [];
+    const orchestrator = createDictationOrchestrator({
+      audio: {
+        startRecording: () => Effect.void,
+        stopRecording: () =>
+          Effect.succeed({
+            sessionId: "session_1",
+            audioPath: "/tmp/topo-capture.wav",
+            durationMs: 1200,
+          }),
+        cleanupCapturedAudio: (audio) =>
+          Effect.sync(() => {
+            cleanupCalls.push(audio.audioPath);
+          }),
+        onLevelFrame: () => () => undefined,
+      },
+      transcription: {
+        transcribe: () =>
+          Effect.succeed({
+            text: "hello",
+            language: "en",
+            durationInSeconds: 1.2,
+            warnings: [],
+          }),
+      },
+      now: () => new Date("2026-05-15T00:00:00.000Z"),
+      createId: () => "tr_audio",
+    });
+
+    await Effect.runPromise(orchestrator.start());
+    const transcript = await Effect.runPromise(
+      orchestrator.stop({
+        language: "en",
+        modelId: "whisper-cpp-small",
+        runtime: "whisper-cpp",
+        installedModelPath: "/models/model.bin",
+        runtimeBinaryPath: "/bin/whisper-cli",
+        postProcessingMode: "raw",
+        recordingMode: "toggle-to-talk",
+        preserveCapturedAudio: () => Effect.fail(new Error("copy failed")),
+        onPreserveCapturedAudioError: (error) =>
+          Effect.sync(() => {
+            preservationErrors.push(error.message);
+          }),
+      }),
+    );
+
+    expect(transcript.text).toBe("hello");
+    expect(transcript.audioFileName).toBeNull();
+    expect(transcript.audioMimeType).toBeNull();
+    expect(transcript.audioByteSize).toBeNull();
+    expect(preservationErrors).toEqual(["copy failed"]);
+    expect(cleanupCalls).toEqual(["/tmp/topo-capture.wav"]);
+  });
+
+  it("clears the active session after a failed stop attempt", async () => {
+    const ids = ["session_1", "session_2"];
+    const orchestrator = createDictationOrchestrator({
+      audio: createMockAudioCaptureService(),
+      transcription: {
+        transcribe: () => Effect.fail(new Error("transcription failed")),
+      },
+      now: () => new Date("2026-05-15T00:00:00.000Z"),
+      createId: () => ids.shift() ?? "tr_audio",
+    });
+
+    await expect(Effect.runPromise(orchestrator.start())).resolves.toBe("session_1");
+    await expect(
+      Effect.runPromise(
+        orchestrator.stop({
+          language: "en",
+          modelId: "whisper-cpp-small",
+          runtime: "whisper-cpp",
+          installedModelPath: "/models/model.bin",
+          runtimeBinaryPath: "/bin/whisper-cli",
+          postProcessingMode: "raw",
+          recordingMode: "toggle-to-talk",
+        }),
+      ),
+    ).rejects.toThrow("transcription failed");
+    await expect(Effect.runPromise(orchestrator.start())).resolves.toBe("session_2");
+  });
+
+  it("skips audio preservation when the preservation predicate rejects the transcript", async () => {
+    let preserveCalls = 0;
+    const orchestrator = createDictationOrchestrator({
+      audio: createMockAudioCaptureService(),
+      transcription: {
+        transcribe: () =>
+          Effect.succeed({
+            text: "   ",
+            language: "en",
+            durationInSeconds: 1.2,
+            warnings: [],
+          }),
+      },
+      now: () => new Date("2026-05-15T00:00:00.000Z"),
+      createId: () => "tr_audio",
+    });
+
+    await Effect.runPromise(orchestrator.start());
+    const transcript = await Effect.runPromise(
+      orchestrator.stop({
+        language: "en",
+        modelId: "whisper-cpp-small",
+        runtime: "whisper-cpp",
+        installedModelPath: "/models/model.bin",
+        runtimeBinaryPath: "/bin/whisper-cli",
+        postProcessingMode: "raw",
+        recordingMode: "toggle-to-talk",
+        shouldPreserveCapturedAudio: ({ text }) => text.trim().length > 0,
+        preserveCapturedAudio: () =>
+          Effect.sync(() => {
+            preserveCalls += 1;
+            return {
+              audioFileName: "tr_audio.wav",
+              audioMimeType: "audio/wav",
+              audioByteSize: 4,
+            };
+          }),
+      }),
+    );
+
+    expect(preserveCalls).toBe(0);
+    expect(transcript.audioFileName).toBeNull();
+  });
+
   it("keeps raw transcript text when post-processing fails", async () => {
     const orchestrator = createDictationOrchestrator({
       audio: createMockAudioCaptureService(),

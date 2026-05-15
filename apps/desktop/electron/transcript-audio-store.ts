@@ -70,8 +70,14 @@ export const createTranscriptAudioStore = (rootDirectory: string): TranscriptAud
 };
 
 const assertSimpleFileName = (fileName: string): string => {
-  if (fileName.length === 0 || basename(fileName) !== fileName) {
-    throw new Error("Transcript audio file name must be a simple file name.");
+  if (
+    fileName.length === 0 ||
+    fileName === "." ||
+    fileName === ".." ||
+    basename(fileName) !== fileName ||
+    !fileName.endsWith(".wav")
+  ) {
+    throw new Error("Transcript audio file name must be a simple wav file name.");
   }
 
   return fileName;
