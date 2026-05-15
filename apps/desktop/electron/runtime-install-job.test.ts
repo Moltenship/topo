@@ -12,7 +12,7 @@ import { createFileRuntimeInstallJob } from "./runtime-install-job";
 const sha256 = (content: string): string => createHash("sha256").update(content).digest("hex");
 
 const createRuntime = (content: string): RuntimeCatalogEntry => ({
-  id: "whisper-cpp-windows-x64",
+  id: "whisper-cpp-windows-x64-cpu",
   displayName: "Whisper.cpp Windows x64",
   engine: "whisper-cpp",
   platform: "windows",

@@ -48,7 +48,7 @@ describe("createInstallPlan", () => {
 
     expect(plan).toMatchObject({
       modelId: "whisper-cpp-small",
-      runtimeId: "whisper-cpp-windows-x64",
+      runtimeId: "whisper-cpp-windows-x64-cpu",
       installRuntime: true,
       installModel: true,
     });
@@ -62,7 +62,7 @@ describe("createInstallPlan", () => {
       modelCatalog: bundledModelCatalog,
       runtimeCatalog: bundledRuntimeCatalog,
       installedModels: [installedModel("whisper-cpp-small")],
-      installedRuntimes: [installedRuntime("whisper-cpp-windows-x64")],
+      installedRuntimes: [installedRuntime("whisper-cpp-windows-x64-cpu")],
     });
 
     expect(plan.installRuntime).toBe(false);
@@ -77,7 +77,7 @@ describe("createInstallPlan", () => {
       modelCatalog: bundledModelCatalog,
       runtimeCatalog: bundledRuntimeCatalog,
       installedModels: [installedModel("whisper-cpp-small", "corrupt")],
-      installedRuntimes: [installedRuntime("whisper-cpp-windows-x64")],
+      installedRuntimes: [installedRuntime("whisper-cpp-windows-x64-cpu")],
     });
 
     expect(plan.installRuntime).toBe(false);

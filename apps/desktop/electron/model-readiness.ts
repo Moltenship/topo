@@ -7,6 +7,9 @@ import type {
 } from "@topo/shared";
 import type { WhisperCppRuntimeResolver, WhisperCppRuntimeResult } from "./whisper-cpp-runtime";
 
+export const managedWhisperCppGpuNvidiaMessage =
+  "Managed GPU acceleration for this model currently requires an NVIDIA GPU. AMD and Intel GPU acceleration are not supported yet; use CPU or provide a custom whisper.cpp runtime.";
+
 export interface ComputeModelReadinessInput {
   readonly modelId: string;
   readonly runtime: AsrRuntime;
@@ -153,7 +156,10 @@ export const computeModelReadiness = ({
     modelId,
     status: "ready",
     lamp: "green",
-    message: "Model and whisper.cpp runtime are ready.",
+    message:
+      runtimeResult.accelerator === "gpu"
+        ? `Model and whisper.cpp GPU runtime are ready. ${managedWhisperCppGpuNvidiaMessage}`
+        : "Model and whisper.cpp CPU runtime are ready.",
     runtimeBinaryPath: runtimeResult.binaryPath,
     checkedAt: runtimeResult.checkedAt,
   };

@@ -87,10 +87,10 @@ describe("openAppDatabase", () => {
     await Effect.runPromise(
       database.installedRuntimes.upsert({
         id: "installed_whisper_cpp_windows_x64",
-        runtimeId: "whisper-cpp-windows-x64",
+        runtimeId: "whisper-cpp-windows-x64-cpu",
         engine: "whisper-cpp",
-        installedPath: "C:/runtimes/whisper-cpp-windows-x64",
-        binaryPath: "C:/runtimes/whisper-cpp-windows-x64/whisper-cli.exe",
+        installedPath: "C:/runtimes/whisper-cpp-windows-x64-cpu",
+        binaryPath: "C:/runtimes/whisper-cpp-windows-x64-cpu/whisper-cli.exe",
         checksumSha256: "sha",
         verificationStatus: "verified",
         installedAt: "2026-05-14T00:00:00.000Z",
@@ -103,7 +103,7 @@ describe("openAppDatabase", () => {
     await Effect.runPromise(database.close());
 
     expect(installedRuntimes).toHaveLength(1);
-    expect(installedRuntimes[0]?.runtimeId).toBe("whisper-cpp-windows-x64");
+    expect(installedRuntimes[0]?.runtimeId).toBe("whisper-cpp-windows-x64-cpu");
   });
 
   it("records applied migrations and can reopen the database idempotently", async () => {

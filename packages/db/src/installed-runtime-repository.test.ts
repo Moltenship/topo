@@ -31,10 +31,10 @@ describe("createInstalledRuntimeRepository", () => {
     const repository = createRepository();
     const record = {
       id: "installed_whisper_cpp_windows_x64",
-      runtimeId: "whisper-cpp-windows-x64" as const,
+      runtimeId: "whisper-cpp-windows-x64-cpu" as const,
       engine: "whisper-cpp" as const,
-      installedPath: "C:/runtimes/whisper-cpp-windows-x64",
-      binaryPath: "C:/runtimes/whisper-cpp-windows-x64/whisper-cli.exe",
+      installedPath: "C:/runtimes/whisper-cpp-windows-x64-cpu",
+      binaryPath: "C:/runtimes/whisper-cpp-windows-x64-cpu/whisper-cli.exe",
       checksumSha256: "sha",
       verificationStatus: "verified" as const,
       installedAt: "2026-05-14T00:00:00.000Z",
@@ -45,14 +45,14 @@ describe("createInstalledRuntimeRepository", () => {
     await Effect.runPromise(repository.upsert(record));
 
     expect(await Effect.runPromise(repository.list())).toEqual([record]);
-    expect(await Effect.runPromise(repository.getByRuntimeId("whisper-cpp-windows-x64"))).toEqual(
+    expect(await Effect.runPromise(repository.getByRuntimeId("whisper-cpp-windows-x64-cpu"))).toEqual(
       record,
     );
 
-    await Effect.runPromise(repository.removeByRuntimeId("whisper-cpp-windows-x64"));
+    await Effect.runPromise(repository.removeByRuntimeId("whisper-cpp-windows-x64-cpu"));
 
     expect(
-      await Effect.runPromise(repository.getByRuntimeId("whisper-cpp-windows-x64")),
+      await Effect.runPromise(repository.getByRuntimeId("whisper-cpp-windows-x64-cpu")),
     ).toBeNull();
   });
 });

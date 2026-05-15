@@ -5,6 +5,7 @@ import {
   computeModelReadiness,
   computeModelReadinessForCatalog,
   createWhisperCppRuntimeReadinessCache,
+  managedWhisperCppGpuNvidiaMessage,
 } from "./model-readiness";
 import type { WhisperCppRuntimeResult } from "./whisper-cpp-runtime";
 
@@ -26,6 +27,18 @@ const availableRuntime: WhisperCppRuntimeResult = {
   status: "available",
   binaryPath: "C:/tools/whisper-cli.exe",
   source: "path",
+  accelerator: "cpu",
+  runtimeId: null,
+  probeOutput: "usage: whisper-cli",
+  checkedAt: "2026-05-09T11:00:00.000Z",
+};
+
+const availableGpuRuntime: WhisperCppRuntimeResult = {
+  status: "available",
+  binaryPath: "C:/tools/cuda/whisper-cli.exe",
+  source: "installed",
+  accelerator: "gpu",
+  runtimeId: "whisper-cpp-windows-x64-cuda",
   probeOutput: "usage: whisper-cli",
   checkedAt: "2026-05-09T11:00:00.000Z",
 };
@@ -33,11 +46,11 @@ const availableRuntime: WhisperCppRuntimeResult = {
 const installedRuntime = (
   verificationStatus: InstalledRuntimeRecord["verificationStatus"] = "verified",
 ): InstalledRuntimeRecord => ({
-  id: "installed-whisper-cpp-windows-x64",
-  runtimeId: "whisper-cpp-windows-x64",
+  id: "installed-whisper-cpp-windows-x64-cpu",
+  runtimeId: "whisper-cpp-windows-x64-cpu",
   engine: "whisper-cpp",
-  installedPath: "C:/runtimes/whisper-cpp-windows-x64",
-  binaryPath: "C:/runtimes/whisper-cpp-windows-x64/whisper-cli.exe",
+  installedPath: "C:/runtimes/whisper-cpp-windows-x64-cpu",
+  binaryPath: "C:/runtimes/whisper-cpp-windows-x64-cpu/whisper-cli.exe",
   checksumSha256: "runtime-sha",
   verificationStatus,
   installedAt: "2026-05-09T10:30:00.000Z",
@@ -59,9 +72,27 @@ describe("computeModelReadiness", () => {
       modelId: "whisper-cpp-small",
       status: "ready",
       lamp: "green",
-      message: "Model and whisper.cpp runtime are ready.",
+      message: "Model and whisper.cpp CPU runtime are ready.",
       runtimeBinaryPath: "C:/tools/whisper-cli.exe",
       checkedAt: "2026-05-09T11:00:00.000Z",
+    });
+  });
+
+  it("returns ready with NVIDIA-only messaging for a verified model and GPU runtime", () => {
+    expect(
+      computeModelReadiness({
+        modelId: "whisper-cpp-small",
+        runtime: "whisper-cpp",
+        installedModel: installedModel(),
+        installedRuntime: installedRuntime(),
+        runtimeResult: availableGpuRuntime,
+      }),
+    ).toMatchObject({
+      modelId: "whisper-cpp-small",
+      status: "ready",
+      lamp: "green",
+      message: `Model and whisper.cpp GPU runtime are ready. ${managedWhisperCppGpuNvidiaMessage}`,
+      runtimeBinaryPath: "C:/tools/cuda/whisper-cli.exe",
     });
   });
 
@@ -249,7 +280,7 @@ describe("computeModelReadinessForCatalog", () => {
           runtime: "whisper-cpp",
           runtimeRequirement: {
             engine: "whisper-cpp",
-            supportedRuntimeIds: ["whisper-cpp-windows-x64"],
+            supportedRuntimeIds: ["whisper-cpp-windows-x64-cpu"],
           },
           platforms: ["windows"],
           architectures: ["x64"],
@@ -304,7 +335,7 @@ describe("computeModelReadinessForCatalog", () => {
           runtime: "whisper-cpp",
           runtimeRequirement: {
             engine: "whisper-cpp",
-            supportedRuntimeIds: ["whisper-cpp-windows-x64"],
+            supportedRuntimeIds: ["whisper-cpp-windows-x64-cpu"],
           },
           platforms: ["windows"],
           architectures: ["x64"],
@@ -358,7 +389,7 @@ describe("computeModelReadinessForCatalog", () => {
           runtime: "whisper-cpp",
           runtimeRequirement: {
             engine: "whisper-cpp",
-            supportedRuntimeIds: ["whisper-cpp-windows-x64"],
+            supportedRuntimeIds: ["whisper-cpp-windows-x64-cpu"],
           },
           platforms: ["windows"],
           architectures: ["x64"],
@@ -399,7 +430,7 @@ describe("computeModelReadinessForCatalog", () => {
     expect(records[0]).toMatchObject({
       status: "runtime-failed",
       lamp: "red",
-      runtimeBinaryPath: "C:/runtimes/whisper-cpp-windows-x64/whisper-cli.exe",
+      runtimeBinaryPath: "C:/runtimes/whisper-cpp-windows-x64-cpu/whisper-cli.exe",
     });
   });
 });

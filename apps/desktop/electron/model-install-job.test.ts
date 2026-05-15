@@ -16,7 +16,7 @@ const createTestModel = (content: string): ModelCatalogEntry => ({
   runtime: "whisper-cpp",
   runtimeRequirement: {
     engine: "whisper-cpp",
-    supportedRuntimeIds: ["whisper-cpp-windows-x64"],
+    supportedRuntimeIds: ["whisper-cpp-windows-x64-cpu"],
   },
   platforms: ["windows"],
   architectures: ["x64"],

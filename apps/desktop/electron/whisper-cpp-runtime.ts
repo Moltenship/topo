@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { stat } from "node:fs/promises";
 import { delimiter, join } from "node:path";
 import { Effect } from "effect";
+import type { InstalledRuntimeRecord } from "@topo/shared";
 
 export interface RuntimeProbeResult {
   readonly ok: boolean;
@@ -13,11 +14,15 @@ export interface RuntimeProbeResult {
 export type RuntimeProbe = (binaryPath: string) => Effect.Effect<RuntimeProbeResult, Error>;
 
 export type WhisperCppRuntimeSource = "installed" | "env" | "bundled" | "path";
+export type WhisperCppRuntimeAccelerator = "cpu" | "gpu";
+export type WhisperCppAcceleratorPreference = "auto" | "cpu" | "gpu";
 
 export interface WhisperCppRuntimeAvailable {
   readonly status: "available";
   readonly binaryPath: string;
   readonly source: WhisperCppRuntimeSource;
+  readonly accelerator: WhisperCppRuntimeAccelerator;
+  readonly runtimeId: string | null;
   readonly probeOutput: string;
   readonly checkedAt: string;
 }
@@ -33,6 +38,8 @@ export interface WhisperCppRuntimeFailed {
   readonly status: "failed";
   readonly binaryPath: string;
   readonly source: WhisperCppRuntimeSource;
+  readonly accelerator: WhisperCppRuntimeAccelerator;
+  readonly runtimeId: string | null;
   readonly checkedCandidates: readonly string[];
   readonly message: string;
   readonly checkedAt: string;
@@ -52,6 +59,8 @@ export interface WhisperCppRuntimeResolver {
 export interface WhisperCppRuntimeResolverOptions {
   readonly resourcesRoot: string;
   readonly installedBinaryPath?: string | null;
+  readonly preferredAccelerator?: WhisperCppAcceleratorPreference;
+  readonly installedRuntimes?: readonly InstalledRuntimeRecord[];
   readonly env?: NodeJS.ProcessEnv;
   readonly probe?: RuntimeProbe;
 }
@@ -59,6 +68,8 @@ export interface WhisperCppRuntimeResolverOptions {
 interface Candidate {
   readonly path: string;
   readonly source: WhisperCppRuntimeSource;
+  readonly accelerator: WhisperCppRuntimeAccelerator;
+  readonly runtimeId: string | null;
 }
 
 interface FailedProbe {
@@ -67,6 +78,8 @@ interface FailedProbe {
 }
 
 const envBinaryName = "MOLTEN_WHISPER_CPP_BINARY";
+const windowsCpuRuntimeId = "whisper-cpp-windows-x64-cpu";
+const windowsCudaRuntimeId = "whisper-cpp-windows-x64-cuda";
 const binaryNames = [
   "whisper-cli.exe",
   "whisper-cli",
@@ -98,42 +111,108 @@ const createCandidates = (
   resourcesRoot: string,
   env: NodeJS.ProcessEnv,
   installedBinaryPath?: string | null,
+  preferredAccelerator: WhisperCppAcceleratorPreference = "auto",
+  installedRuntimes: readonly InstalledRuntimeRecord[] = [],
 ): readonly Candidate[] => {
-  const candidates: Candidate[] = [];
+  const envCandidates: Candidate[] = [];
+  const bundledCpuCandidates: Candidate[] = [];
+  const bundledGpuCandidates: Candidate[] = [];
+  const installedCpuCandidates: Candidate[] = [];
+  const installedGpuCandidates: Candidate[] = [];
+  const pathCandidates: Candidate[] = [];
   const envOverride = env[envBinaryName];
   const pathValue = env.PATH ?? env.Path ?? "";
 
   if (installedBinaryPath) {
-    candidates.push({
+    installedCpuCandidates.push({
       path: installedBinaryPath,
       source: "installed",
+      accelerator: "cpu",
+      runtimeId: null,
     });
   }
 
+  for (const runtime of installedRuntimes) {
+    if (runtime.verificationStatus !== "verified" || !runtime.binaryPath) {
+      continue;
+    }
+
+    if (runtime.runtimeId === windowsCudaRuntimeId) {
+      installedGpuCandidates.push({
+        path: runtime.binaryPath,
+        source: "installed",
+        accelerator: "gpu",
+        runtimeId: runtime.runtimeId,
+      });
+    }
+
+    if (runtime.runtimeId === windowsCpuRuntimeId) {
+      installedCpuCandidates.push({
+        path: runtime.binaryPath,
+        source: "installed",
+        accelerator: "cpu",
+        runtimeId: runtime.runtimeId,
+      });
+    }
+  }
+
   if (envOverride) {
-    candidates.push({
+    envCandidates.push({
       path: envOverride,
       source: "env",
+      accelerator: preferredAccelerator === "gpu" ? "gpu" : "cpu",
+      runtimeId: null,
     });
   }
 
   for (const binaryName of binaryNames) {
-    candidates.push({
+    bundledGpuCandidates.push({
+      path: join(resourcesRoot, "whisper.cpp-cuda", binaryName),
+      source: "bundled",
+      accelerator: "gpu",
+      runtimeId: windowsCudaRuntimeId,
+    });
+    bundledCpuCandidates.push({
+      path: join(resourcesRoot, "whisper.cpp-cpu", binaryName),
+      source: "bundled",
+      accelerator: "cpu",
+      runtimeId: windowsCpuRuntimeId,
+    });
+    bundledCpuCandidates.push({
       path: join(resourcesRoot, "whisper.cpp", binaryName),
       source: "bundled",
+      accelerator: "cpu",
+      runtimeId: null,
     });
   }
 
   for (const pathEntry of pathValue.split(delimiter).filter(Boolean)) {
     for (const binaryName of binaryNames) {
-      candidates.push({
+      pathCandidates.push({
         path: join(pathEntry, binaryName),
         source: "path",
+        accelerator: preferredAccelerator === "gpu" ? "gpu" : "cpu",
+        runtimeId: null,
       });
     }
   }
 
-  return candidates;
+  if (preferredAccelerator === "gpu") {
+    return [...installedGpuCandidates, ...bundledGpuCandidates, ...envCandidates, ...pathCandidates];
+  }
+
+  if (preferredAccelerator === "cpu") {
+    return [...installedCpuCandidates, ...bundledCpuCandidates, ...envCandidates, ...pathCandidates];
+  }
+
+  return [
+    ...installedGpuCandidates,
+    ...bundledGpuCandidates,
+    ...installedCpuCandidates,
+    ...bundledCpuCandidates,
+    ...envCandidates,
+    ...pathCandidates,
+  ];
 };
 
 const fileExists = (path: string): Effect.Effect<boolean, never> =>
@@ -230,6 +309,8 @@ export const defaultRuntimeProbe: RuntimeProbe = (binaryPath) =>
 export const createWhisperCppRuntimeResolver = ({
   resourcesRoot,
   installedBinaryPath = null,
+  preferredAccelerator = "auto",
+  installedRuntimes = [],
   env = process.env,
   probe = defaultRuntimeProbe,
 }: WhisperCppRuntimeResolverOptions): WhisperCppRuntimeResolver => {
@@ -243,7 +324,13 @@ export const createWhisperCppRuntimeResolver = ({
         }
 
         const checkedAt = now().toISOString();
-        const candidates = createCandidates(resourcesRoot, env, installedBinaryPath);
+        const candidates = createCandidates(
+          resourcesRoot,
+          env,
+          installedBinaryPath,
+          preferredAccelerator,
+          installedRuntimes,
+        );
         const checkedCandidates: string[] = [];
         const failedProbes: FailedProbe[] = [];
 
@@ -271,6 +358,8 @@ export const createWhisperCppRuntimeResolver = ({
                 status: "failed",
                 binaryPath: candidate.path,
                 source: candidate.source,
+                accelerator: candidate.accelerator,
+                runtimeId: candidate.runtimeId,
                 checkedCandidates,
                 message: createFailedMessage(probeResult),
                 checkedAt,
@@ -288,6 +377,8 @@ export const createWhisperCppRuntimeResolver = ({
             status: "available",
             binaryPath: candidate.path,
             source: candidate.source,
+            accelerator: candidate.accelerator,
+            runtimeId: candidate.runtimeId,
             probeOutput: compactOutput(probeResult),
             checkedAt,
           };
@@ -302,6 +393,8 @@ export const createWhisperCppRuntimeResolver = ({
             status: "failed",
             binaryPath: firstFailedProbe.candidate.path,
             source: firstFailedProbe.candidate.source,
+            accelerator: firstFailedProbe.candidate.accelerator,
+            runtimeId: firstFailedProbe.candidate.runtimeId,
             checkedCandidates,
             message: createFailedMessage(firstFailedProbe.result),
             checkedAt,
