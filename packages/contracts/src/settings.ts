@@ -5,6 +5,9 @@ import { ApiPostProcessingSettings, PostProcessingMode } from "./post-processing
 export const SilenceTimeoutMs = Schema.Literal(1200, 1500, 2000, 3000);
 export type SilenceTimeoutMs = typeof SilenceTimeoutMs.Type;
 
+export const WhisperCppAccelerator = Schema.Literal("auto", "cpu", "gpu");
+export type WhisperCppAccelerator = typeof WhisperCppAccelerator.Type;
+
 export const OverlayPosition = Schema.Literal(
   "bottom-center",
   "top-center",
@@ -27,6 +30,7 @@ export const AppSettings = Schema.Struct({
   language: Schema.optionalWith(LanguageCode, { default: () => "auto" }),
   historyEnabled: Schema.optionalWith(Schema.Boolean, { default: () => true }),
   saveTranscriptAudio: Schema.optionalWith(Schema.Boolean, { default: () => false }),
+  whisperCppAccelerator: Schema.optionalWith(WhisperCppAccelerator, { default: () => "auto" }),
   autoDeleteHistoryDays: Schema.optionalWith(Schema.NullOr(Schema.Int.pipe(Schema.positive())), {
     default: () => null,
   }),

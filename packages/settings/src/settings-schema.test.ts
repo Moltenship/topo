@@ -13,6 +13,7 @@ describe("appSettingsSchema", () => {
       language: "auto",
       historyEnabled: true,
       saveTranscriptAudio: false,
+      whisperCppAccelerator: "auto",
       autoDeleteHistoryDays: null,
       modelDirectory: null,
       activeModelId: null,
@@ -31,6 +32,14 @@ describe("appSettingsSchema", () => {
 
   it("accepts transcript audio saving preference", () => {
     expect(parseAppSettings({ saveTranscriptAudio: true }).saveTranscriptAudio).toBe(true);
+  });
+
+  it.each(["auto", "cpu", "gpu"] as const)("accepts %s whisper.cpp accelerator", (value) => {
+    expect(parseAppSettings({ whisperCppAccelerator: value }).whisperCppAccelerator).toBe(value);
+  });
+
+  it("rejects unsupported whisper.cpp accelerators", () => {
+    expect(() => parseAppSettings({ whisperCppAccelerator: "cuda" })).toThrow();
   });
 
   it("rejects unsupported silence timeout values", () => {
