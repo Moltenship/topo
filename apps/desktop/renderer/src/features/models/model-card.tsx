@@ -57,6 +57,18 @@ const readinessLabel = (readiness: ModelReadinessRecord | null): string => {
     return "Runtime failed";
   }
 
+  if (readiness.message.includes("GPU runtime")) {
+    return "GPU ready";
+  }
+
+  if (readiness.message.includes("CPU runtime")) {
+    return "CPU ready";
+  }
+
+  if (readiness.message.includes("CPU fallback")) {
+    return "GPU unavailable; CPU fallback ready";
+  }
+
   return "Ready";
 };
 

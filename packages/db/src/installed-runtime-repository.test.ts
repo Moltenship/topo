@@ -45,9 +45,9 @@ describe("createInstalledRuntimeRepository", () => {
     await Effect.runPromise(repository.upsert(record));
 
     expect(await Effect.runPromise(repository.list())).toEqual([record]);
-    expect(await Effect.runPromise(repository.getByRuntimeId("whisper-cpp-windows-x64-cpu"))).toEqual(
-      record,
-    );
+    expect(
+      await Effect.runPromise(repository.getByRuntimeId("whisper-cpp-windows-x64-cpu")),
+    ).toEqual(record);
 
     await Effect.runPromise(repository.removeByRuntimeId("whisper-cpp-windows-x64-cpu"));
 

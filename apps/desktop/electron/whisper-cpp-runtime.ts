@@ -198,11 +198,21 @@ const createCandidates = (
   }
 
   if (preferredAccelerator === "gpu") {
-    return [...installedGpuCandidates, ...bundledGpuCandidates, ...envCandidates, ...pathCandidates];
+    return [
+      ...installedGpuCandidates,
+      ...bundledGpuCandidates,
+      ...envCandidates,
+      ...pathCandidates,
+    ];
   }
 
   if (preferredAccelerator === "cpu") {
-    return [...installedCpuCandidates, ...bundledCpuCandidates, ...envCandidates, ...pathCandidates];
+    return [
+      ...installedCpuCandidates,
+      ...bundledCpuCandidates,
+      ...envCandidates,
+      ...pathCandidates,
+    ];
   }
 
   return [

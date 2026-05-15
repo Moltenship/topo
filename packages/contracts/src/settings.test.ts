@@ -14,6 +14,8 @@ describe("AppSettings", () => {
   });
 
   it("rejects unsupported whisper.cpp accelerator values", () => {
-    expect(() => Schema.decodeUnknownSync(AppSettings)({ whisperCppAccelerator: "cuda" })).toThrow();
+    expect(() =>
+      Schema.decodeUnknownSync(AppSettings)({ whisperCppAccelerator: "cuda" }),
+    ).toThrow();
   });
 });

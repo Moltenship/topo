@@ -71,6 +71,15 @@ const postProcessingModeLabels: Record<AppSettings["postProcessingMode"], string
   api: "API provider",
 };
 
+const whisperCppAcceleratorOptions = [
+  { label: "Auto", value: "auto" },
+  { label: "GPU", value: "gpu" },
+  { label: "CPU", value: "cpu" },
+] satisfies readonly {
+  readonly label: string;
+  readonly value: AppSettings["whisperCppAccelerator"];
+}[];
+
 interface MicrophoneDeviceOption {
   readonly label: string;
   readonly value: string | null;
@@ -280,6 +289,18 @@ export const SettingsPage = ({
               ]
             }
           </Button>
+        </SettingsRow>
+        <SettingsRow
+          title="Whisper acceleration"
+          description="Auto uses GPU when the Windows CUDA runtime is ready and falls back to CPU if it fails."
+          resetAction={getResetAction("whisperCppAccelerator", "whisper acceleration")}
+        >
+          <SettingsSelect
+            disabled={!settings}
+            value={settings?.whisperCppAccelerator ?? "auto"}
+            options={whisperCppAcceleratorOptions}
+            onChange={(value) => updateSettings("whisperCppAccelerator", value)}
+          />
         </SettingsRow>
       </SettingsSection>
       <SettingsSection id="models" title="Models">

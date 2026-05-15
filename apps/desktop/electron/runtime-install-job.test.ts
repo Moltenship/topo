@@ -17,6 +17,7 @@ const createRuntime = (content: string): RuntimeCatalogEntry => ({
   engine: "whisper-cpp",
   platform: "windows",
   architecture: "x64",
+  accelerator: "cpu",
   version: "test",
   source: {
     type: "direct-url",
