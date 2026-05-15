@@ -31,6 +31,7 @@ import {
   InstallModelBundleRequest,
   IpcChannels,
   ListTranscriptsRequest,
+  LoadTranscriptAudioRequest,
   ReinsertTranscriptRequest,
   UpdateSettingsRequest,
 } from "@topo/shared";
@@ -766,6 +767,19 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
         const payload = yield* decodeIpcPayload(ReinsertTranscriptRequest, input);
 
         yield* reinsertTranscript(dependencies, payload.id);
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.loadTranscriptAudio, (_event, input: unknown) =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        yield* decodeIpcPayload(LoadTranscriptAudioRequest, input);
+
+        return yield* Effect.fail(
+          new Error(
+            "Transcript audio loading is not available until transcript audio storage is initialized.",
+          ),
+        );
       }),
     ),
   );

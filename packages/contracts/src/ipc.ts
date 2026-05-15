@@ -12,6 +12,7 @@ export const IpcChannels = {
   copyTranscript: "history:copy-transcript",
   reinsertTranscript: "history:reinsert-transcript",
   deleteTranscript: "history:delete-transcript",
+  loadTranscriptAudio: "history:load-transcript-audio",
   clearTranscripts: "history:clear-transcripts",
   updateSettings: "settings:update",
   showOverlayPreview: "overlay:show-preview",
@@ -62,6 +63,16 @@ export type CopyTranscriptRequest = typeof CopyTranscriptRequest.Type;
 
 export const ReinsertTranscriptRequest = DeleteTranscriptRequest;
 export type ReinsertTranscriptRequest = typeof ReinsertTranscriptRequest.Type;
+
+export const LoadTranscriptAudioRequest = DeleteTranscriptRequest;
+export type LoadTranscriptAudioRequest = typeof LoadTranscriptAudioRequest.Type;
+
+export const LoadTranscriptAudioResponse = Schema.Struct({
+  bytes: Schema.Uint8ArrayFromSelf,
+  mimeType: Schema.String,
+  byteSize: Schema.Number,
+});
+export type LoadTranscriptAudioResponse = typeof LoadTranscriptAudioResponse.Type;
 
 export const UpdateSettingsRequest = AppSettings;
 export type UpdateSettingsRequest = typeof UpdateSettingsRequest.Type;

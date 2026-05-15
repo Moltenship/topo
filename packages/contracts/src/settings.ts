@@ -26,6 +26,7 @@ export const AppSettings = Schema.Struct({
   }),
   language: Schema.optionalWith(LanguageCode, { default: () => "auto" }),
   historyEnabled: Schema.optionalWith(Schema.Boolean, { default: () => true }),
+  saveTranscriptAudio: Schema.optionalWith(Schema.Boolean, { default: () => false }),
   autoDeleteHistoryDays: Schema.optionalWith(Schema.NullOr(Schema.Int.pipe(Schema.positive())), {
     default: () => null,
   }),

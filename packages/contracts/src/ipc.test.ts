@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
-import { AppStateSnapshot } from "./ipc";
+import { AppStateSnapshot, IpcChannels, LoadTranscriptAudioResponse } from "./ipc";
 import { InstallBundleProgress } from "./model-installation";
 
 describe("AppStateSnapshot", () => {
@@ -48,5 +48,21 @@ describe("InstallBundleProgress", () => {
 
     expect(decoded.runtimeId).toBe("whisper-cpp-windows-x64");
     expect(decoded.stage).toBe("runtime");
+  });
+});
+
+describe("transcript audio IPC contracts", () => {
+  it("defines the load transcript audio channel", () => {
+    expect(IpcChannels.loadTranscriptAudio).toBe("history:load-transcript-audio");
+  });
+
+  it("decodes load transcript audio responses", () => {
+    const decoded = Schema.decodeUnknownSync(LoadTranscriptAudioResponse)({
+      bytes: new Uint8Array([1, 2, 3]),
+      mimeType: "audio/wav",
+      byteSize: 3,
+    });
+
+    expect(decoded.byteSize).toBe(3);
   });
 });

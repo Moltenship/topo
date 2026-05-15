@@ -44,6 +44,9 @@ export const TranscriptRecord = Schema.Struct({
   insertionMode: InsertionMode,
   insertionStatus: InsertionStatus,
   targetAppName: Schema.NullOr(Schema.String),
+  audioFileName: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
+  audioMimeType: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
+  audioByteSize: Schema.optionalWith(Schema.NullOr(Schema.Number), { default: () => null }),
 });
 export type TranscriptRecord = typeof TranscriptRecord.Type;
 

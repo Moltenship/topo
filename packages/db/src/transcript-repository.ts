@@ -4,6 +4,34 @@ import { Effect } from "effect";
 import type { TranscriptRecord } from "@topo/shared";
 import { transcripts } from "./schema";
 
+const normalizeTranscriptRecord = (row: typeof transcripts.$inferSelect): TranscriptRecord => ({
+  id: row.id,
+  text: row.text,
+  createdAt: row.createdAt,
+  durationMs: row.durationMs,
+  modelId: row.modelId,
+  runtime: row.runtime,
+  language: row.language as TranscriptRecord["language"],
+  recordingMode: row.recordingMode as TranscriptRecord["recordingMode"],
+  stopReason: row.stopReason as TranscriptRecord["stopReason"],
+  insertionMode: row.insertionMode as TranscriptRecord["insertionMode"],
+  insertionStatus: row.insertionStatus as TranscriptRecord["insertionStatus"],
+  targetAppName: row.targetAppName,
+  audioFileName: null,
+  audioMimeType: null,
+  audioByteSize: null,
+});
+
+const assertNoAudioMetadata = (record: TranscriptRecord) => {
+  if (
+    record.audioFileName !== null ||
+    record.audioMimeType !== null ||
+    record.audioByteSize !== null
+  ) {
+    throw new Error("Transcript audio metadata cannot be stored before audio columns exist.");
+  }
+};
+
 export interface TranscriptRepository {
   readonly insert: (record: TranscriptRecord) => Effect.Effect<void>;
   readonly getById: (id: string) => Effect.Effect<TranscriptRecord | null>;
@@ -18,13 +46,14 @@ export const createTranscriptRepository = (
 ): TranscriptRepository => ({
   insert: (record) =>
     Effect.sync(() => {
+      assertNoAudioMetadata(record);
       db.insert(transcripts).values(record).run();
     }),
   getById: (id) =>
     Effect.sync(() => {
       const row = db.select().from(transcripts).where(eq(transcripts.id, id)).get();
 
-      return (row as TranscriptRecord | undefined) ?? null;
+      return row ? normalizeTranscriptRecord(row) : null;
     }),
   list: (query) =>
     Effect.sync(() => {
@@ -37,7 +66,7 @@ export const createTranscriptRepository = (
             .all()
         : db.select().from(transcripts).orderBy(desc(transcripts.createdAt)).all();
 
-      return rows as readonly TranscriptRecord[];
+      return rows.map(normalizeTranscriptRecord);
     }),
   deleteById: (id) =>
     Effect.sync(() => {

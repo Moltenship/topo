@@ -7,6 +7,8 @@ export {
   InstallModelRequest,
   IpcChannels,
   ListTranscriptsRequest,
+  LoadTranscriptAudioRequest,
+  LoadTranscriptAudioResponse,
   ReinsertTranscriptRequest,
   UpdateSettingsRequest,
   type CancelModelInstallRequest as CancelModelInstallRequestPayload,
@@ -17,6 +19,8 @@ export {
   type InstallModelRequest as InstallModelRequestPayload,
   type IpcChannel,
   type ListTranscriptsRequest as ListTranscriptsRequestPayload,
+  type LoadTranscriptAudioRequest as LoadTranscriptAudioRequestPayload,
+  type LoadTranscriptAudioResponse as LoadTranscriptAudioResponsePayload,
   type ReinsertTranscriptRequest as ReinsertTranscriptRequestPayload,
   type UpdateSettingsRequest as UpdateSettingsRequestPayload,
 } from "@topo/contracts";

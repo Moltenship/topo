@@ -12,6 +12,7 @@ describe("appSettingsSchema", () => {
       postProcessingApiProvider: null,
       language: "auto",
       historyEnabled: true,
+      saveTranscriptAudio: false,
       autoDeleteHistoryDays: null,
       modelDirectory: null,
       activeModelId: null,
@@ -26,6 +27,10 @@ describe("appSettingsSchema", () => {
 
   it("accepts a selected overlay position", () => {
     expect(parseAppSettings({ overlayPosition: "top-center" }).overlayPosition).toBe("top-center");
+  });
+
+  it("accepts transcript audio saving preference", () => {
+    expect(parseAppSettings({ saveTranscriptAudio: true }).saveTranscriptAudio).toBe(true);
   });
 
   it("rejects unsupported silence timeout values", () => {

@@ -48,6 +48,9 @@ describe("TranscriptRepositoryService", () => {
         insertionMode: "paste",
         insertionStatus: "inserted",
         targetAppName: "Layer Test",
+        audioFileName: null,
+        audioMimeType: null,
+        audioByteSize: null,
       });
 
       return yield* repository.list("layer backed");
@@ -78,6 +81,9 @@ describe("TranscriptRepositoryService", () => {
             insertionMode: "paste",
             insertionStatus: "skipped",
             targetAppName: null,
+            audioFileName: null,
+            audioMimeType: null,
+            audioByteSize: null,
           },
         ]),
       deleteById: () => Effect.void,

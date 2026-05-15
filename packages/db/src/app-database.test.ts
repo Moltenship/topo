@@ -40,6 +40,9 @@ describe("openAppDatabase", () => {
         insertionMode: "paste",
         insertionStatus: "skipped",
         targetAppName: null,
+        audioFileName: null,
+        audioMimeType: null,
+        audioByteSize: null,
       }),
     );
 

@@ -27,6 +27,7 @@ import type {
   AppSettings,
   InstalledModelRecord,
   InstallBundleProgress,
+  LoadTranscriptAudioResponse,
   ModelInstallProgress,
   NativeHotkeyEvent,
   NativeHotkeyPhase,
@@ -39,6 +40,7 @@ export type {
   AppStateSnapshot,
   InstalledModelRecord,
   InstallBundleProgress,
+  LoadTranscriptAudioResponse,
   ModelInstallProgress,
   NativeHotkeyEvent,
   NativeHotkeyPhase,
@@ -53,6 +55,7 @@ export interface TopoApi {
   readonly listTranscripts: (query?: string) => Promise<readonly TranscriptRecord[]>;
   readonly copyTranscript: (id: string) => Promise<void>;
   readonly reinsertTranscript: (id: string) => Promise<void>;
+  readonly loadTranscriptAudio: (id: string) => Promise<LoadTranscriptAudioResponse>;
   readonly deleteTranscript: (id: string) => Promise<void>;
   readonly clearTranscripts: () => Promise<void>;
   readonly updateSettings: (settings: AppSettings) => Promise<AppSettings>;
