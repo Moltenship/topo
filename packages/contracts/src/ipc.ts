@@ -3,7 +3,11 @@ import { OverlayState, TranscriptRecord } from "./dictation";
 import { InstalledModelRecord, ModelReadinessRecord } from "./installed-model";
 import { InstalledRuntimeRecord } from "./installed-runtime";
 import { InstallBundleProgress, ModelInstallProgress } from "./model-installation";
-import { AppleIntelligenceAvailability } from "./post-processing";
+import {
+  AppleIntelligenceAvailability,
+  TestPostProcessingRequest,
+  TestPostProcessingResponse,
+} from "./post-processing";
 import { AppSettings } from "./settings";
 
 export const IpcChannels = {
@@ -25,6 +29,8 @@ export const IpcChannels = {
   cancelModelInstall: "models:cancel-install",
   refreshModelReadiness: "models:refresh-readiness",
   getAppleIntelligenceAvailability: "post-processing:apple-intelligence-availability",
+  testPostProcessing: "post-processing:test",
+  openDiagnosticsFolder: "diagnostics:open-folder",
   windowMinimize: "window:minimize",
   windowMaximize: "window:maximize",
   windowClose: "window:close",
@@ -44,6 +50,7 @@ export const AppStateSnapshot = Schema.Struct({
   modelInstallProgress: Schema.NullOr(ModelInstallProgress),
   runtimeInstallProgress: Schema.NullOr(ModelInstallProgress),
   bundleInstallProgress: Schema.NullOr(InstallBundleProgress),
+  diagnosticsLogDirectory: Schema.String,
   errorMessage: Schema.NullOr(Schema.String),
 });
 export type AppStateSnapshot = typeof AppStateSnapshot.Type;
@@ -99,3 +106,5 @@ export type CommitOverlayPreviewPositionRequest = typeof CommitOverlayPreviewPos
 export const AppleIntelligenceAvailabilityResponse = AppleIntelligenceAvailability;
 export type AppleIntelligenceAvailabilityResponse =
   typeof AppleIntelligenceAvailabilityResponse.Type;
+
+export { TestPostProcessingRequest, TestPostProcessingResponse };

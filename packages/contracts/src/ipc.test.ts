@@ -1,6 +1,12 @@
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
-import { AppStateSnapshot, IpcChannels, LoadTranscriptAudioResponse } from "./ipc";
+import {
+  AppStateSnapshot,
+  IpcChannels,
+  LoadTranscriptAudioResponse,
+  TestPostProcessingRequest,
+  TestPostProcessingResponse,
+} from "./ipc";
 import { InstallBundleProgress } from "./model-installation";
 
 describe("AppStateSnapshot", () => {
@@ -20,11 +26,13 @@ describe("AppStateSnapshot", () => {
       modelInstallProgress: null,
       runtimeInstallProgress: null,
       bundleInstallProgress: null,
+      diagnosticsLogDirectory: "/tmp/topo/logs",
       errorMessage: null,
     });
 
     expect(decoded.installedRuntimes).toEqual([]);
     expect(decoded.runtimeInstallProgress).toBeNull();
+    expect(decoded.diagnosticsLogDirectory).toBe("/tmp/topo/logs");
   });
 });
 
@@ -56,6 +64,14 @@ describe("transcript audio IPC contracts", () => {
     expect(IpcChannels.loadTranscriptAudio).toBe("history:load-transcript-audio");
   });
 
+  it("defines the open diagnostics folder channel", () => {
+    expect(IpcChannels.openDiagnosticsFolder).toBe("diagnostics:open-folder");
+  });
+
+  it("defines the post-processing test channel", () => {
+    expect(IpcChannels.testPostProcessing).toBe("post-processing:test");
+  });
+
   it("decodes load transcript audio responses", () => {
     const decoded = Schema.decodeUnknownSync(LoadTranscriptAudioResponse)({
       bytes: new Uint8Array([1, 2, 3]),
@@ -64,5 +80,18 @@ describe("transcript audio IPC contracts", () => {
     });
 
     expect(decoded.byteSize).toBe(3);
+  });
+
+  it("decodes post-processing test payloads", () => {
+    const request = Schema.decodeUnknownSync(TestPostProcessingRequest)({
+      rawTranscript: "hello world",
+    });
+    const response = Schema.decodeUnknownSync(TestPostProcessingResponse)({
+      text: "Hello world.",
+      warning: null,
+    });
+
+    expect(request.rawTranscript).toBe("hello world");
+    expect(response.text).toBe("Hello world.");
   });
 });

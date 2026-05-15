@@ -25,6 +25,8 @@ const api: TopoApi = {
   refreshModelReadiness: () => ipcRenderer.invoke(IpcChannels.refreshModelReadiness),
   getAppleIntelligenceAvailability: () =>
     ipcRenderer.invoke(IpcChannels.getAppleIntelligenceAvailability),
+  testPostProcessing: (input) => ipcRenderer.invoke(IpcChannels.testPostProcessing, input),
+  openDiagnosticsFolder: () => ipcRenderer.invoke(IpcChannels.openDiagnosticsFolder),
   startTestDictation: () => ipcRenderer.invoke(IpcChannels.startTestDictation),
   stopTestDictation: (input) => ipcRenderer.invoke(IpcChannels.stopTestDictation, input),
   minimizeWindow: () => ipcRenderer.invoke(IpcChannels.windowMinimize),

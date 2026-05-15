@@ -32,11 +32,23 @@ export const PostProcessingRequest = Schema.Struct({
   rawTranscript: Schema.String,
   language: LanguageCode,
   promptId: Schema.String,
+  prompt: Schema.String,
   providerId: PostProcessingProviderId,
   modelId: Schema.String,
   targetSchema: PostProcessingTargetSchema,
 });
 export type PostProcessingRequest = typeof PostProcessingRequest.Type;
+
+export const TestPostProcessingRequest = Schema.Struct({
+  rawTranscript: Schema.String,
+});
+export type TestPostProcessingRequest = typeof TestPostProcessingRequest.Type;
+
+export const TestPostProcessingResponse = Schema.Struct({
+  text: Schema.String,
+  warning: Schema.NullOr(Schema.String),
+});
+export type TestPostProcessingResponse = typeof TestPostProcessingResponse.Type;
 
 export const AppleIntelligenceAvailabilityStatus = Schema.Literal(
   "available",

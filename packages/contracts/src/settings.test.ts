@@ -7,6 +7,10 @@ describe("AppSettings", () => {
     expect(DEFAULT_APP_SETTINGS.whisperCppAccelerator).toBe("auto");
   });
 
+  it("defaults the post-processing prompt", () => {
+    expect(DEFAULT_APP_SETTINGS.postProcessingPrompt).toContain("preserving the speaker's meaning");
+  });
+
   it.each(["auto", "cpu", "gpu"] as const)("accepts %s whisper.cpp accelerator", (value) => {
     expect(Schema.decodeUnknownSync(AppSettings)({ whisperCppAccelerator: value })).toMatchObject({
       whisperCppAccelerator: value,

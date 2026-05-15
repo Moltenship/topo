@@ -8,6 +8,7 @@ type AppleIntelligenceLanguageModel = Extract<
 export interface AppleIntelligenceBridgeRequest {
   readonly modelId: string;
   readonly prompt: string;
+  readonly systemPrompt?: string;
   readonly abortSignal?: AbortSignal;
 }
 
@@ -24,9 +25,11 @@ export const appleIntelligence = (
   modelId,
   supportedUrls: {},
   doGenerate: async ({ abortSignal, prompt }) => {
+    const textPrompt = promptToText(prompt);
     const text = await bridge.generate({
       modelId,
-      prompt: promptToText(prompt),
+      prompt: textPrompt.prompt,
+      ...(textPrompt.systemPrompt ? { systemPrompt: textPrompt.systemPrompt } : {}),
       ...(abortSignal ? { abortSignal } : {}),
     });
 
@@ -62,13 +65,20 @@ const unavailableAppleIntelligenceBridge: AppleIntelligenceBridge = {
 
 const promptToText = (
   prompt: Parameters<AppleIntelligenceLanguageModel["doGenerate"]>[0]["prompt"],
-): string =>
-  prompt
-    .flatMap((message) => {
-      if (message.role === "system") {
-        return message.content;
-      }
-
-      return message.content.flatMap((part) => (part.type === "text" ? [part.text] : []));
-    })
+): { readonly systemPrompt?: string; readonly prompt: string } => {
+  const systemPrompt = prompt
+    .flatMap((message) => (message.role === "system" ? [message.content] : []))
     .join("\n");
+  const userPrompt = prompt
+    .flatMap((message) =>
+      message.role === "system"
+        ? []
+        : message.content.flatMap((part) => (part.type === "text" ? [part.text] : [])),
+    )
+    .join("\n");
+
+  return {
+    ...(systemPrompt ? { systemPrompt } : {}),
+    prompt: userPrompt || systemPrompt,
+  };
+};

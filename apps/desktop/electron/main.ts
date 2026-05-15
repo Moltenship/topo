@@ -68,9 +68,13 @@ const syncOverlayWindow = (window: BrowserWindow, snapshot: AppStateSnapshot) =>
   }
 };
 
-const bootstrapDesktop = (userDataDirectory: string): Effect.Effect<void, unknown> =>
+const bootstrapDesktop = (input: {
+  readonly userDataDirectory: string;
+  readonly logDirectory: string;
+}): Effect.Effect<void, unknown> =>
   Effect.gen(function* () {
     yield* topoMainLogger.logInfo("desktop startup begin");
+    const { userDataDirectory, logDirectory } = input;
     const bundledCatalog = getBundledModelCatalog({ includeDev: !app.isPackaged });
     const catalog = yield* createModelCatalogService({
       bundledCatalog,
@@ -91,24 +95,26 @@ const bootstrapDesktop = (userDataDirectory: string): Effect.Effect<void, unknow
         generate: appleIntelligenceBridge.bridge.generate,
       },
     });
+    const postProcessing = createAiSdkPostProcessingProvider({
+      model: (modelId) =>
+        appleIntelligence(modelId, {
+          generate: (request) =>
+            Effect.runPromise(
+              appleIntelligenceService.generateAppleIntelligenceText({
+                ...(request.systemPrompt ? { systemPrompt: request.systemPrompt } : {}),
+                prompt: request.prompt,
+                maxTokens: 512,
+              }),
+            ),
+        }),
+    });
     const dictation = createDictationOrchestrator({
       audio,
       transcription: createRuntimeTranscriptionProvider({
         whisperCpp: createWhisperCppTranscriptionProvider(),
         whisperKit: createWhisperKitTranscriptionProvider({ bridge: whisperKitBridge }),
       }),
-      postProcessing: createAiSdkPostProcessingProvider({
-        model: (modelId) =>
-          appleIntelligence(modelId, {
-            generate: (request) =>
-              Effect.runPromise(
-                appleIntelligenceService.generateAppleIntelligenceText({
-                  prompt: request.prompt,
-                  maxTokens: 512,
-                }),
-              ),
-          }),
-      }),
+      postProcessing,
       now: () => new Date(),
       createId: () => crypto.randomUUID(),
     });
@@ -121,8 +127,10 @@ const bootstrapDesktop = (userDataDirectory: string): Effect.Effect<void, unknow
     registerIpcHandlers({
       database,
       dictation,
+      postProcessing,
       audio,
       transcriptAudioStore,
+      diagnosticsLogDirectory: logDirectory,
       catalog,
       modelInstallJob: createFileModelInstallJob({
         installRoot: join(userDataDirectory, "models"),
@@ -182,7 +190,7 @@ app.whenReady().then(async () => {
 
   await Effect.runPromise(
     Effect.scoped(
-      bootstrapDesktop(userDataDirectory).pipe(
+      bootstrapDesktop({ userDataDirectory, logDirectory: logDir }).pipe(
         topoMainLogger.annotate({
           runId,
           logDir,

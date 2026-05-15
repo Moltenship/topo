@@ -3,14 +3,24 @@ import {
   type AppleIntelligenceAvailability,
   type ApiPostProcessingProvider,
   type AppSettings,
+  DEFAULT_POST_PROCESSING_PROMPT,
   type Platform,
   type PostProcessingMode,
 } from "@topo/shared";
 import { BrainCircuit, KeyRound, Server, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SettingsRow, SettingsSection, SettingsSelect } from "@/components/settings-layout";
+import { getRendererApi } from "@/api/renderer-api";
 import { cn } from "@/lib/utils";
 
 interface PostProcessingPageProps {
@@ -20,9 +30,6 @@ interface PostProcessingPageProps {
   readonly onRefreshAppleIntelligenceAvailability: () => void;
   readonly onSettingsChange: (settings: AppSettings) => void;
 }
-
-const defaultCleanupPrompt =
-  "Clean this transcript while preserving the speaker's meaning. Fix casing, punctuation, filler artifacts, and obvious transcription spacing. Return only the cleaned transcript.";
 
 const modeOptions = [
   {
@@ -145,8 +152,13 @@ export const PostProcessingPage = ({
 }: PostProcessingPageProps) => {
   const apiSettings = getApiSettings(settings);
   const [apiKeyDraft, setApiKeyDraft] = useState("");
-  const [promptDraft, setPromptDraft] = useState(defaultCleanupPrompt);
   const [connectionState, setConnectionState] = useState<"idle" | "ready" | "missing-key">("idle");
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [testTranscript, setTestTranscript] = useState("");
+  const [testResult, setTestResult] = useState<string | null>(null);
+  const [testWarning, setTestWarning] = useState<string | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
+  const [testState, setTestState] = useState<"idle" | "running">("idle");
   const appleIntelligenceStatus = getAppleIntelligenceStatus(
     platform,
     appleIntelligenceAvailability,
@@ -156,6 +168,15 @@ export const PostProcessingPage = ({
   const mode = settings?.postProcessingMode ?? null;
   const apiKeySummary = apiKeyDraft.length > 0 ? "Key staged for secure storage" : "No key staged";
   const selectedProviderDescription = providerDescriptions[apiSettings.providerId];
+  const apiProviderAvailable =
+    mode === "api" &&
+    apiSettings.modelId.trim().length > 0 &&
+    (connectionState === "ready" || apiSettings.apiKeyStorageKey !== null);
+  const appleIntelligenceAvailable =
+    mode === "apple-intelligence" && appleIntelligenceAvailability?.status === "available";
+  const canTestPostProcessing = Boolean(
+    settings && (appleIntelligenceAvailable || apiProviderAvailable),
+  );
 
   const fetchedModelOptions = useMemo(
     () => [
@@ -194,6 +215,32 @@ export const PostProcessingPage = ({
         modelId,
       },
     });
+  };
+
+  const runPostProcessingTest = async () => {
+    const rawTranscript = testTranscript.trim();
+    if (!rawTranscript) {
+      setTestError("Enter sample transcript text before running the test.");
+      return;
+    }
+
+    setTestState("running");
+    setTestError(null);
+    setTestResult(null);
+    setTestWarning(null);
+
+    try {
+      const result = await getRendererApi().testPostProcessing({ rawTranscript });
+      setTestResult(result.text);
+      setTestWarning(
+        result.warning ??
+          (result.text.trim() === rawTranscript ? "The model returned unchanged text." : null),
+      );
+    } catch (error) {
+      setTestError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setTestState("idle");
+    }
   };
 
   return (
@@ -343,31 +390,95 @@ export const PostProcessingPage = ({
       </SettingsSection>
 
       <SettingsSection id="cleanup-prompt" title="Prompt">
+        <SettingsRow
+          title="Test post-processing"
+          description="Run sample text through the selected Apple Intelligence or API cleanup model."
+        >
+          <Button
+            disabled={!canTestPostProcessing}
+            size="sm"
+            variant="outline"
+            type="button"
+            onClick={() => setTestDialogOpen(true)}
+          >
+            Open tester
+          </Button>
+        </SettingsRow>
         <div className="border-t border-border/60 px-4 py-4 first:border-t-0 sm:px-5">
           <Textarea
             aria-label="Default cleanup prompt"
             className="min-h-[132px]"
             disabled={!settings}
-            value={promptDraft}
-            onChange={(event) => setPromptDraft(event.target.value)}
+            value={settings?.postProcessingPrompt ?? DEFAULT_POST_PROCESSING_PROMPT}
+            onChange={(event) => updateSettings({ postProcessingPrompt: event.target.value })}
           />
           <div className="mt-3 flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start">
             <p className="text-xs leading-relaxed text-muted-foreground/80">
-              Prompt editing is local to this tab until prompt persistence is wired into provider
-              settings.
+              Saved locally with provider settings and used for Apple Intelligence and API cleanup.
             </p>
             <Button
-              disabled={!settings || promptDraft === defaultCleanupPrompt}
+              disabled={
+                !settings || settings.postProcessingPrompt === DEFAULT_POST_PROCESSING_PROMPT
+              }
               size="sm"
               variant="outline"
               type="button"
-              onClick={() => setPromptDraft(defaultCleanupPrompt)}
+              onClick={() =>
+                updateSettings({ postProcessingPrompt: DEFAULT_POST_PROCESSING_PROMPT })
+              }
             >
               Reset
             </Button>
           </div>
         </div>
       </SettingsSection>
+      <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Test Post-Processing</DialogTitle>
+            <DialogDescription>
+              The prompt from this tab is sent as the system prompt for this run.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            aria-label="Sample transcript for post-processing"
+            className="min-h-[160px]"
+            placeholder="Paste or type transcript text to clean up..."
+            value={testTranscript}
+            onChange={(event) => {
+              setTestTranscript(event.target.value);
+              setTestError(null);
+            }}
+          />
+          {testError ? (
+            <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {testError}
+            </p>
+          ) : null}
+          {testWarning ? (
+            <p className="rounded-md border border-border bg-secondary/30 px-3 py-2 text-xs text-muted-foreground">
+              {testWarning}
+            </p>
+          ) : null}
+          {testResult ? (
+            <Textarea
+              aria-label="Post-processing test result"
+              className="min-h-[132px]"
+              readOnly
+              value={testResult}
+            />
+          ) : null}
+          <DialogFooter>
+            <Button
+              disabled={testState === "running" || !canTestPostProcessing}
+              type="button"
+              onClick={runPostProcessingTest}
+            >
+              {testState === "running" ? "Running..." : "Run test"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PostProcessingError } from "@topo/asr";
 import { bundledModelCatalog } from "@topo/model-catalog";
 import {
   IpcChannels,
@@ -24,6 +25,9 @@ vi.mock("electron", () => ({
     handle: vi.fn((channel: string, handler: (event: unknown, input: unknown) => unknown) => {
       handlers.set(channel, handler);
     }),
+  },
+  shell: {
+    openPath: vi.fn(async () => ""),
   },
 }));
 
@@ -127,6 +131,7 @@ const createDependencies = (overrides: Record<string, unknown> = {}) => ({
     registerHotkey: () => Effect.succeed(() => {}),
     getActiveApplication: () => Effect.succeed({ appName: null, windowTitle: null }),
   },
+  diagnosticsLogDirectory: "/tmp/topo/logs",
   ...overrides,
 });
 
@@ -296,6 +301,120 @@ const createReadyDependencies = (
 describe("registerIpcHandlers", () => {
   beforeEach(() => {
     handlers.clear();
+  });
+
+  it("includes the diagnostics log directory in app state", async () => {
+    const dependencies = createDependencies({
+      diagnosticsLogDirectory: "/Users/test/Library/Application Support/Topo/logs",
+    });
+
+    registerIpcHandlers(dependencies);
+
+    const snapshot = await invoke<{ readonly diagnosticsLogDirectory: string }>(
+      IpcChannels.getAppState,
+    );
+
+    expect(snapshot.diagnosticsLogDirectory).toBe(
+      "/Users/test/Library/Application Support/Topo/logs",
+    );
+  });
+
+  it("opens the diagnostics log directory", async () => {
+    const openedPaths: string[] = [];
+    const dependencies = createDependencies({
+      diagnosticsLogDirectory: "/tmp/topo/logs",
+      openPath: async (path: string) => {
+        openedPaths.push(path);
+        return "";
+      },
+    });
+
+    registerIpcHandlers(dependencies);
+
+    await invoke(IpcChannels.openDiagnosticsFolder);
+
+    expect(openedPaths).toEqual(["/tmp/topo/logs"]);
+  });
+
+  it("runs Apple Intelligence post-processing tests through the configured provider", async () => {
+    const processedInputs: unknown[] = [];
+    const dependencies = createDependencies({
+      database: {
+        ...createDependencies().database,
+        settings: {
+          get: () =>
+            Effect.succeed({
+              ...DEFAULT_APP_SETTINGS,
+              postProcessingMode: "apple-intelligence" as const,
+              postProcessingPrompt: "Clean the transcript.",
+              language: "en" as const,
+            }),
+          set: (settings: typeof DEFAULT_APP_SETTINGS) => Effect.succeed(settings),
+        },
+      },
+      appleIntelligence: {
+        getAvailability: () =>
+          Effect.succeed({
+            status: "available" as const,
+            reason: "Ready.",
+          }),
+      },
+      postProcessing: {
+        process: (input: unknown) =>
+          Effect.sync(() => {
+            processedInputs.push(input);
+            return { text: "Cleaned transcript.", warning: null };
+          }),
+      },
+    });
+
+    registerIpcHandlers(dependencies);
+
+    const result = await invoke<{ readonly text: string; readonly warning: string | null }>(
+      IpcChannels.testPostProcessing,
+      { rawTranscript: "cleaned transcript" },
+    );
+
+    expect(result).toEqual({ text: "Cleaned transcript.", warning: null });
+    expect(processedInputs[0]).toMatchObject({
+      rawTranscript: "cleaned transcript",
+      prompt: "Clean the transcript.",
+      providerId: "apple-intelligence",
+      modelId: "apple-intelligence",
+    });
+  });
+
+  it("surfaces post-processing provider failures during settings tests", async () => {
+    const dependencies = createDependencies({
+      database: {
+        ...createDependencies().database,
+        settings: {
+          get: () =>
+            Effect.succeed({
+              ...DEFAULT_APP_SETTINGS,
+              postProcessingMode: "apple-intelligence" as const,
+            }),
+          set: (settings: typeof DEFAULT_APP_SETTINGS) => Effect.succeed(settings),
+        },
+      },
+      appleIntelligence: {
+        getAvailability: () =>
+          Effect.succeed({
+            status: "available" as const,
+            reason: "Ready.",
+          }),
+      },
+      postProcessing: {
+        process: () =>
+          Effect.fail(new PostProcessingError("provider_failed", "helper failed", "raw text")),
+      },
+    });
+
+    registerIpcHandlers(dependencies);
+
+    await expect(
+      invoke(IpcChannels.testPostProcessing, { rawTranscript: "raw text" }),
+    ).rejects.toThrow("helper failed");
   });
 
   it("saves transcript audio metadata during settings test dictation when enabled", async () => {

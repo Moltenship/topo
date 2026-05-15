@@ -211,6 +211,12 @@ export const App = ({ view = "workbench" }: AppProps) => {
     });
   }, [refreshSnapshot, runAction]);
 
+  const openDiagnosticsFolder = useCallback(async () => {
+    await runAction(async () => {
+      await getRendererApi().openDiagnosticsFolder();
+    });
+  }, [runAction]);
+
   const restoreDefaultSettings = useCallback(async () => {
     await updateSettings(DEFAULT_APP_SETTINGS);
   }, [updateSettings]);
@@ -287,6 +293,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
         <SettingsPage
           errorMessage={effectiveErrorMessage}
           bundleInstallProgress={snapshot?.bundleInstallProgress ?? null}
+          diagnosticsLogDirectory={snapshot?.diagnosticsLogDirectory ?? ""}
           installedModels={snapshot?.installedModels ?? []}
           isRecording={snapshot?.overlayState === "recording"}
           modelInstallProgress={snapshot?.modelInstallProgress ?? null}
@@ -297,6 +304,7 @@ export const App = ({ view = "workbench" }: AppProps) => {
           onClearTranscripts={clearTranscripts}
           onDismissError={() => setErrorMessage(null)}
           onInstallModel={installModel}
+          onOpenDiagnosticsFolder={openDiagnosticsFolder}
           onRefreshModelReadiness={refreshModelReadiness}
           onSettingsChange={updateSettings}
           onShowOverlayPreview={showOverlayPreview}

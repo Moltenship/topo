@@ -16,6 +16,7 @@ export type {
   PostProcessingProviderId,
   PostProcessingRequest,
   PostProcessingTargetSchema,
+  TestPostProcessingResponse,
 } from "@topo/contracts";
 export type { InstalledRuntimeRecord } from "@topo/contracts";
 
@@ -32,9 +33,10 @@ import type {
   NativeHotkeyEvent,
   NativeHotkeyPhase,
   OverlayPosition,
+  TestPostProcessingResponse,
   TranscriptRecord,
 } from "@topo/contracts";
-export { DEFAULT_APP_SETTINGS } from "@topo/contracts";
+export { DEFAULT_APP_SETTINGS, DEFAULT_POST_PROCESSING_PROMPT } from "@topo/contracts";
 export type {
   AppSettings,
   AppStateSnapshot,
@@ -69,6 +71,10 @@ export interface TopoApi {
   readonly cancelModelInstall: (modelId: string) => Promise<void>;
   readonly refreshModelReadiness: () => Promise<void>;
   readonly getAppleIntelligenceAvailability: () => Promise<AppleIntelligenceAvailability>;
+  readonly testPostProcessing: (input: {
+    readonly rawTranscript: string;
+  }) => Promise<TestPostProcessingResponse>;
+  readonly openDiagnosticsFolder: () => Promise<void>;
   readonly startTestDictation: () => Promise<void>;
   readonly stopTestDictation: (input: {
     readonly wavBytes: Uint8Array;

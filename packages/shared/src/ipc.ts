@@ -10,6 +10,8 @@ export {
   LoadTranscriptAudioRequest,
   LoadTranscriptAudioResponse,
   ReinsertTranscriptRequest,
+  TestPostProcessingRequest,
+  TestPostProcessingResponse,
   UpdateSettingsRequest,
   type CancelModelInstallRequest as CancelModelInstallRequestPayload,
   type CommitOverlayPreviewPositionRequest as CommitOverlayPreviewPositionRequestPayload,
@@ -22,5 +24,7 @@ export {
   type LoadTranscriptAudioRequest as LoadTranscriptAudioRequestPayload,
   type LoadTranscriptAudioResponse as LoadTranscriptAudioResponsePayload,
   type ReinsertTranscriptRequest as ReinsertTranscriptRequestPayload,
+  type TestPostProcessingRequest as TestPostProcessingRequestPayload,
+  type TestPostProcessingResponse as TestPostProcessingResponsePayload,
   type UpdateSettingsRequest as UpdateSettingsRequestPayload,
 } from "@topo/contracts";

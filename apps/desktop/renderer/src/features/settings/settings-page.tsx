@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { RefreshCw } from "lucide-react";
 import {
   DEFAULT_APP_SETTINGS,
   normalizeHotkeyFromKeys,
@@ -13,6 +14,7 @@ import { getBundledModelCatalog } from "@topo/model-catalog";
 import { HotkeyKbd } from "@/components/hotkey-kbd";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ModelCard } from "@/features/models/model-card";
 import {
   SettingResetButton,
@@ -27,6 +29,7 @@ interface SettingsPageProps {
   readonly installedModels: readonly InstalledModelRecord[];
   readonly isRecording: boolean;
   readonly bundleInstallProgress: InstallBundleProgress | null;
+  readonly diagnosticsLogDirectory: string;
   readonly modelInstallProgress: ModelInstallProgress | null;
   readonly modelReadiness: readonly ModelReadinessRecord[];
   readonly settings: AppSettings | null;
@@ -35,6 +38,7 @@ interface SettingsPageProps {
   readonly onClearTranscripts: () => void;
   readonly onDismissError: () => void;
   readonly onInstallModel: (modelId: string) => void;
+  readonly onOpenDiagnosticsFolder: () => void;
   readonly onRefreshModelReadiness: () => void;
   readonly onSettingsChange: (settings: AppSettings) => void;
   readonly onShowOverlayPreview: () => void;
@@ -113,6 +117,7 @@ export const SettingsPage = ({
   installedModels,
   isRecording,
   bundleInstallProgress,
+  diagnosticsLogDirectory,
   modelInstallProgress,
   modelReadiness,
   settings,
@@ -121,6 +126,7 @@ export const SettingsPage = ({
   onClearTranscripts,
   onDismissError,
   onInstallModel,
+  onOpenDiagnosticsFolder,
   onRefreshModelReadiness,
   onSettingsChange,
   onShowOverlayPreview,
@@ -303,12 +309,27 @@ export const SettingsPage = ({
           />
         </SettingsRow>
       </SettingsSection>
-      <SettingsSection id="models" title="Models">
-        <div className="border-t border-border/60 px-4 py-3.5 first:border-t-0 sm:px-5">
-          <Button size="sm" variant="outline" type="button" onClick={onRefreshModelReadiness}>
-            Refresh
-          </Button>
-        </div>
+      <SettingsSection
+        id="models"
+        title="Models"
+        action={
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  aria-label="Refresh model readiness"
+                  className="flex size-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground"
+                  type="button"
+                  onClick={onRefreshModelReadiness}
+                >
+                  <RefreshCw className="size-3" />
+                </button>
+              }
+            />
+            <TooltipContent side="top">Refresh model readiness</TooltipContent>
+          </Tooltip>
+        }
+      >
         {modelCatalog.map((model) => {
           const isExpanded = expandedModelId === model.id;
 
@@ -516,6 +537,22 @@ export const SettingsPage = ({
               Record
             </Button>
           </div>
+        </SettingsRow>
+      </SettingsSection>
+      <SettingsSection id="about" title="About">
+        <SettingsRow
+          title="Diagnostics"
+          description={diagnosticsLogDirectory || "Logs are created in app-managed storage."}
+        >
+          <Button
+            disabled={!diagnosticsLogDirectory}
+            size="sm"
+            variant="outline"
+            type="button"
+            onClick={onOpenDiagnosticsFolder}
+          >
+            Open folder
+          </Button>
         </SettingsRow>
       </SettingsSection>
     </div>

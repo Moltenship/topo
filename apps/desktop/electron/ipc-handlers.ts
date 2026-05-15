@@ -1,7 +1,7 @@
-import { BrowserWindow, clipboard, ipcMain } from "electron";
+import { BrowserWindow, clipboard, ipcMain, shell } from "electron";
 import { Effect } from "effect";
 import * as Schema from "effect/Schema";
-import type { DictationOrchestrator } from "@topo/asr";
+import type { DictationOrchestrator, PostProcessingProvider } from "@topo/asr";
 import type { AppDatabase } from "@topo/db";
 import {
   bundledModelCatalog,
@@ -19,6 +19,7 @@ import type {
   InstalledRuntimeRecord,
   InstallBundleProgress,
   NativeHotkeyEvent,
+  PostProcessingProviderId,
   TranscriptRecord,
 } from "@topo/shared";
 import { canStartDictation, DEFAULT_APP_SETTINGS } from "@topo/shared";
@@ -35,6 +36,7 @@ import {
   LoadTranscriptAudioRequest,
   ReinsertTranscriptRequest,
   UpdateSettingsRequest,
+  TestPostProcessingRequest,
 } from "@topo/shared";
 import type { OverlayPosition } from "@topo/shared";
 import type { ModelInstallJob } from "./model-install-job";
@@ -70,6 +72,7 @@ let currentBundleInstallProgress: InstallBundleProgress | null = null;
 interface IpcHandlerDependencies {
   readonly database: AppDatabase;
   readonly dictation: DictationOrchestrator;
+  readonly postProcessing?: PostProcessingProvider;
   readonly audio?: SubmittedAudioCaptureService;
   readonly modelInstallJob: ModelInstallJob;
   readonly runtimeInstallJob: RuntimeInstallJob;
@@ -83,6 +86,8 @@ interface IpcHandlerDependencies {
   readonly whisperCppRuntimeResolver?: WhisperCppRuntimeResolver;
   readonly whisperKitBridge?: WhisperKitBridge;
   readonly transcriptAudioStore?: TranscriptAudioStore;
+  readonly diagnosticsLogDirectory: string;
+  readonly openPath?: (path: string) => Promise<string>;
   readonly createWhisperCppRuntimeResolver?: (input: {
     readonly installedBinaryPath: string | null;
     readonly preferredAccelerator: AppSettings["whisperCppAccelerator"];
@@ -140,6 +145,28 @@ const decodeStopTestDictationInput = (
   }
 
   return { wavBytes, durationMs: candidate.durationMs };
+};
+
+const getPostProcessingProviderId = (settings: AppSettings): PostProcessingProviderId => {
+  if (settings.postProcessingMode === "api") {
+    return settings.postProcessingApiProvider?.providerId ?? "openai";
+  }
+
+  return settings.postProcessingMode === "apple-intelligence"
+    ? "apple-intelligence"
+    : "lightweight";
+};
+
+const getPostProcessingModelId = (settings: AppSettings): string => {
+  if (settings.postProcessingMode === "api") {
+    return settings.postProcessingApiProvider?.modelId ?? "gpt-5.4-mini";
+  }
+
+  if (settings.postProcessingMode === "apple-intelligence") {
+    return "apple-intelligence";
+  }
+
+  return "local";
 };
 
 const deleteTranscriptAudioFiles = (
@@ -346,8 +373,23 @@ const getAppState = (
       modelInstallProgress: dependencies.modelInstallJob.getCurrentProgress(),
       runtimeInstallProgress: dependencies.runtimeInstallJob.getCurrentProgress(),
       bundleInstallProgress: currentBundleInstallProgress,
+      diagnosticsLogDirectory: dependencies.diagnosticsLogDirectory,
       errorMessage: currentErrorMessage,
     };
+  });
+
+const openDiagnosticsFolder = (dependencies: IpcHandlerDependencies): Effect.Effect<void, Error> =>
+  Effect.tryPromise({
+    try: async () => {
+      const errorMessage = await (dependencies.openPath ?? shell.openPath)(
+        dependencies.diagnosticsLogDirectory,
+      );
+
+      if (errorMessage) {
+        throw new Error(errorMessage);
+      }
+    },
+    catch: (error) => (error instanceof Error ? error : new Error(String(error))),
   });
 
 const recordInstalledModel = (
@@ -804,6 +846,7 @@ const stopTestDictation = (
           installedModelPath: installedModel.installedPath,
           runtimeBinaryPath: null,
           postProcessingMode: settings.postProcessingMode,
+          postProcessingPrompt: settings.postProcessingPrompt,
           recordingMode: settings.recordingMode,
           ...(audioPreservation ? { preserveCapturedAudio: audioPreservation } : {}),
           onPreserveCapturedAudioError: observeTranscriptAudioPreservationError(dependencies),
@@ -872,6 +915,7 @@ const stopTestDictation = (
           : null,
       accelerator: settings.whisperCppAccelerator,
       postProcessingMode: settings.postProcessingMode,
+      postProcessingPrompt: settings.postProcessingPrompt,
       recordingMode: settings.recordingMode,
       ...(audioPreservation ? { preserveCapturedAudio: audioPreservation } : {}),
       onPreserveCapturedAudioError: observeTranscriptAudioPreservationError(dependencies),
@@ -879,6 +923,56 @@ const stopTestDictation = (
     });
 
     return yield* finalizeStoppedTranscript(dependencies, settings, transcript);
+  });
+
+const testPostProcessing = (
+  dependencies: IpcHandlerDependencies,
+  rawTranscript: string,
+): Effect.Effect<{ readonly text: string; readonly warning: string | null }, Error> =>
+  Effect.gen(function* () {
+    const settings = yield* getSettings(dependencies);
+    if (settings.postProcessingMode === "raw" || settings.postProcessingMode === "lightweight") {
+      return yield* Effect.fail(
+        new Error("Select Apple Intelligence or an API provider before testing post-processing."),
+      );
+    }
+
+    if (settings.postProcessingMode === "apple-intelligence") {
+      const availability = yield* (
+        dependencies.appleIntelligence?.getAvailability() ??
+          Effect.succeed({
+            status: "device-not-eligible" as const,
+            reason: "Apple Intelligence is only available on supported macOS devices.",
+          })
+      );
+
+      if (availability.status !== "available") {
+        return yield* Effect.fail(new Error(availability.reason));
+      }
+    }
+
+    if (settings.postProcessingMode === "api" && !settings.postProcessingApiProvider) {
+      return yield* Effect.fail(
+        new Error("Select an API provider before testing post-processing."),
+      );
+    }
+
+    const provider = dependencies.postProcessing;
+    if (!provider) {
+      return yield* Effect.fail(new Error("Post-processing provider is not configured."));
+    }
+
+    return yield* provider
+      .process({
+        rawTranscript,
+        language: settings.language,
+        promptId: "settings-test",
+        prompt: settings.postProcessingPrompt,
+        providerId: getPostProcessingProviderId(settings),
+        modelId: getPostProcessingModelId(settings),
+        targetSchema: "plain-text",
+      })
+      .pipe(Effect.mapError((error) => new Error(error.message)));
   });
 
 const preserveCapturedAudio = (
@@ -1101,6 +1195,18 @@ export const registerIpcHandlers = (dependencies: IpcHandlerDependencies) => {
           reason: "Apple Intelligence is only available on supported macOS devices.",
         }),
     ),
+  );
+  ipcMain.handle(IpcChannels.testPostProcessing, (_event, input: unknown) =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const payload = yield* decodeIpcPayload(TestPostProcessingRequest, input);
+
+        return yield* testPostProcessing(dependencies, payload.rawTranscript);
+      }),
+    ),
+  );
+  ipcMain.handle(IpcChannels.openDiagnosticsFolder, () =>
+    Effect.runPromise(openDiagnosticsFolder(dependencies)),
   );
   ipcMain.handle(IpcChannels.startTestDictation, () =>
     Effect.runPromise(

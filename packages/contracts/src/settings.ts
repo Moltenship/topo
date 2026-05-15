@@ -2,6 +2,9 @@ import * as Schema from "effect/Schema";
 import { InsertionMode, LanguageCode, RecordingMode } from "./dictation";
 import { ApiPostProcessingSettings, PostProcessingMode } from "./post-processing";
 
+export const DEFAULT_POST_PROCESSING_PROMPT =
+  "Clean this transcript while preserving the speaker's meaning. Fix casing, punctuation, filler artifacts, and obvious transcription spacing. Return only the cleaned transcript.";
+
 export const SilenceTimeoutMs = Schema.Literal(1200, 1500, 2000, 3000);
 export type SilenceTimeoutMs = typeof SilenceTimeoutMs.Type;
 
@@ -24,6 +27,9 @@ export const AppSettings = Schema.Struct({
   silenceTimeoutMs: Schema.optionalWith(Schema.NullOr(SilenceTimeoutMs), { default: () => null }),
   insertionMode: Schema.optionalWith(InsertionMode, { default: () => "paste" }),
   postProcessingMode: Schema.optionalWith(PostProcessingMode, { default: () => "lightweight" }),
+  postProcessingPrompt: Schema.optionalWith(Schema.String, {
+    default: () => DEFAULT_POST_PROCESSING_PROMPT,
+  }),
   postProcessingApiProvider: Schema.optionalWith(Schema.NullOr(ApiPostProcessingSettings), {
     default: () => null,
   }),

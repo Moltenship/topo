@@ -9,6 +9,8 @@ describe("appSettingsSchema", () => {
       silenceTimeoutMs: null,
       insertionMode: "paste",
       postProcessingMode: "lightweight",
+      postProcessingPrompt:
+        "Clean this transcript while preserving the speaker's meaning. Fix casing, punctuation, filler artifacts, and obvious transcription spacing. Return only the cleaned transcript.",
       postProcessingApiProvider: null,
       language: "auto",
       historyEnabled: true,
@@ -32,6 +34,12 @@ describe("appSettingsSchema", () => {
 
   it("accepts transcript audio saving preference", () => {
     expect(parseAppSettings({ saveTranscriptAudio: true }).saveTranscriptAudio).toBe(true);
+  });
+
+  it("accepts a custom post-processing prompt", () => {
+    expect(
+      parseAppSettings({ postProcessingPrompt: "Return concise text." }).postProcessingPrompt,
+    ).toBe("Return concise text.");
   });
 
   it.each(["auto", "cpu", "gpu"] as const)("accepts %s whisper.cpp accelerator", (value) => {

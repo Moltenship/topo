@@ -11,6 +11,7 @@ describe("post-processing providers", () => {
     rawTranscript: "  hello   world  ! ",
     language: "en",
     promptId: "default-cleanup",
+    prompt: "Clean the transcript.",
     providerId: "lightweight",
     modelId: "local",
     targetSchema: "plain-text",
@@ -42,6 +43,29 @@ describe("post-processing providers", () => {
       text: "cleaned:true",
       warning: null,
     });
+  });
+
+  it("uses the selected prompt as the AI SDK system prompt", async () => {
+    const requests: { readonly system: string; readonly prompt: string }[] = [];
+    const provider = createAiSdkPostProcessingProvider({
+      generate: async ({ system, prompt }) => {
+        requests.push({ system, prompt });
+        return { text: "cleaned" };
+      },
+    });
+
+    await Effect.runPromise(
+      provider.process({
+        ...input,
+        prompt: "Rewrite as a status update.",
+        providerId: "openai",
+        modelId: "gpt-5.4-mini",
+      }),
+    );
+
+    expect(requests[0]?.system).toBe("Rewrite as a status update.");
+    expect(requests[0]?.prompt).not.toContain("Rewrite as a status update.");
+    expect(requests[0]?.prompt).toContain(input.rawTranscript);
   });
 
   it("preserves the raw transcript when AI processing fails", async () => {

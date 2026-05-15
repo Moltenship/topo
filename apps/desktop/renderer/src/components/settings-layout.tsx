@@ -10,19 +10,24 @@ export interface SegmentedOption<T extends string | number | boolean | null> {
 }
 
 export const SettingsSection = ({
+  action,
   children,
   id,
   title,
 }: {
+  readonly action?: ReactNode;
   readonly children: ReactNode;
   readonly id: string;
   readonly title: string;
 }) => (
   <section className="space-y-2.5" id={id}>
-    <h2 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/50">
-      <span className="h-px w-3 bg-border" aria-hidden="true" />
-      {title}
-    </h2>
+    <div className="flex min-h-5 items-center gap-2">
+      <h2 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground/50">
+        <span className="h-px w-3 bg-border" aria-hidden="true" />
+        {title}
+      </h2>
+      {action ? <div className="inline-flex items-center">{action}</div> : null}
+    </div>
     <div className="rounded-2xl border bg-card text-card-foreground shadow-sm">{children}</div>
   </section>
 );

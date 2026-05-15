@@ -47,6 +47,7 @@ export const createLightweightPostProcessingProvider = (): PostProcessingProvide
 
 export interface AiSdkPostProcessingGeneratorInput {
   readonly modelId: string;
+  readonly system: string;
   readonly prompt: string;
 }
 
@@ -74,9 +75,10 @@ export const createAiSdkPostProcessingProvider = ({
         const prompt = buildPostProcessingPrompt(input);
         const result =
           generate !== undefined
-            ? await generate({ modelId: input.modelId, prompt })
+            ? await generate({ modelId: input.modelId, system: input.prompt, prompt })
             : await generateText({
                 model: requireModel(model, input.modelId),
+                system: input.prompt,
                 prompt,
               });
 
@@ -93,7 +95,6 @@ export const createAiSdkPostProcessingProvider = ({
 
 export const buildPostProcessingPrompt = (input: PostProcessingInput): string =>
   [
-    "Clean this transcript while preserving the speaker's meaning.",
     `Language: ${input.language}.`,
     `Target schema: ${input.targetSchema}.`,
     "",

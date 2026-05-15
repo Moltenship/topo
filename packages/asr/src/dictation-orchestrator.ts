@@ -33,6 +33,7 @@ export interface DictationOrchestrator {
     readonly fallbackRuntimeBinaryPath?: string | null;
     readonly accelerator?: "auto" | "cpu" | "gpu" | null;
     readonly postProcessingMode: PostProcessingMode;
+    readonly postProcessingPrompt: string;
     readonly recordingMode: RecordingMode;
     readonly preserveCapturedAudio?: (input: {
       readonly transcriptId: string;
@@ -87,6 +88,7 @@ export const createDictationOrchestrator = (
                           rawTranscript: result.text,
                           language: result.language,
                           promptId: "default-cleanup",
+                          prompt: input.postProcessingPrompt,
                           providerId: getPostProcessingProviderId(input.postProcessingMode),
                           modelId: getPostProcessingModelId(input.postProcessingMode),
                           targetSchema: "plain-text",

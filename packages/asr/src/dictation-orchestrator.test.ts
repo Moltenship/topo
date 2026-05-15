@@ -33,6 +33,7 @@ describe("createDictationOrchestrator", () => {
           installedModelPath: "C:\\models\\ggml-small.bin",
           runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
           postProcessingMode: "lightweight",
+          postProcessingPrompt: "Clean the transcript.",
           recordingMode: "toggle-to-talk",
         });
       }),
@@ -88,6 +89,7 @@ describe("createDictationOrchestrator", () => {
           installedModelPath: "C:\\models\\ggml-small.bin",
           runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
           postProcessingMode: "lightweight",
+          postProcessingPrompt: "Clean the transcript.",
           recordingMode: "toggle-to-talk",
         }),
       ),
@@ -137,6 +139,7 @@ describe("createDictationOrchestrator", () => {
         installedModelPath: "/models/model.bin",
         runtimeBinaryPath: "/bin/whisper-cli",
         postProcessingMode: "raw",
+        postProcessingPrompt: "Clean the transcript.",
         recordingMode: "toggle-to-talk",
         preserveCapturedAudio: ({ transcriptId, audioPath }) => {
           expect(cleanupCalls).toEqual([]);
@@ -196,6 +199,7 @@ describe("createDictationOrchestrator", () => {
         installedModelPath: "/models/model.bin",
         runtimeBinaryPath: "/bin/whisper-cli",
         postProcessingMode: "raw",
+        postProcessingPrompt: "Clean the transcript.",
         recordingMode: "toggle-to-talk",
         preserveCapturedAudio: () => Effect.fail(new Error("copy failed")),
         onPreserveCapturedAudioError: (error) =>
@@ -234,6 +238,7 @@ describe("createDictationOrchestrator", () => {
           installedModelPath: "/models/model.bin",
           runtimeBinaryPath: "/bin/whisper-cli",
           postProcessingMode: "raw",
+          postProcessingPrompt: "Clean the transcript.",
           recordingMode: "toggle-to-talk",
         }),
       ),
@@ -267,6 +272,7 @@ describe("createDictationOrchestrator", () => {
         installedModelPath: "/models/model.bin",
         runtimeBinaryPath: "/bin/whisper-cli",
         postProcessingMode: "raw",
+        postProcessingPrompt: "Clean the transcript.",
         recordingMode: "toggle-to-talk",
         shouldPreserveCapturedAudio: ({ text }) => text.trim().length > 0,
         preserveCapturedAudio: () =>
@@ -317,6 +323,7 @@ describe("createDictationOrchestrator", () => {
           installedModelPath: "C:\\models\\ggml-small.bin",
           runtimeBinaryPath: "C:\\bin\\whisper-cli.exe",
           postProcessingMode: "api",
+          postProcessingPrompt: "Clean the transcript.",
           recordingMode: "toggle-to-talk",
         });
       }),
