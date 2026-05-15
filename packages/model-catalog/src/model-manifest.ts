@@ -7,7 +7,8 @@ import { resolveDownloadSourceUrl } from "./download-source";
 
 const RuntimeId = Schema.Literal(
   "whisperkit",
-  "whisper-cpp-windows-x64",
+  "whisper-cpp-windows-x64-cpu",
+  "whisper-cpp-windows-x64-cuda",
   "whisper-cpp-macos-arm64",
 );
 

@@ -26,6 +26,19 @@ describe("bundledModelCatalog", () => {
     expect(findCatalogModel("whisper-cpp-small")?.runtime).toBe("whisper-cpp");
   });
 
+  it("allows the Windows whisper.cpp model to use CUDA with CPU fallback", () => {
+    expect(findCatalogModel("whisper-cpp-small")?.runtimeRequirement.supportedRuntimeIds).toEqual([
+      "whisper-cpp-windows-x64-cuda",
+      "whisper-cpp-windows-x64-cpu",
+    ]);
+  });
+
+  it("tells non-NVIDIA users managed GPU acceleration is not supported", () => {
+    expect(findCatalogModel("whisper-cpp-small")?.recommendedReason).toContain(
+      "Managed GPU acceleration for this model currently requires an NVIDIA GPU",
+    );
+  });
+
   it("declares runtime requirements and comparison scores for every model", () => {
     expect(
       getBundledModelCatalog({ includeDev: true }).every(

@@ -92,7 +92,7 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     runtime: "whisper-cpp",
     runtimeRequirement: {
       engine: "whisper-cpp",
-      supportedRuntimeIds: ["whisper-cpp-windows-x64"],
+      supportedRuntimeIds: ["whisper-cpp-windows-x64-cuda", "whisper-cpp-windows-x64-cpu"],
     },
     platforms: ["windows"],
     architectures: ["x64", "arm64"],
@@ -116,7 +116,8 @@ export const bundledModelCatalog: readonly ModelCatalogEntry[] = [
     speedLabel: "fast",
     accuracyScore: 72,
     speedScore: 70,
-    recommendedReason: "Recommended on Windows for a stable local-first baseline.",
+    recommendedReason:
+      "Recommended on Windows for a stable local-first baseline. Managed GPU acceleration for this model currently requires an NVIDIA GPU.",
     badges: ["recommended"],
     experimental: false,
   },
@@ -160,7 +161,11 @@ export const bundledDevModelCatalog: readonly ModelCatalogEntry[] = [
     runtime: "whisper-cpp",
     runtimeRequirement: {
       engine: "whisper-cpp",
-      supportedRuntimeIds: ["whisper-cpp-windows-x64", "whisper-cpp-macos-arm64"],
+      supportedRuntimeIds: [
+        "whisper-cpp-windows-x64-cuda",
+        "whisper-cpp-windows-x64-cpu",
+        "whisper-cpp-macos-arm64",
+      ],
     },
     platforms: ["windows", "macos"],
     architectures: ["x64", "arm64"],

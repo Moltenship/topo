@@ -32,10 +32,10 @@ describe("InstallBundleProgress", () => {
   it("decodes bundle progress with child runtime and model progress", () => {
     const decoded = Schema.decodeUnknownSync(InstallBundleProgress)({
       modelId: "whisper-cpp-small",
-      runtimeId: "whisper-cpp-windows-x64",
+      runtimeId: "whisper-cpp-windows-x64-cpu",
       stage: "runtime",
       runtimeProgress: {
-        modelId: "whisper-cpp-windows-x64",
+        modelId: "whisper-cpp-windows-x64-cpu",
         status: "downloading",
         receivedBytes: 1,
         totalBytes: 2,
@@ -46,7 +46,7 @@ describe("InstallBundleProgress", () => {
       errorMessage: null,
     });
 
-    expect(decoded.runtimeId).toBe("whisper-cpp-windows-x64");
+    expect(decoded.runtimeId).toBe("whisper-cpp-windows-x64-cpu");
     expect(decoded.stage).toBe("runtime");
   });
 });
