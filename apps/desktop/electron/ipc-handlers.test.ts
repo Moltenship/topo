@@ -29,6 +29,9 @@ const createDependencies = () => ({
     transcripts: {
       insert: () => Effect.void,
       getById: () => Effect.succeed(null),
+      getAudioFileNameById: () => Effect.succeed(null),
+      getAudioFileNamesCreatedBefore: () => Effect.succeed([]),
+      listAudioFileNames: () => Effect.succeed([]),
       list: () => Effect.succeed([]),
       deleteById: () => Effect.void,
       deleteCreatedBefore: () => Effect.void,

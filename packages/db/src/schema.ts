@@ -44,6 +44,9 @@ export const transcripts = sqliteTable("transcripts", {
   insertionMode: text("insertion_mode").notNull(),
   insertionStatus: text("insertion_status").notNull(),
   targetAppName: text("target_app_name"),
+  audioFileName: text("audio_file_name"),
+  audioMimeType: text("audio_mime_type"),
+  audioByteSize: integer("audio_byte_size"),
 });
 
 export const insertionEvents = sqliteTable("insertion_events", {

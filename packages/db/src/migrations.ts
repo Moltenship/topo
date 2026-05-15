@@ -85,6 +85,14 @@ const migrations: readonly Migration[] = [
       );
     `,
   },
+  {
+    id: "0004_transcript_audio_metadata",
+    sql: `
+      ALTER TABLE transcripts ADD COLUMN audio_file_name TEXT;
+      ALTER TABLE transcripts ADD COLUMN audio_mime_type TEXT;
+      ALTER TABLE transcripts ADD COLUMN audio_byte_size INTEGER;
+    `,
+  },
 ];
 
 const createMigrationTable = (sqlite: Database.Database) => {

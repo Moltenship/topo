@@ -40,9 +40,9 @@ describe("openAppDatabase", () => {
         insertionMode: "paste",
         insertionStatus: "skipped",
         targetAppName: null,
-        audioFileName: null,
-        audioMimeType: null,
-        audioByteSize: null,
+        audioFileName: "transcript_1.wav",
+        audioMimeType: "audio/wav",
+        audioByteSize: 45,
       }),
     );
 
@@ -52,6 +52,7 @@ describe("openAppDatabase", () => {
     expect(existsSync(database.path)).toBe(true);
     expect(transcripts).toHaveLength(1);
     expect(transcripts[0]?.text).toBe("persistent local transcript");
+    expect(transcripts[0]?.audioFileName).toBe("transcript_1.wav");
   });
 
   it("persists installed model records", async () => {
@@ -121,6 +122,25 @@ describe("openAppDatabase", () => {
       { id: "0001_initial_schema" },
       { id: "0002_expand_installed_models" },
       { id: "0003_installed_runtimes" },
+      { id: "0004_transcript_audio_metadata" },
     ]);
+  });
+
+  it("migrates transcript audio metadata columns", async () => {
+    const directory = makeTemporaryDirectory();
+    const database = await Effect.runPromise(openAppDatabase(directory));
+    await Effect.runPromise(database.close());
+
+    const sqlite = new Database(database.path, { readonly: true });
+    const columns = sqlite.prepare("PRAGMA table_info(transcripts)").all();
+    sqlite.close();
+
+    expect(columns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "audio_file_name" }),
+        expect.objectContaining({ name: "audio_mime_type" }),
+        expect.objectContaining({ name: "audio_byte_size" }),
+      ]),
+    );
   });
 });

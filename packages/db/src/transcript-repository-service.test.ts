@@ -23,7 +23,10 @@ const makeMemoryLayer = () => {
       stop_reason TEXT NOT NULL,
       insertion_mode TEXT NOT NULL,
       insertion_status TEXT NOT NULL,
-      target_app_name TEXT
+      target_app_name TEXT,
+      audio_file_name TEXT,
+      audio_mime_type TEXT,
+      audio_byte_size INTEGER
     )
   `);
 
@@ -66,6 +69,9 @@ describe("TranscriptRepositoryService", () => {
     const fakeLayer = Layer.succeed(TranscriptRepositoryService, {
       insert: () => Effect.void,
       getById: () => Effect.succeed(null),
+      getAudioFileNameById: () => Effect.succeed(null),
+      getAudioFileNamesCreatedBefore: () => Effect.succeed([]),
+      listAudioFileNames: () => Effect.succeed([]),
       list: () =>
         Effect.succeed([
           {
