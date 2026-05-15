@@ -23,23 +23,26 @@ const normalizeTranscriptRecord = (row: typeof transcripts.$inferSelect): Transc
 });
 
 export interface TranscriptRepository {
-  readonly insert: (record: TranscriptRecord) => Effect.Effect<void>;
+  readonly insert: (record: TranscriptRecord) => Effect.Effect<void, Error>;
   readonly getById: (id: string) => Effect.Effect<TranscriptRecord | null>;
   readonly getAudioFileNameById: (id: string) => Effect.Effect<string | null>;
   readonly getAudioFileNamesCreatedBefore: (cutoffIso: string) => Effect.Effect<readonly string[]>;
   readonly listAudioFileNames: () => Effect.Effect<readonly string[]>;
   readonly list: (query?: string) => Effect.Effect<readonly TranscriptRecord[]>;
-  readonly deleteById: (id: string) => Effect.Effect<void>;
-  readonly deleteCreatedBefore: (cutoffIso: string) => Effect.Effect<void>;
-  readonly clear: () => Effect.Effect<void>;
+  readonly deleteById: (id: string) => Effect.Effect<void, Error>;
+  readonly deleteCreatedBefore: (cutoffIso: string) => Effect.Effect<void, Error>;
+  readonly clear: () => Effect.Effect<void, Error>;
 }
 
 export const createTranscriptRepository = (
   db: BetterSQLite3Database<Record<string, unknown>>,
 ): TranscriptRepository => ({
   insert: (record) =>
-    Effect.sync(() => {
-      db.insert(transcripts).values(record).run();
+    Effect.try({
+      try: () => {
+        db.insert(transcripts).values(record).run();
+      },
+      catch: toError,
     }),
   getById: (id) =>
     Effect.sync(() => {
@@ -97,15 +100,27 @@ export const createTranscriptRepository = (
       return rows.map(normalizeTranscriptRecord);
     }),
   deleteById: (id) =>
-    Effect.sync(() => {
-      db.delete(transcripts).where(eq(transcripts.id, id)).run();
+    Effect.try({
+      try: () => {
+        db.delete(transcripts).where(eq(transcripts.id, id)).run();
+      },
+      catch: toError,
     }),
   deleteCreatedBefore: (cutoffIso) =>
-    Effect.sync(() => {
-      db.delete(transcripts).where(lt(transcripts.createdAt, cutoffIso)).run();
+    Effect.try({
+      try: () => {
+        db.delete(transcripts).where(lt(transcripts.createdAt, cutoffIso)).run();
+      },
+      catch: toError,
     }),
   clear: () =>
-    Effect.sync(() => {
-      db.delete(transcripts).run();
+    Effect.try({
+      try: () => {
+        db.delete(transcripts).run();
+      },
+      catch: toError,
     }),
 });
+
+const toError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error(String(error));

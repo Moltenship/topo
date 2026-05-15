@@ -159,6 +159,24 @@ const cleanupSavedTranscriptAudio = (
     transcript.audioFileName ? [transcript.audioFileName] : [],
   );
 
+const reconcileUnreferencedTranscriptAudio = (
+  dependencies: IpcHandlerDependencies,
+): Effect.Effect<void, Error> =>
+  Effect.gen(function* () {
+    if (!dependencies.transcriptAudioStore) {
+      return;
+    }
+
+    const [storedFileNames, referencedFileNames] = yield* Effect.all([
+      dependencies.transcriptAudioStore.listFileNames(),
+      dependencies.database.transcripts.listAudioFileNames(),
+    ]);
+    const referenced = new Set(referencedFileNames);
+    const unreferencedFileNames = storedFileNames.filter((fileName) => !referenced.has(fileName));
+
+    yield* deleteTranscriptAudioFiles(dependencies, unreferencedFileNames);
+  });
+
 const errorMessage = (error: Error): string => error.message || String(error);
 
 const combineSavedAudioCleanupError = (operationError: Error, cleanupError: Error): Error =>
@@ -195,7 +213,7 @@ const pruneExpiredTranscripts = (
   settings: AppSettings,
 ): Effect.Effect<void, Error> => {
   if (settings.autoDeleteHistoryDays === null) {
-    return Effect.void;
+    return reconcileUnreferencedTranscriptAudio(dependencies);
   }
 
   const retentionMs = settings.autoDeleteHistoryDays * 24 * 60 * 60 * 1000;

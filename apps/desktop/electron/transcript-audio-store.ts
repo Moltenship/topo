@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, rm, stat } from "node:fs/promises";
+import { copyFile, mkdir, readFile, readdir, rm, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { Effect } from "effect";
 
@@ -20,6 +20,7 @@ export interface TranscriptAudioStore {
     readonly sourcePath: string;
   }) => Effect.Effect<TranscriptAudioMetadata, Error>;
   readonly loadByFileName: (fileName: string) => Effect.Effect<LoadedTranscriptAudio, Error>;
+  readonly listFileNames: () => Effect.Effect<readonly string[], Error>;
   readonly deleteByFileNames: (fileNames: readonly string[]) => Effect.Effect<void, Error>;
 }
 
@@ -57,6 +58,20 @@ export const createTranscriptAudioStore = (rootDirectory: string): TranscriptAud
         },
         catch: toError,
       }),
+    listFileNames: () =>
+      Effect.tryPromise({
+        try: async () => {
+          await mkdir(rootDirectory, { recursive: true });
+          const entries = await readdir(rootDirectory, { withFileTypes: true });
+
+          return entries
+            .filter((entry) => entry.isFile())
+            .map((entry) => entry.name)
+            .filter(isSimpleWavFileName)
+            .sort();
+        },
+        catch: toError,
+      }),
     deleteByFileNames: (fileNames) =>
       Effect.tryPromise({
         try: async () => {
@@ -70,18 +85,19 @@ export const createTranscriptAudioStore = (rootDirectory: string): TranscriptAud
 };
 
 const assertSimpleFileName = (fileName: string): string => {
-  if (
-    fileName.length === 0 ||
-    fileName === "." ||
-    fileName === ".." ||
-    basename(fileName) !== fileName ||
-    !fileName.endsWith(".wav")
-  ) {
+  if (!isSimpleWavFileName(fileName)) {
     throw new Error("Transcript audio file name must be a simple wav file name.");
   }
 
   return fileName;
 };
+
+const isSimpleWavFileName = (fileName: string): boolean =>
+  fileName.length > 0 &&
+  fileName !== "." &&
+  fileName !== ".." &&
+  basename(fileName) === fileName &&
+  fileName.endsWith(".wav");
 
 const toError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error));

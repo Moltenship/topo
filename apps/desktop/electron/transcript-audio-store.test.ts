@@ -40,6 +40,26 @@ describe("createTranscriptAudioStore", () => {
     });
   });
 
+  it("lists simple wav files in storage", async () => {
+    const root = await mkdtemp(join(tmpdir(), "topo-audio-"));
+    await writeFile(join(root, "tr_2.wav"), Buffer.from([2]));
+    await writeFile(join(root, "notes.txt"), Buffer.from([3]));
+    await writeFile(join(root, "tr_1.wav"), Buffer.from([1]));
+    const store = createTranscriptAudioStore(root);
+
+    await expect(Effect.runPromise(store.listFileNames())).resolves.toEqual([
+      "tr_1.wav",
+      "tr_2.wav",
+    ]);
+  });
+
+  it("creates the storage directory before listing files", async () => {
+    const root = await mkdtemp(join(tmpdir(), "topo-audio-"));
+    const store = createTranscriptAudioStore(join(root, "missing-audio"));
+
+    await expect(Effect.runPromise(store.listFileNames())).resolves.toEqual([]);
+  });
+
   it("deletes existing wav files by file name", async () => {
     const root = await mkdtemp(join(tmpdir(), "topo-audio-"));
     const audioPath = join(root, "tr_1.wav");

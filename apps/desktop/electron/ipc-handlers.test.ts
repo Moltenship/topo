@@ -153,6 +153,7 @@ const createReadyDependencies = (
         readonly mimeType: "audio/wav";
         readonly byteSize: number;
       }>;
+      readonly listFileNames: () => Effect.Effect<readonly string[], Error>;
       readonly deleteByFileNames: (fileNames: readonly string[]) => Effect.Effect<void, Error>;
     };
   } = {},
@@ -176,6 +177,7 @@ const createReadyDependencies = (
         mimeType: "audio/wav" as const,
         byteSize: 4,
       }),
+    listFileNames: () => Effect.succeed([]),
     deleteByFileNames: () => Effect.void,
   };
   const dependencies = createDependencies({
@@ -418,6 +420,7 @@ describe("registerIpcHandlers", () => {
               mimeType: "audio/wav" as const,
               byteSize: 4,
             }),
+          listFileNames: () => Effect.succeed([]),
           deleteByFileNames: (fileNames) =>
             Effect.sync(() => {
               deletedFileNames.push(fileNames);
@@ -463,6 +466,7 @@ describe("registerIpcHandlers", () => {
               mimeType: "audio/wav" as const,
               byteSize: 4,
             }),
+          listFileNames: () => Effect.succeed([]),
           deleteByFileNames: () => Effect.void,
         },
       },
@@ -517,6 +521,7 @@ describe("registerIpcHandlers", () => {
               mimeType: "audio/wav" as const,
               byteSize: 4,
             }),
+          listFileNames: () => Effect.succeed([]),
           deleteByFileNames: (fileNames) =>
             Effect.sync(() => {
               deletedFileNames.push(fileNames);
@@ -578,6 +583,7 @@ describe("registerIpcHandlers", () => {
               mimeType: "audio/wav" as const,
               byteSize: 4,
             }),
+          listFileNames: () => Effect.succeed([]),
           deleteByFileNames: (fileNames) =>
             Effect.sync(() => {
               deletedFileNames.push(fileNames);
@@ -621,6 +627,7 @@ describe("registerIpcHandlers", () => {
             mimeType: "audio/wav" as const,
             byteSize: 4,
           }),
+        listFileNames: () => Effect.succeed([]),
         deleteByFileNames: () => Effect.void,
       },
     });
@@ -656,6 +663,7 @@ describe("registerIpcHandlers", () => {
       transcriptAudioStore: {
         saveWavForTranscript: () => Effect.fail(new Error("not implemented")),
         loadByFileName: () => Effect.fail(new Error("not implemented")),
+        listFileNames: () => Effect.succeed([]),
         deleteByFileNames: (fileNames: readonly string[]) =>
           Effect.sync(() => {
             calls.push(`delete-files:${fileNames.join(",")}`);
@@ -691,6 +699,7 @@ describe("registerIpcHandlers", () => {
       transcriptAudioStore: {
         saveWavForTranscript: () => Effect.fail(new Error("not implemented")),
         loadByFileName: () => Effect.fail(new Error("not implemented")),
+        listFileNames: () => Effect.succeed([]),
         deleteByFileNames: () =>
           Effect.sync(() => {
             calls.push("delete-files");
@@ -727,6 +736,7 @@ describe("registerIpcHandlers", () => {
       transcriptAudioStore: {
         saveWavForTranscript: () => Effect.fail(new Error("not implemented")),
         loadByFileName: () => Effect.fail(new Error("not implemented")),
+        listFileNames: () => Effect.succeed([]),
         deleteByFileNames: (fileNames: readonly string[]) =>
           Effect.sync(() => {
             calls.push(`delete-files:${fileNames.join(",")}`);
@@ -738,7 +748,12 @@ describe("registerIpcHandlers", () => {
 
     await invoke(IpcChannels.clearTranscripts);
 
-    expect(calls).toEqual(["list-audio-files", "delete-files:tr_1.wav,tr_2.wav", "clear-rows"]);
+    expect(calls).toEqual([
+      "list-audio-files",
+      "delete-files:tr_1.wav,tr_2.wav",
+      "clear-rows",
+      "list-audio-files",
+    ]);
   });
 
   it("rejects transcript clearing when saved audio deletion fails", async () => {
@@ -762,6 +777,7 @@ describe("registerIpcHandlers", () => {
       transcriptAudioStore: {
         saveWavForTranscript: () => Effect.fail(new Error("not implemented")),
         loadByFileName: () => Effect.fail(new Error("not implemented")),
+        listFileNames: () => Effect.succeed([]),
         deleteByFileNames: () =>
           Effect.sync(() => {
             calls.push("delete-files");
@@ -804,6 +820,7 @@ describe("registerIpcHandlers", () => {
       transcriptAudioStore: {
         saveWavForTranscript: () => Effect.fail(new Error("not implemented")),
         loadByFileName: () => Effect.fail(new Error("not implemented")),
+        listFileNames: () => Effect.succeed([]),
         deleteByFileNames: (fileNames: readonly string[]) =>
           Effect.sync(() => {
             calls.push(`delete-files:${fileNames.join(",")}`);
@@ -819,6 +836,47 @@ describe("registerIpcHandlers", () => {
       "list-expired-audio-files",
       "delete-files:old.wav",
       "delete-expired-rows",
+    ]);
+  });
+
+  it("deletes unreferenced saved audio before listing transcripts", async () => {
+    const calls: string[] = [];
+    const dependencies = createDependencies({
+      database: {
+        ...createDependencies().database,
+        transcripts: {
+          ...createDependencies().database.transcripts,
+          listAudioFileNames: () =>
+            Effect.sync(() => {
+              calls.push("list-referenced-audio-files");
+              return ["referenced.wav"];
+            }),
+          list: () => Effect.succeed([]),
+        },
+      },
+      transcriptAudioStore: {
+        saveWavForTranscript: () => Effect.fail(new Error("not implemented")),
+        loadByFileName: () => Effect.fail(new Error("not implemented")),
+        listFileNames: () =>
+          Effect.sync(() => {
+            calls.push("list-stored-audio-files");
+            return ["orphan.wav", "referenced.wav"];
+          }),
+        deleteByFileNames: (fileNames: readonly string[]) =>
+          Effect.sync(() => {
+            calls.push(`delete-files:${fileNames.join(",")}`);
+          }),
+      },
+    });
+
+    registerIpcHandlers(dependencies);
+
+    await invoke(IpcChannels.listTranscripts, {});
+
+    expect(calls).toEqual([
+      "list-stored-audio-files",
+      "list-referenced-audio-files",
+      "delete-files:orphan.wav",
     ]);
   });
 
@@ -851,6 +909,7 @@ describe("registerIpcHandlers", () => {
       transcriptAudioStore: {
         saveWavForTranscript: () => Effect.fail(new Error("not implemented")),
         loadByFileName: () => Effect.fail(new Error("not implemented")),
+        listFileNames: () => Effect.succeed([]),
         deleteByFileNames: () =>
           Effect.sync(() => {
             calls.push("delete-files");

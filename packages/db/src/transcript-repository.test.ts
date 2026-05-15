@@ -139,6 +139,31 @@ describe("createTranscriptRepository", () => {
     });
   });
 
+  it("fails inserts as typed Effect errors", async () => {
+    const repository = createMemoryRepository();
+    const record = {
+      id: "tr_duplicate",
+      text: "first transcript",
+      createdAt: "2026-05-15T00:00:00.000Z",
+      durationMs: 1200,
+      modelId: "whisper-cpp-small",
+      runtime: "whisper-cpp",
+      language: "en" as const,
+      recordingMode: "toggle-to-talk" as const,
+      stopReason: "hotkey-release" as const,
+      insertionMode: "paste" as const,
+      insertionStatus: "inserted" as const,
+      targetAppName: null,
+      audioFileName: null,
+      audioMimeType: null,
+      audioByteSize: null,
+    };
+
+    await Effect.runPromise(repository.insert(record));
+
+    await expect(Effect.runPromise(repository.insert(record))).rejects.toThrow();
+  });
+
   it("lists transcript audio file names", async () => {
     const repository = createMemoryRepository();
 
