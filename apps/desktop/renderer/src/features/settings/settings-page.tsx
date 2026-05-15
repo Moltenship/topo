@@ -418,8 +418,19 @@ export const SettingsPage = ({
           />
         </SettingsRow>
         <SettingsRow
+          title="Save transcript audio"
+          description="Store WAV audio with transcript history. Saved audio is deleted with its transcript."
+          resetAction={getResetAction("saveTranscriptAudio", "saved transcript audio")}
+        >
+          <SettingsSwitch
+            disabled={!settings || !settings.historyEnabled}
+            checked={settings?.saveTranscriptAudio ?? false}
+            onChange={(value) => updateSettings("saveTranscriptAudio", value)}
+          />
+        </SettingsRow>
+        <SettingsRow
           title="Auto-delete"
-          description="Remove local transcripts after the selected retention period."
+          description="Remove local transcripts and saved audio after the selected retention period."
           resetAction={getResetAction("autoDeleteHistoryDays", "history auto-delete")}
         >
           <SettingsSelect
