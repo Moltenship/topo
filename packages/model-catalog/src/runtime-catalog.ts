@@ -60,7 +60,7 @@ export const bundledRuntimeCatalog: readonly RuntimeCatalogEntry[] = [
     checksumSha256: "74f973345cb52ef5ba3ec9e7e7af8e48cc8c71722d1528603b80588a11f82e3e",
     downloadSizeBytes: 4_078_768,
     diskSizeBytes: 16 * 1024 * 1024,
-    binaryRelativePath: "whisper-cli.exe",
+    binaryRelativePath: "Release/whisper-cli.exe",
     probeArgs: ["--help"],
   },
   {
@@ -78,7 +78,7 @@ export const bundledRuntimeCatalog: readonly RuntimeCatalogEntry[] = [
     checksumSha256: "b07cff4e59831b227896018facbb6334907bf324a342c84597c44f087823d252",
     downloadSizeBytes: 457_024_596,
     diskSizeBytes: 512 * 1024 * 1024,
-    binaryRelativePath: "whisper-cli.exe",
+    binaryRelativePath: "Release/whisper-cli.exe",
     probeArgs: ["--help"],
   },
   {

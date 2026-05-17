@@ -26,7 +26,7 @@ describe("bundledRuntimeCatalog", () => {
     expect(runtime?.checksumSha256).toBe(
       "74f973345cb52ef5ba3ec9e7e7af8e48cc8c71722d1528603b80588a11f82e3e",
     );
-    expect(runtime?.binaryRelativePath).toBe("whisper-cli.exe");
+    expect(runtime?.binaryRelativePath).toBe("Release/whisper-cli.exe");
   });
 
   it("represents Windows whisper.cpp CUDA as an official NVIDIA GPU runtime pack", () => {
@@ -43,7 +43,7 @@ describe("bundledRuntimeCatalog", () => {
     expect(runtime?.checksumSha256).toBe(
       "b07cff4e59831b227896018facbb6334907bf324a342c84597c44f087823d252",
     );
-    expect(runtime?.binaryRelativePath).toBe("whisper-cli.exe");
+    expect(runtime?.binaryRelativePath).toBe("Release/whisper-cli.exe");
   });
 
   it("has unique runtime ids", () => {
