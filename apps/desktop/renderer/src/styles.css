@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant wco (&:is(.wco, .wco *));
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);

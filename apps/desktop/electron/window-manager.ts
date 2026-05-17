@@ -3,6 +3,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
+const titleBarHeight = 40;
+const titleBarOverlayColor = "#01000000";
+const titleBarOverlaySymbolColor = "#f8fafc";
 
 const loadRenderer = (window: BrowserWindow, hash?: string) => {
   const devServerUrl = process.env.ELECTRON_RENDERER_URL ?? process.env.VITE_DEV_SERVER_URL;
@@ -33,6 +36,15 @@ export const createMainWindow = (): BrowserWindow => {
     title: "Topo",
     titleBarStyle: isMac ? "hiddenInset" : "hidden",
     ...(isMac ? { trafficLightPosition: { x: 16, y: 18 } } : {}),
+    ...(!isMac
+      ? {
+          titleBarOverlay: {
+            color: titleBarOverlayColor,
+            height: titleBarHeight,
+            symbolColor: titleBarOverlaySymbolColor,
+          },
+        }
+      : {}),
     webPreferences: {
       preload: join(currentDirectory, "../preload/preload.cjs"),
       contextIsolation: true,
